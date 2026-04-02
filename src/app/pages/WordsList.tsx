@@ -1,40 +1,96 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Search, Filter, ChevronRight, Star, BookOpen, Layers, TrendingUp } from "lucide-react";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { db } from "../lib/firebase";
+
+interface WordItem {
+  id: string;
+  word: string;
+  meaning: string;
+  level: string;
+  mastery: number;
+  isFavorite: boolean;
+}
+
+const fallbackWords: WordItem[] = [
+  { id: "1", word: "Serendipity", meaning: "뜻밖의 행운", level: "고급", mastery: 78, isFavorite: true },
+  { id: "2", word: "Abundant", meaning: "풍부한", level: "중급", mastery: 85, isFavorite: true },
+  { id: "3", word: "Benevolent", meaning: "자비로운", level: "고급", mastery: 72, isFavorite: false },
+  { id: "4", word: "Compassion", meaning: "연민, 동정심", level: "중급", mastery: 90, isFavorite: true },
+  { id: "5", word: "Diligent", meaning: "부지런한", level: "초급", mastery: 95, isFavorite: false },
+  { id: "6", word: "Eloquent", meaning: "웅변의", level: "고급", mastery: 68, isFavorite: true },
+  { id: "7", word: "Frugal", meaning: "검소한", level: "중급", mastery: 80, isFavorite: false },
+  { id: "8", word: "Gregarious", meaning: "사교적인", level: "고급", mastery: 55, isFavorite: false },
+  { id: "9", word: "Harmonious", meaning: "조화로운", level: "초급", mastery: 92, isFavorite: true },
+  { id: "10", word: "Simple", meaning: "간단한", level: "초급", mastery: 100, isFavorite: false },
+  { id: "11", word: "Happy", meaning: "행복한", level: "초급", mastery: 98, isFavorite: true },
+  { id: "12", word: "Leverage", meaning: "활용하다", level: "비즈니스", mastery: 65, isFavorite: false },
+  { id: "13", word: "Synergy", meaning: "시너지", level: "비즈니스", mastery: 70, isFavorite: true },
+  { id: "14", word: "Stakeholder", meaning: "이해관계자", level: "비즈니스", mastery: 82, isFavorite: false },
+  { id: "15", word: "Quarterly", meaning: "분기별", level: "비즈니스", mastery: 88, isFavorite: true },
+  { id: "16", word: "Revenue", meaning: "수익", level: "비즈니스", mastery: 75, isFavorite: false },
+];
 
 export default function WordsList() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [words, setWords] = useState<WordItem[]>(fallbackWords);
+  const [isLoading, setIsLoading] = useState(true);
 
   const categories = ["전체", "초급", "중급", "고급", "비즈니스"];
   const [activeCategory, setActiveCategory] = useState("전체");
 
-  const words = [
-    { id: 1, word: "Serendipity", meaning: "뜻밖의 행운", level: "고급", mastery: 78, isFavorite: true },
-    { id: 2, word: "Abundant", meaning: "풍부한", level: "중급", mastery: 85, isFavorite: true },
-    { id: 3, word: "Benevolent", meaning: "자비로운", level: "고급", mastery: 72, isFavorite: false },
-    { id: 4, word: "Compassion", meaning: "연민, 동정심", level: "중급", mastery: 90, isFavorite: true },
-    { id: 5, word: "Diligent", meaning: "부지런한", level: "초급", mastery: 95, isFavorite: false },
-    { id: 6, word: "Eloquent", meaning: "웅변의", level: "고급", mastery: 68, isFavorite: true },
-    { id: 7, word: "Frugal", meaning: "검소한", level: "중급", mastery: 80, isFavorite: false },
-    { id: 8, word: "Gregarious", meaning: "사교적인", level: "고급", mastery: 55, isFavorite: false },
-    { id: 9, word: "Harmonious", meaning: "조화로운", level: "초급", mastery: 92, isFavorite: true },
-    { id: 10, word: "Simple", meaning: "간단한", level: "초급", mastery: 100, isFavorite: false },
-    { id: 11, word: "Happy", meaning: "행복한", level: "초급", mastery: 98, isFavorite: true },
-    { id: 12, word: "Leverage", meaning: "활용하다", level: "비즈니스", mastery: 65, isFavorite: false },
-    { id: 13, word: "Synergy", meaning: "시너지", level: "비즈니스", mastery: 70, isFavorite: true },
-    { id: 14, word: "Stakeholder", meaning: "이해관계자", level: "비즈니스", mastery: 82, isFavorite: false },
-    { id: 15, word: "Quarterly", meaning: "분기별", level: "비즈니스", mastery: 88, isFavorite: true },
-    { id: 16, word: "Revenue", meaning: "수익", level: "비즈니스", mastery: 75, isFavorite: false },
-  ];
+  useEffect(() => {
+    const loadWords = async () => {
+      try {
+        const wordsQuery = query(collection(db, "words"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(wordsQuery);
 
-  // 레벨에 따라 단어 필터링
-  const filteredWords = activeCategory === "전체" 
-    ? words 
-    : words.filter(word => word.level === activeCategory);
+        if (!snapshot.empty) {
+          const firestoreWords = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              word: typeof data.word === "string" ? data.word : "Untitled",
+              meaning: typeof data.meaning === "string" ? data.meaning : "",
+              level: typeof data.level === "string" ? data.level : "전체",
+              mastery: typeof data.mastery === "number" ? data.mastery : 0,
+              isFavorite: Boolean(data.isFavorite),
+            } satisfies WordItem;
+          });
+
+          setWords(firestoreWords);
+        }
+      } catch (error) {
+        console.error("단어 목록 불러오기 실패:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadWords();
+  }, []);
+
+  const searchedWords = words.filter((word) => {
+    const keyword = searchQuery.trim().toLowerCase();
+    if (!keyword) {
+      return true;
+    }
+
+    return (
+      word.word.toLowerCase().includes(keyword) ||
+      word.meaning.toLowerCase().includes(keyword)
+    );
+  });
+
+  const filteredWords =
+    activeCategory === "전체"
+      ? searchedWords
+      : searchedWords.filter((word) => word.level === activeCategory);
 
   return (
     <div className="min-h-screen bg-background pb-6">
@@ -107,7 +163,9 @@ export default function WordsList() {
         </div>
 
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-muted-foreground">{filteredWords.length}개의 단어</p>
+          <p className="text-sm text-muted-foreground">
+            {isLoading ? "불러오는 중..." : `${filteredWords.length}개의 단어`}
+          </p>
           <Badge variant="secondary" className="bg-primary/10 text-primary">
             오늘 15개 추가
           </Badge>
