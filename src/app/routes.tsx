@@ -23,11 +23,12 @@ import SentenceQuiz from "./pages/SentenceQuiz";
 import FlashcardFavorites from "./pages/FlashcardFavorites";
 import SentenceFavorites from "./pages/SentenceFavorites";
 import Layout from "./components/Layout";
+import { RedirectIfAuthenticated, RequireAuth } from "./components/AuthGuard";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/screens-overview" replace />,
+    element: <Navigate to="/app/home" replace />,
   },
   {
     path: "/screens-overview",
@@ -38,92 +39,102 @@ export const router = createBrowserRouter([
     element: <Onboarding />,
   },
   {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/app",
-    element: <Layout />,
+    element: <RedirectIfAuthenticated />,
     children: [
       {
-        path: "home",
-        element: <Home />,
+        path: "/login",
+        element: <Login />,
       },
+    ],
+  },
+  {
+    element: <RequireAuth />,
+    children: [
       {
-        path: "words",
-        element: <WordsList />,
-      },
-      {
-        path: "words/:id",
-        element: <WordDetail />,
-      },
-      {
-        path: "quiz",
-        element: <QuizStart />,
-      },
-      {
-        path: "quiz/multiple-choice",
-        element: <MultipleChoiceQuiz />,
-      },
-      {
-        path: "quiz/short-answer",
-        element: <ShortAnswerQuiz />,
-      },
-      {
-        path: "quiz/result",
-        element: <QuizResult />,
-      },
-      {
-        path: "review",
-        element: <ReviewList />,
-      },
-      {
-        path: "wrong-answers",
-        element: <WrongAnswers />,
-      },
-      {
-        path: "favorites",
-        element: <Favorites />,
-      },
-      {
-        path: "settings",
-        element: <Settings />,
-      },
-      {
-        path: "profile",
-        element: <Profile />,
-      },
-      {
-        path: "community",
-        element: <Community />,
-      },
-      {
-        path: "community/create",
-        element: <CreatePost />,
-      },
-      {
-        path: "community/:id",
-        element: <PostDetail />,
-      },
-      {
-        path: "flashcard-study",
-        element: <FlashcardStudy />,
-      },
-      {
-        path: "sentence-study",
-        element: <SentenceStudy />,
-      },
-      {
-        path: "sentence-quiz",
-        element: <SentenceQuiz />,
-      },
-      {
-        path: "flashcard-favorites",
-        element: <FlashcardFavorites />,
-      },
-      {
-        path: "sentence-favorites",
-        element: <SentenceFavorites />,
+        path: "/app",
+        element: <Layout />,
+        children: [
+          {
+            path: "home",
+            element: <Home />,
+          },
+          {
+            path: "words",
+            element: <WordsList />,
+          },
+          {
+            path: "words/:id",
+            element: <WordDetail />,
+          },
+          {
+            path: "quiz",
+            element: <QuizStart />,
+          },
+          {
+            path: "quiz/multiple-choice",
+            element: <MultipleChoiceQuiz />,
+          },
+          {
+            path: "quiz/short-answer",
+            element: <ShortAnswerQuiz />,
+          },
+          {
+            path: "quiz/result",
+            element: <QuizResult />,
+          },
+          {
+            path: "review",
+            element: <ReviewList />,
+          },
+          {
+            path: "wrong-answers",
+            element: <WrongAnswers />,
+          },
+          {
+            path: "favorites",
+            element: <Favorites />,
+          },
+          {
+            path: "settings",
+            element: <Settings />,
+          },
+          {
+            path: "profile",
+            element: <Profile />,
+          },
+          {
+            path: "community",
+            element: <Community />,
+          },
+          {
+            path: "community/create",
+            element: <CreatePost />,
+          },
+          {
+            path: "community/:id",
+            element: <PostDetail />,
+          },
+          {
+            path: "flashcard-study",
+            element: <FlashcardStudy />,
+          },
+          {
+            path: "sentence-study",
+            element: <SentenceStudy />,
+          },
+          {
+            path: "sentence-quiz",
+            element: <SentenceQuiz />,
+          },
+          {
+            path: "flashcard-favorites",
+            element: <FlashcardFavorites />,
+          },
+          {
+            path: "sentence-favorites",
+            element: <SentenceFavorites />,
+          },
+        ],
       },
     ],
   },

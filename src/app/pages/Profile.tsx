@@ -8,12 +8,13 @@ import { useAuth } from "../contexts/AuthContext";
 export default function Profile() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const fallbackName = user?.email?.split("@")[0] || "사용자";
 
   const userInfo = {
-    name: user?.displayName || "사용자",
+    name: user?.displayName || fallbackName,
     email: user?.email || "user@wordy.com",
     joinDate: user?.metadata.creationTime || "2026-01-15",
-    avatar: user?.photoURL || "🎓",
+    photoURL: user?.photoURL,
     level: 12,
     currentExp: 2450,
     nextLevelExp: 3000,
@@ -50,8 +51,17 @@ export default function Profile() {
 
         {/* Profile Info */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center text-4xl">
-            {userInfo.avatar}
+          <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center overflow-hidden text-4xl">
+            {userInfo.photoURL ? (
+              <img
+                src={userInfo.photoURL}
+                alt={`${userInfo.name} 프로필 이미지`}
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              "🎓"
+            )}
           </div>
           <div className="flex-1">
             <h1 className="text-2xl mb-1">{userInfo.name}</h1>

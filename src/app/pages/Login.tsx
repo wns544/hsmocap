@@ -1,64 +1,51 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { 
-  signInWithRedirect,
-  getRedirectResult
+  signInWithPopup,
 } from "firebase/auth";
-import { auth, googleProvider, facebookProvider } from "../lib/firebase";
+import { auth, googleProvider } from "../lib/firebase";
 import { Button } from "../components/ui/button";
 import { Chrome, Facebook as FacebookIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { signInAsGuest } = useAuth();
   const [loading, setLoading] = useState(false);
-
-  // 리다이렉트 결과 처리
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log("로그인 성공:", result.user);
-          toast.success("로그인 성공!");
-          navigate("/app/home");
-        }
-      } catch (error: any) {
-        console.error("로그인 에러:", error);
-        toast.error("로그인에 실패했습니다.");
-      }
-    };
-
-    handleRedirectResult();
-  }, [navigate]);
+  const redirectPath = (location.state as { from?: string } | null)?.from || "/app/home";
 
   // Google 로그인
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
+      toast.success("Google 로그인 성공!");
+      navigate(redirectPath, { replace: true });
     } catch (error: any) {
       console.error("Google 로그인 에러:", error);
-      toast.error("로그인에 실패했습��다.");
+      toast.error("Google 로그인에 실패했습니다.");
       setLoading(false);
     }
   };
 
   // Facebook 로그인
-  const handleFacebookLogin = async () => {
-    setLoading(true);
-    try {
-      await signInWithRedirect(auth, facebookProvider);
-    } catch (error: any) {
-      console.error("Facebook 로그인 에러:", error);
-      toast.error("로그인에 실패했습니다.");
-      setLoading(false);
-    }
+  const handleFacebookLogin = () => {
+    toast.info("Facebook 로그인은 아직 설정 중입니다.");
   };
 
-  // 게스트로 계속하기 (임시)
-  const handleGuestLogin = () => {
-    navigate("/app/home");
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    try {
+      await signInAsGuest();
+      toast.success("게스트 로그인 성공!");
+      navigate(redirectPath, { replace: true });
+    } catch (error) {
+      console.error("게스트 로그인 에러:", error);
+      toast.error("게스트 로그인에 실패했습니다. Firebase 익명 로그인을 활성화하세요.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -101,6 +88,7 @@ export default function Login() {
             <Button
               type="button"
               onClick={handleGuestLogin}
+              disabled={loading}
               className="w-full h-14 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-border rounded-xl flex items-center justify-center gap-3 shadow-sm"
             >
               <span>게스트로 계속하기</span>

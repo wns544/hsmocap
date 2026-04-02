@@ -20,8 +20,9 @@ import {
   ArrowRight,
   Layers,
 } from "lucide-react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { seedWords } from "../data/seedWords";
 
 interface Screen {
   id: number;
@@ -184,20 +185,31 @@ const categories = ["인증", "메인", "학습", "퀴즈", "복습", "프로필
 export default function ScreensOverview() {
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleFirestoreTest = async () => {
+  const handleSeedWords = async () => {
     setIsSaving(true);
     try {
-      const docRef = await addDoc(collection(db, "words"), {
-        word: "Apple",
-        meaning: "사과",
-        createdAt: serverTimestamp(),
-        source: "screens-overview-test",
+      const batch = writeBatch(db);
+
+      seedWords.forEach((item) => {
+        const ref = doc(db, "words", item.word.toLowerCase());
+        batch.set(
+          ref,
+          {
+            ...item,
+            mastery: 0,
+            isFavorite: false,
+            source: "FrequencyWords (CC BY-SA 4.0)",
+            createdAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
       });
 
-      alert(`Firestore 저장 성공: ${docRef.id}`);
+      await batch.commit();
+      alert(`단어 ${seedWords.length}개 저장 완료`);
     } catch (error) {
-      console.error("Firestore 저장 실패:", error);
-      alert("Firestore 저장 실패. 콘솔 에러를 확인하세요.");
+      console.error("단어 시드 저장 실패:", error);
+      alert("단어 저장 실패. 콘솔 에러를 확인하세요.");
     } finally {
       setIsSaving(false);
     }
@@ -246,18 +258,18 @@ export default function ScreensOverview() {
         </div>
 
         <div className="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
-          <h3 className="mb-2 text-lg">Firestore 연결 테스트</h3>
+          <h3 className="mb-2 text-lg">오픈소스 단어 시드</h3>
           <p className="mb-4 text-sm text-muted-foreground">
             아래 버튼을 누르면 <code className="rounded bg-blue-100 px-2 py-1">words</code> 컬렉션에
-            테스트 문서가 저장됩니다.
+            공개 빈도 리스트 기반 단어 50개를 저장합니다.
           </p>
           <button
             type="button"
-            onClick={handleFirestoreTest}
+            onClick={handleSeedWords}
             disabled={isSaving}
             className="rounded-xl bg-blue-600 px-4 py-3 text-sm text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? "저장 중..." : "Apple 테스트 데이터 저장"}
+            {isSaving ? "저장 중..." : "오픈소스 단어 50개 불러오기"}
           </button>
         </div>
 
