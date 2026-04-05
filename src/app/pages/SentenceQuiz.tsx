@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { ChevronLeft, Settings, Volume2, Play, BookOpen, CheckCircle, AlertCircle, Trophy, RefreshCw, Home, Delete, ImageIcon, X as XIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
+import { db } from "../lib/firebase";
 
 interface QuizQuestion {
   id: number;
@@ -21,7 +23,7 @@ interface FeedbackData {
   hint?: string;
 }
 
-const quizQuestions: QuizQuestion[] = [
+const fallbackQuizQuestions: QuizQuestion[] = [
   {
     id: 1,
     korean: "너 날 믿니?",
@@ -126,8 +128,9 @@ const quizQuestions: QuizQuestion[] = [
 
 export default function SentenceQuiz() {
   const navigate = useNavigate();
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(fallbackQuizQuestions);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showWord, setShowWord] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
   const [userInput, setUserInput] = useState("");
   const [showFeedback, setShowFeedback] = useState<FeedbackData | null>(null);
@@ -138,12 +141,63 @@ export default function SentenceQuiz() {
   const [hintImageUrl, setHintImageUrl] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const currentQuestion = quizQuestions[currentIndex];
+  const currentQuestion = quizQuestions[currentIndex] ?? null;
   const totalQuestions = quizQuestions.length;
-  const progress = ((completedCount) / totalQuestions) * 100;
+  const progress = totalQuestions > 0 ? ((completedCount) / totalQuestions) * 100 : 0;
+
+  useEffect(() => {
+    const loadQuizQuestions = async () => {
+      try {
+        const wordsQuery = query(collection(db, "words"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(wordsQuery);
+
+        const firestoreQuestions = snapshot.docs
+          .map((item, index) => {
+            const data = item.data();
+            const english = typeof data.exampleSentence === "string" ? data.exampleSentence.trim() : "";
+            const korean = typeof data.exampleTranslation === "string" ? data.exampleTranslation.trim() : "";
+            const koreanTargetWord = typeof data.quizKoreanBlank === "string" ? data.quizKoreanBlank.trim() : "";
+            const answers = Array.isArray(data.quizAnswers)
+              ? data.quizAnswers.filter((answer): answer is string => typeof answer === "string")
+              : [];
+            const targetWord = typeof data.word === "string" ? data.word.trim() : "";
+            const wordMeaning = typeof data.meaning === "string" ? data.meaning.trim() : "";
+
+            if (!english || !korean || !koreanTargetWord || answers.length === 0 || !targetWord) {
+              return null;
+            }
+
+            return {
+              id: index + 1,
+              korean,
+              english,
+              targetWord,
+              wordMeaning,
+              koreanTargetWord,
+              acceptableAnswers: answers,
+            } satisfies QuizQuestion;
+          })
+          .filter((question): question is QuizQuestion => question !== null);
+
+        if (firestoreQuestions.length > 0) {
+          setQuizQuestions(firestoreQuestions);
+        }
+      } catch (error) {
+        console.error("문장 퀴즈 데이터 불러오기 실패:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadQuizQuestions();
+  }, []);
 
   // 입력 필드에 자동으로 포커스
   useEffect(() => {
+    if (!currentQuestion) {
+      return undefined;
+    }
+
     // 약간의 지연을 주어 모바일 키보드가 확실히 나타나도록 함
     const timer = setTimeout(() => {
       if (inputRef.current) {
@@ -204,7 +258,6 @@ export default function SentenceQuiz() {
   const handleNext = () => {
     if (currentIndex < totalQuestions - 1) {
       setCurrentIndex(currentIndex + 1);
-      setShowWord(false);
       setUserInput(""); // 입력 필드 초기화
       setShowFeedback(null); // 피드백 초기화
       setCompletedCount(completedCount + 1);
@@ -301,6 +354,10 @@ export default function SentenceQuiz() {
 
   // 모르겠음 - 정답 보여주기
   const handleDontKnow = () => {
+    if (!currentQuestion) {
+      return;
+    }
+
     setUserInput(currentQuestion.koreanTargetWord);
     setShowFeedback({ 
       isCorrect: false, 
@@ -311,6 +368,10 @@ export default function SentenceQuiz() {
 
   // 발음 듣기 (문장 전체)
   const handlePronunciation = () => {
+    if (!currentQuestion) {
+      return;
+    }
+
     const utterance = new SpeechSynthesisUtterance(currentQuestion.english);
     utterance.lang = "en-US";
     utterance.rate = 0.9;
@@ -319,6 +380,10 @@ export default function SentenceQuiz() {
 
   // 이미지 힌트 보기
   const handleImageHint = async () => {
+    if (!currentQuestion) {
+      return;
+    }
+
     // Unsplash API를 통해 이미지 가져오기 (간단한 모의 데이터로 대체)
     const imageQuery = currentQuestion.targetWord;
     // 실제로는 Unsplash API를 호출해야 하지만, 여기서는 플레이스홀더 이미지 사용
@@ -329,6 +394,10 @@ export default function SentenceQuiz() {
 
   // 정답 제출
   const handleSubmit = () => {
+    if (!currentQuestion) {
+      return;
+    }
+
     const trimmedInput = userInput.trim();
     const correctAnswer = currentQuestion.koreanTargetWord.trim();
     
@@ -359,6 +428,31 @@ export default function SentenceQuiz() {
     ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'],
     ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ'],
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
+        <div className="text-center">
+          <p className="text-lg text-gray-700 mb-2">문장 퀴즈를 준비하는 중입니다.</p>
+          <p className="text-sm text-gray-500">Firestore의 `words` 문장 데이터를 확인하고 있습니다.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
+        <div className="text-center max-w-sm">
+          <p className="text-lg text-gray-700 mb-2">문장 퀴즈에 사용할 데이터가 없습니다.</p>
+          <p className="text-sm text-gray-500 mb-6">`words` 문서에 `exampleSentence`, `exampleTranslation`, `quizKoreanBlank`, `quizAnswers` 필드를 넣어주세요.</p>
+          <Button onClick={() => navigate("/app/words")} className="rounded-xl">
+            단어 목록으로
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

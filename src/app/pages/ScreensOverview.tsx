@@ -184,6 +184,15 @@ const categories = ["인증", "메인", "학습", "퀴즈", "복습", "프로필
 
 export default function ScreensOverview() {
   const [isSaving, setIsSaving] = useState(false);
+  const totalSeedWords = seedWords.length;
+  const quizReadySeedWords = seedWords.filter(
+    (item) =>
+      typeof item.exampleSentence === "string" &&
+      typeof item.exampleTranslation === "string" &&
+      typeof item.quizKoreanBlank === "string" &&
+      Array.isArray(item.quizAnswers) &&
+      item.quizAnswers.length > 0,
+  ).length;
 
   const handleSeedWords = async () => {
     setIsSaving(true);
@@ -206,7 +215,7 @@ export default function ScreensOverview() {
       });
 
       await batch.commit();
-      alert(`단어 ${seedWords.length}개 저장 완료`);
+      alert(`단어 ${totalSeedWords}개 저장 완료`);
     } catch (error) {
       console.error("단어 시드 저장 실패:", error);
       alert("단어 저장 실패. 콘솔 에러를 확인하세요.");
@@ -261,7 +270,8 @@ export default function ScreensOverview() {
           <h3 className="mb-2 text-lg">오픈소스 단어 시드</h3>
           <p className="mb-4 text-sm text-muted-foreground">
             아래 버튼을 누르면 <code className="rounded bg-blue-100 px-2 py-1">words</code> 컬렉션에
-            공개 빈도 리스트 기반 단어 50개를 저장합니다.
+            공개 빈도 리스트 기반 단어 {totalSeedWords}개를 저장합니다. 문장 퀴즈용 예문 데이터는 현재{" "}
+            {quizReadySeedWords}개 단어에 포함되어 있습니다.
           </p>
           <button
             type="button"
@@ -269,7 +279,7 @@ export default function ScreensOverview() {
             disabled={isSaving}
             className="rounded-xl bg-blue-600 px-4 py-3 text-sm text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? "저장 중..." : "오픈소스 단어 50개 불러오기"}
+            {isSaving ? "저장 중..." : `오픈소스 단어 ${totalSeedWords}개 불러오기`}
           </button>
         </div>
 
