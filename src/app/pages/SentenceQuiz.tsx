@@ -23,6 +23,12 @@ interface FeedbackData {
   hint?: string;
 }
 
+interface CommonsImageResult {
+  imageUrl: string;
+  descriptionUrl: string;
+  title: string;
+}
+
 const fallbackQuizQuestions: QuizQuestion[] = [
   {
     id: 1,
@@ -139,6 +145,9 @@ export default function SentenceQuiz() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showImageHint, setShowImageHint] = useState(false);
   const [hintImageUrl, setHintImageUrl] = useState<string>("");
+  const [hintImageSourceUrl, setHintImageSourceUrl] = useState<string>("");
+  const [hintImageTitle, setHintImageTitle] = useState<string>("");
+  const [isHintLoading, setIsHintLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
@@ -384,12 +393,80 @@ export default function SentenceQuiz() {
       return;
     }
 
-    // Unsplash API를 통해 이미지 가져오기 (간단한 모의 데이터로 대체)
-    const imageQuery = currentQuestion.targetWord;
-    // 실제로는 Unsplash API를 호출해야 하지만, 여기서는 플레이스홀더 이미지 사용
-    const imageUrl = `https://source.unsplash.com/400x400/?${imageQuery}`;
-    setHintImageUrl(imageUrl);
+    const searchCommonsImage = async (queryWord: string): Promise<CommonsImageResult | null> => {
+      const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
+      endpoint.searchParams.set("action", "query");
+      endpoint.searchParams.set("generator", "search");
+      endpoint.searchParams.set("gsrsearch", queryWord);
+      endpoint.searchParams.set("gsrnamespace", "6");
+      endpoint.searchParams.set("gsrlimit", "1");
+      endpoint.searchParams.set("prop", "imageinfo|info");
+      endpoint.searchParams.set("iiprop", "url");
+      endpoint.searchParams.set("iiurlwidth", "640");
+      endpoint.searchParams.set("inprop", "url");
+      endpoint.searchParams.set("format", "json");
+      endpoint.searchParams.set("formatversion", "2");
+      endpoint.searchParams.set("origin", "*");
+
+      const response = await fetch(endpoint.toString());
+      if (!response.ok) {
+        throw new Error(`Wikimedia Commons request failed: ${response.status}`);
+      }
+
+      const data = await response.json() as {
+        query?: {
+          pages?: Array<{
+            title?: string;
+            fullurl?: string;
+            imageinfo?: Array<{
+              thumburl?: string;
+              url?: string;
+            }>;
+          }>;
+        };
+      };
+
+      const page = data.query?.pages?.[0];
+      const imageInfo = page?.imageinfo?.[0];
+      const imageUrl = imageInfo?.thumburl || imageInfo?.url;
+      const descriptionUrl = page?.fullurl;
+
+      if (!page?.title || !imageUrl || !descriptionUrl) {
+        return null;
+      }
+
+      return {
+        imageUrl,
+        descriptionUrl,
+        title: page.title,
+      };
+    };
+
+    setIsHintLoading(true);
+    setHintImageUrl("");
+    setHintImageSourceUrl("");
+    setHintImageTitle("");
     setShowImageHint(true);
+
+    try {
+      const result = await searchCommonsImage(currentQuestion.targetWord);
+
+      if (!result) {
+        toast.error(`'${currentQuestion.targetWord}'에 맞는 이미지 힌트를 찾지 못했습니다.`);
+        setShowImageHint(false);
+        return;
+      }
+
+      setHintImageUrl(result.imageUrl);
+      setHintImageSourceUrl(result.descriptionUrl);
+      setHintImageTitle(result.title);
+    } catch (error) {
+      console.error("Wikimedia Commons 이미지 힌트 로드 실패:", error);
+      toast.error("이미지 힌트를 불러오지 못했습니다.");
+      setShowImageHint(false);
+    } finally {
+      setIsHintLoading(false);
+    }
   };
 
   // 정답 제출
@@ -728,19 +805,33 @@ export default function SentenceQuiz() {
               </h3>
 
               {/* Image */}
-              <div className="rounded-2xl overflow-hidden bg-gray-100 mb-4">
-                <img
-                  src={hintImageUrl}
-                  alt={currentQuestion?.targetWord}
-                  className="w-full h-64 object-cover"
-                  key={hintImageUrl}
-                />
+              <div className="rounded-2xl overflow-hidden bg-gray-100 mb-4 min-h-64 flex items-center justify-center">
+                {isHintLoading ? (
+                  <p className="text-sm text-gray-500">Wikimedia Commons에서 이미지를 찾는 중입니다.</p>
+                ) : (
+                  <img
+                    src={hintImageUrl}
+                    alt={currentQuestion?.targetWord}
+                    className="w-full h-64 object-cover"
+                    key={hintImageUrl}
+                  />
+                )}
               </div>
 
               {/* Hint Text */}
               <p className="text-sm text-gray-500 text-center">
                 💡 이미지를 보고 단어의 의미를 떠올려보세요!
               </p>
+              {!isHintLoading && hintImageSourceUrl && (
+                <a
+                  href={hintImageSourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 block text-center text-xs text-blue-600 hover:underline"
+                >
+                  출처 보기: {hintImageTitle || "Wikimedia Commons"}
+                </a>
+              )}
             </motion.div>
           </motion.div>
         )}
