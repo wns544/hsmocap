@@ -26,14 +26,14 @@ const fallbackWords: WordItem[] = fallbackWordSummaries.map((word) => ({
   isFavorite: word.isFavorite,
 }));
 
+const categories = ["전체", "초급", "중급", "고급", "비즈니스"] as const;
+
 export default function WordsList() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [words, setWords] = useState<WordItem[]>(fallbackWords);
   const [isLoading, setIsLoading] = useState(true);
-
-  const categories = ["전체", "초급", "중급", "고급", "비즈니스"];
-  const [activeCategory, setActiveCategory] = useState("전체");
+  const [activeCategory, setActiveCategory] = useState<(typeof categories)[number]>("전체");
 
   useEffect(() => {
     const loadWords = async () => {
@@ -80,6 +80,9 @@ export default function WordsList() {
       ? searchedWords
       : searchedWords.filter((word) => word.level === activeCategory);
 
+  const buildStudyPath = (path: string) =>
+    activeCategory === "전체" ? path : `${path}?level=${encodeURIComponent(activeCategory)}`;
+
   return (
     <div className="min-h-screen bg-background pb-6">
       <div className="bg-white border-b border-border px-6 pt-12 pb-4 sticky top-0 z-10">
@@ -119,7 +122,7 @@ export default function WordsList() {
       <div className="px-6 mt-4">
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Button
-            onClick={() => navigate("/app/sentence-quiz")}
+            onClick={() => navigate(buildStudyPath("/app/sentence-quiz"))}
             className="h-auto py-4 px-3 flex flex-col items-center gap-2 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 rounded-2xl"
           >
             <BookOpen className="w-6 h-6" />
@@ -127,7 +130,7 @@ export default function WordsList() {
           </Button>
 
           <Button
-            onClick={() => navigate("/app/flashcard-study")}
+            onClick={() => navigate(buildStudyPath("/app/flashcard-study"))}
             className="h-auto py-4 px-3 flex flex-col items-center gap-2 bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border-0 rounded-2xl"
           >
             <Layers className="w-6 h-6" />
@@ -135,7 +138,7 @@ export default function WordsList() {
           </Button>
 
           <Button
-            onClick={() => navigate("/app/review")}
+            onClick={() => navigate(buildStudyPath("/app/review"))}
             className="h-auto py-4 px-3 flex flex-col items-center gap-2 bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 rounded-2xl"
           >
             <TrendingUp className="w-6 h-6" />
@@ -154,7 +157,11 @@ export default function WordsList() {
 
         <div className="space-y-3">
           {filteredWords.map((item) => (
-            <Link key={item.id} to={`/app/words/${item.id}`}>
+            <Link
+              key={item.id}
+              to={`/app/words/${item.id}?word=${encodeURIComponent(item.word)}`}
+              state={{ word: item }}
+            >
               <div className="bg-white rounded-2xl p-4 border border-border active:scale-[0.98] transition-transform">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

@@ -1,16 +1,72 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, Check, Star, Volume2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { getWordById } from "../lib/words";
+import { getWordById, type WordDetailData, words } from "../lib/words";
+
+interface WordLocationState {
+  word?: {
+    id: string;
+    word: string;
+    meaning: string;
+    level: string;
+    mastery: number;
+    isFavorite: boolean;
+  };
+}
+
+function createFallbackDetail(source: NonNullable<WordLocationState["word"]>): WordDetailData {
+  return {
+    id: Number.isNaN(Number(source.id)) ? -1 : Number(source.id),
+    word: source.word,
+    meaning: source.meaning || "단어 뜻 정보가 아직 등록되지 않았습니다.",
+    level: source.level || "전체",
+    mastery: source.mastery ?? 0,
+    isFavorite: source.isFavorite ?? false,
+    pronunciation: `/${source.word}/`,
+    examples: [
+      {
+        en: `${source.word} is part of your study list.`,
+        ko: `${source.word} 단어가 학습 목록에 포함되어 있습니다.`,
+      },
+    ],
+    synonyms: ["추가 정보 준비 중"],
+    related: ["상세 데이터 연결 예정"],
+  };
+}
 
 export default function WordDetail() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
-  const wordId = Number(id);
-  const word = Number.isNaN(wordId) ? undefined : getWordById(wordId);
+  const [searchParams] = useSearchParams();
+  const locationState = location.state as WordLocationState | null;
+
+  const word = useMemo(() => {
+    const numericId = Number(id);
+    const byId = Number.isNaN(numericId) ? undefined : getWordById(numericId);
+
+    if (byId) {
+      return byId;
+    }
+
+    const wordName = searchParams.get("word");
+    if (wordName) {
+      const byName = words.find((item) => item.word.toLowerCase() === wordName.toLowerCase());
+      if (byName) {
+        return byName;
+      }
+    }
+
+    if (locationState?.word) {
+      return createFallbackDetail(locationState.word);
+    }
+
+    return undefined;
+  }, [id, locationState, searchParams]);
+
   const [isFavorite, setIsFavorite] = useState(word?.isFavorite ?? false);
 
   if (!word) {

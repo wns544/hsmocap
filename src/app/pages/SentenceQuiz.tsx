@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { ChevronLeft, Settings, Volume2, Play, BookOpen, CheckCircle, AlertCircle, Trophy, RefreshCw, Home, Delete, ImageIcon, X as XIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
+import { toast } from "sonner";
 import { db } from "../lib/firebase";
 import { getStoredStudyLevel } from "../lib/studyPreferences";
 
@@ -136,6 +137,7 @@ const fallbackQuizQuestions: QuizQuestion[] = [
 
 export default function SentenceQuiz() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(fallbackQuizQuestions);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -151,7 +153,7 @@ export default function SentenceQuiz() {
   const [hintImageTitle, setHintImageTitle] = useState<string>("");
   const [isHintLoading, setIsHintLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const selectedStudyLevel = getStoredStudyLevel();
+  const selectedStudyLevel = searchParams.get("level") || getStoredStudyLevel();
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
   const totalQuestions = quizQuestions.length;
@@ -210,7 +212,7 @@ export default function SentenceQuiz() {
     };
 
     void loadQuizQuestions();
-  }, []);
+  }, [selectedStudyLevel]);
 
   // 입력 필드에 자동으로 포커스
   useEffect(() => {
