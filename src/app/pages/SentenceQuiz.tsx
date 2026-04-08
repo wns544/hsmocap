@@ -5,6 +5,7 @@ import { ChevronLeft, Settings, Volume2, Play, BookOpen, CheckCircle, AlertCircl
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { db } from "../lib/firebase";
+import { getStoredStudyLevel } from "../lib/studyPreferences";
 
 interface QuizQuestion {
   id: number;
@@ -12,6 +13,7 @@ interface QuizQuestion {
   english: string;
   targetWord: string;
   wordMeaning: string;
+  level?: string;
   pronunciation?: string;
   koreanTargetWord: string; // 한국어 문장에서 가릴 단어
   acceptableAnswers: string[]; // 정답으로 인정되는 모든 답변들
@@ -149,6 +151,7 @@ export default function SentenceQuiz() {
   const [hintImageTitle, setHintImageTitle] = useState<string>("");
   const [isHintLoading, setIsHintLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectedStudyLevel = getStoredStudyLevel();
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
   const totalQuestions = quizQuestions.length;
@@ -182,11 +185,19 @@ export default function SentenceQuiz() {
               english,
               targetWord,
               wordMeaning,
+              level: typeof data.level === "string" ? data.level.trim() : "",
               koreanTargetWord,
               acceptableAnswers: answers,
             } satisfies QuizQuestion;
           })
-          .filter((question): question is QuizQuestion => question !== null);
+          .filter((question): question is QuizQuestion => question !== null)
+          .filter((question) => {
+            if (selectedStudyLevel === "전체") {
+              return true;
+            }
+
+            return question.level === selectedStudyLevel;
+          });
 
         if (firestoreQuestions.length > 0) {
           setQuizQuestions(firestoreQuestions);

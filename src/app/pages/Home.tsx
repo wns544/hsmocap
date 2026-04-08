@@ -22,10 +22,10 @@ export default function Home() {
     .filter((word): word is NonNullable<typeof word> => word !== undefined);
 
   const studyHistory = [
-    { date: "2024년 3월 29일", wordsLearned: 15, correctRate: 87, duration: "25분" },
-    { date: "2024년 3월 28일", wordsLearned: 20, correctRate: 92, duration: "32분" },
-    { date: "2024년 3월 27일", wordsLearned: 18, correctRate: 84, duration: "28분" },
-    { date: "2024년 3월 26일", wordsLearned: 12, correctRate: 79, duration: "18분" },
+    { date: "2024년 3월 29일", wordsLearned: 15, correctRate: 87 },
+    { date: "2024년 3월 28일", wordsLearned: 20, correctRate: 92 },
+    { date: "2024년 3월 27일", wordsLearned: 18, correctRate: 84 },
+    { date: "2024년 3월 26일", wordsLearned: 12, correctRate: 79 },
   ];
 
   return (
@@ -98,7 +98,7 @@ export default function Home() {
             {recentWords.map((item) => (
               <Link key={item.id} to={`/app/words/${item.id}`}>
                 <div className="bg-white rounded-2xl p-4 border border-border">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between">
                     <div>
                       <div className="mb-1">{item.word}</div>
                       <div className="text-sm text-muted-foreground">{item.meaning}</div>
@@ -110,10 +110,6 @@ export default function Home() {
                     >
                       <Award className="w-5 h-5" />
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Progress value={item.mastery} className="flex-1 h-1.5" />
-                    <span className="text-xs text-muted-foreground">{item.mastery}%</span>
                   </div>
                 </div>
               </Link>
@@ -134,7 +130,6 @@ export default function Home() {
                   </div>
                   <div className="flex-1">
                     <div className="mb-1">{record.date}</div>
-                    <div className="text-sm text-muted-foreground">학습 시간: {record.duration}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

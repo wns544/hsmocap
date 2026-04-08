@@ -28,7 +28,7 @@ import { RedirectIfAuthenticated, RequireAuth } from "./components/AuthGuard";
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/app/home" replace />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: "/screens-overview",

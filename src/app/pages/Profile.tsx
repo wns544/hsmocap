@@ -1,13 +1,26 @@
 import { useNavigate } from "react-router";
-import { ArrowLeft, Edit, Award, Trophy, Target, Calendar, TrendingUp } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Award,
+  Trophy,
+  Target,
+  Calendar,
+  TrendingUp,
+  LogOut,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
 import { Badge } from "../components/ui/badge";
 import { useAuth } from "../contexts/AuthContext";
+import { StudyLevel, getStoredStudyLevel, setStoredStudyLevel, studyLevels } from "../lib/studyPreferences";
+import { useState } from "react";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const [selectedStudyLevel, setSelectedStudyLevel] = useState<StudyLevel>(getStoredStudyLevel());
   const fallbackName = user?.email?.split("@")[0] || "사용자";
 
   const userInfo = {
@@ -28,19 +41,34 @@ export default function Profile() {
   ];
 
   const achievements = [
-    { name: "첫 걸음", description: "첫 단어 학습 완료", icon: "🎯", earned: true },
-    { name: "연습생", description: "10개 단어 학습", icon: "📚", earned: true },
-    { name: "성실왕", description: "7일 연속 학습", icon: "🔥", earned: true },
+    { name: "첫걸음", description: "첫 단어 학습 완료", icon: "🌱", earned: true },
+    { name: "연습왕", description: "10개 단어 학습", icon: "📘", earned: true },
+    { name: "성실함", description: "7일 연속 학습", icon: "🔥", earned: true },
     { name: "퀴즈 마스터", description: "10회 퀴즈 완료", icon: "🏆", earned: true },
-    { name: "완벽주의자", description: "퀴즈 만점 5회", icon: "💯", earned: false },
-    { name: "전문가", description: "100개 단어 학습", icon: "🎓", earned: true },
+    { name: "집중력", description: "퀴즈 만점 5회", icon: "🎯", earned: false },
+    { name: "전문가", description: "100개 단어 학습", icon: "🧠", earned: true },
   ];
 
   const levelProgress = (userInfo.currentExp / userInfo.nextLevelExp) * 100;
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success("로그아웃되었습니다.");
+      navigate("/login");
+    } catch {
+      toast.error("로그아웃에 실패했습니다.");
+    }
+  };
+
+  const handleStudyLevelChange = (level: StudyLevel) => {
+    setSelectedStudyLevel(level);
+    setStoredStudyLevel(level);
+    toast.success(`학습 레벨이 ${level}(으)로 설정되었습니다.`);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-6">
-      {/* Header */}
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
         <button
           onClick={() => navigate(-1)}
@@ -49,7 +77,6 @@ export default function Profile() {
           <ArrowLeft className="w-5 h-5" />
         </button>
 
-        {/* Profile Info */}
         <div className="flex items-center gap-4 mb-6">
           <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center overflow-hidden text-4xl">
             {userInfo.photoURL ? (
@@ -60,7 +87,7 @@ export default function Profile() {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              "🎓"
+              "🙂"
             )}
           </div>
           <div className="flex-1">
@@ -73,10 +100,10 @@ export default function Profile() {
             className="bg-white/20 hover:bg-white/30 text-white border-0"
           >
             <Edit className="w-4 h-4" />
+            <span>프로필 수정</span>
           </Button>
         </div>
 
-        {/* Level Progress */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -95,7 +122,6 @@ export default function Profile() {
       </div>
 
       <div className="px-6 mt-6">
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           {stats.map((stat, index) => (
             <div key={index} className="bg-white rounded-2xl p-5 border border-border">
@@ -108,7 +134,33 @@ export default function Profile() {
           ))}
         </div>
 
-        {/* Learning Stats */}
+        <div className="bg-white rounded-2xl p-5 border border-border mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base">학습 레벨 설정</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                홈의 학습하기에서 표시할 단어 레벨을 고를 수 있어요.
+              </p>
+            </div>
+            <Badge variant="secondary" className="bg-primary/10 text-primary">
+              {selectedStudyLevel}
+            </Badge>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {studyLevels.map((level) => (
+              <Button
+                key={level}
+                type="button"
+                variant={selectedStudyLevel === level ? "default" : "outline"}
+                className="rounded-xl"
+                onClick={() => handleStudyLevelChange(level)}
+              >
+                {level}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         <div className="bg-white rounded-2xl p-5 border border-border mb-6">
           <h3 className="mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
@@ -139,7 +191,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Achievements */}
         <div>
           <h3 className="mb-4 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />
@@ -150,9 +201,7 @@ export default function Profile() {
               <div
                 key={index}
                 className={`rounded-2xl p-4 border-2 text-center ${
-                  achievement.earned
-                    ? "bg-white border-primary"
-                    : "bg-muted/30 border-border opacity-50"
+                  achievement.earned ? "bg-white border-primary" : "bg-muted/30 border-border opacity-50"
                 }`}
               >
                 <div className="text-3xl mb-2">{achievement.icon}</div>
@@ -168,7 +217,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Member Since */}
         <div className="mt-6 bg-accent rounded-2xl p-5 border border-border text-center">
           <p className="text-sm text-muted-foreground">
             {new Date(userInfo.joinDate).toLocaleDateString("ko-KR", {
@@ -179,6 +227,15 @@ export default function Profile() {
             부터 함께하고 있어요
           </p>
         </div>
+
+        <Button
+          variant="outline"
+          onClick={handleLogout}
+          className="mt-6 w-full h-14 rounded-2xl border-destructive/30 text-destructive hover:bg-destructive/5"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>로그아웃</span>
+        </Button>
       </div>
     </div>
   );
