@@ -21,7 +21,7 @@ export const words: WordDetailData[] = [
   {
     id: 1,
     word: "Serendipity",
-    pronunciation: "/ˌserənˈdɪpəti/",
+    pronunciation: "/ser.en.dip.i.ty/",
     meaning: "뜻밖의 행운, 우연한 발견",
     level: "고급",
     mastery: 78,
@@ -29,7 +29,6 @@ export const words: WordDetailData[] = [
     examples: [
       { en: "Finding that book was pure serendipity.", ko: "그 책을 찾은 건 정말 뜻밖의 행운이었다." },
       { en: "By serendipity, I met my old friend at the airport.", ko: "우연히 공항에서 옛 친구를 만났다." },
-      { en: "The discovery was a result of serendipity.", ko: "그 발견은 뜻밖의 행운의 결과였다." },
     ],
     synonyms: ["fortune", "luck", "chance"],
     related: ["Fortune", "Destiny", "Coincidence"],
@@ -37,7 +36,7 @@ export const words: WordDetailData[] = [
   {
     id: 2,
     word: "Abundant",
-    pronunciation: "/əˈbʌndənt/",
+    pronunciation: "/a.bun.dant/",
     meaning: "풍부한, 많은",
     level: "중급",
     mastery: 85,
@@ -52,7 +51,7 @@ export const words: WordDetailData[] = [
   {
     id: 3,
     word: "Benevolent",
-    pronunciation: "/bəˈnevələnt/",
+    pronunciation: "/be.nev.o.lent/",
     meaning: "자비로운, 선의의",
     level: "고급",
     mastery: 72,
@@ -67,7 +66,7 @@ export const words: WordDetailData[] = [
   {
     id: 4,
     word: "Compassion",
-    pronunciation: "/kəmˈpæʃən/",
+    pronunciation: "/com.pas.sion/",
     meaning: "연민, 동정심",
     level: "중급",
     mastery: 90,
@@ -82,7 +81,7 @@ export const words: WordDetailData[] = [
   {
     id: 5,
     word: "Diligent",
-    pronunciation: "/ˈdɪlədʒənt/",
+    pronunciation: "/di.li.gent/",
     meaning: "부지런한, 성실한",
     level: "초급",
     mastery: 95,
@@ -97,7 +96,7 @@ export const words: WordDetailData[] = [
   {
     id: 6,
     word: "Eloquent",
-    pronunciation: "/ˈeləkwənt/",
+    pronunciation: "/el.o.quent/",
     meaning: "표현력이 뛰어난, 웅변의",
     level: "고급",
     mastery: 68,
@@ -112,14 +111,14 @@ export const words: WordDetailData[] = [
   {
     id: 7,
     word: "Frugal",
-    pronunciation: "/ˈfruːɡəl/",
+    pronunciation: "/fru.gal/",
     meaning: "검소한, 절약하는",
     level: "중급",
     mastery: 80,
     isFavorite: false,
     examples: [
       { en: "They live a frugal lifestyle.", ko: "그들은 검소한 생활을 한다." },
-      { en: "Being frugal helped him save money.", ko: "절약하는 습관이 그가 돈을 모으는 데 도움이 됐다." },
+      { en: "Being frugal helped him save money.", ko: "절약하는 습관이 돈을 모으는 데 도움이 됐다." },
     ],
     synonyms: ["thrifty", "economical", "sparing"],
     related: ["Thrifty", "Economical", "Careful"],
@@ -127,7 +126,7 @@ export const words: WordDetailData[] = [
   {
     id: 8,
     word: "Gregarious",
-    pronunciation: "/ɡrɪˈɡeriəs/",
+    pronunciation: "/gre.gar.i.ous/",
     meaning: "사교적인",
     level: "고급",
     mastery: 55,
@@ -142,7 +141,7 @@ export const words: WordDetailData[] = [
   {
     id: 9,
     word: "Harmonious",
-    pronunciation: "/hɑːrˈmoʊniəs/",
+    pronunciation: "/har.mo.ni.ous/",
     meaning: "조화로운",
     level: "초급",
     mastery: 92,
@@ -157,7 +156,7 @@ export const words: WordDetailData[] = [
   {
     id: 10,
     word: "Simple",
-    pronunciation: "/ˈsɪmpəl/",
+    pronunciation: "/sim.ple/",
     meaning: "간단한, 쉬운",
     level: "초급",
     mastery: 100,
@@ -172,14 +171,14 @@ export const words: WordDetailData[] = [
   {
     id: 11,
     word: "Happy",
-    pronunciation: "/ˈhæpi/",
+    pronunciation: "/hap.py/",
     meaning: "행복한, 기쁜",
     level: "초급",
     mastery: 98,
     isFavorite: true,
     examples: [
       { en: "She felt happy after the test.", ko: "그녀는 시험 후 행복했다." },
-      { en: "Happy memories stayed with him.", ko: "행복한 기억이 그와 함께 남았다." },
+      { en: "Happy memories stayed with him.", ko: "행복한 기억이 오래 남았다." },
     ],
     synonyms: ["glad", "joyful", "pleased"],
     related: ["Joyful", "Glad", "Content"],
@@ -187,7 +186,7 @@ export const words: WordDetailData[] = [
   {
     id: 12,
     word: "Leverage",
-    pronunciation: "/ˈlevərɪdʒ/",
+    pronunciation: "/lev.er.age/",
     meaning: "활용하다",
     level: "비즈니스",
     mastery: 65,
@@ -202,7 +201,7 @@ export const words: WordDetailData[] = [
   {
     id: 13,
     word: "Synergy",
-    pronunciation: "/ˈsɪnərdʒi/",
+    pronunciation: "/syn.er.gy/",
     meaning: "시너지, 상승 효과",
     level: "비즈니스",
     mastery: 70,
@@ -217,7 +216,7 @@ export const words: WordDetailData[] = [
   {
     id: 14,
     word: "Stakeholder",
-    pronunciation: "/ˈsteɪkˌhoʊldər/",
+    pronunciation: "/stake.hold.er/",
     meaning: "이해관계자",
     level: "비즈니스",
     mastery: 82,
@@ -232,7 +231,7 @@ export const words: WordDetailData[] = [
   {
     id: 15,
     word: "Quarterly",
-    pronunciation: "/ˈkwɔːrtərli/",
+    pronunciation: "/quar.ter.ly/",
     meaning: "분기별",
     level: "비즈니스",
     mastery: 88,
@@ -247,7 +246,7 @@ export const words: WordDetailData[] = [
   {
     id: 16,
     word: "Revenue",
-    pronunciation: "/ˈrevənuː/",
+    pronunciation: "/rev.e.nue/",
     meaning: "수익, 매출",
     level: "비즈니스",
     mastery: 75,
@@ -262,6 +261,17 @@ export const words: WordDetailData[] = [
 ];
 
 export const recentWordIds = [1, 2, 6];
+
+export const fallbackWordSummaries: WordSummary[] = words.map(
+  ({ id, word, meaning, level, mastery, isFavorite }) => ({
+    id,
+    word,
+    meaning,
+    level,
+    mastery,
+    isFavorite,
+  }),
+);
 
 export function getWordById(id: number) {
   return words.find((word) => word.id === id);
