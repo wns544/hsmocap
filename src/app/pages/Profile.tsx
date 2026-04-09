@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -8,63 +9,126 @@ import {
   Calendar,
   TrendingUp,
   LogOut,
+  Sprout,
+  BookOpen,
+  Flame,
+  Shield,
+  Crown,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
-import { Badge } from "../components/ui/badge";
 import { useAuth } from "../contexts/AuthContext";
 import { StudyLevel, getStoredStudyLevel, setStoredStudyLevel, studyLevels } from "../lib/studyPreferences";
-import { useState } from "react";
+import { getStudyProgressSummary, subscribeStudyProgress } from "../lib/studyProgress";
+
+function getProfileLevelTheme(level: number): {
+  icon: LucideIcon;
+  containerClassName: string;
+  iconClassName: string;
+  tierLabel: string;
+} {
+  if (level >= 20) {
+    return {
+      icon: Crown,
+      containerClassName:
+        "bg-gradient-to-br from-amber-300 via-yellow-400 to-orange-500 shadow-lg shadow-amber-500/30",
+      iconClassName: "text-white",
+      tierLabel: "\ub9c8\uc2a4\ud130",
+    };
+  }
+
+  if (level >= 15) {
+    return {
+      icon: Shield,
+      containerClassName:
+        "bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 shadow-lg shadow-sky-500/30",
+      iconClassName: "text-white",
+      tierLabel: "\uc804\ubb38\uac00",
+    };
+  }
+
+  if (level >= 10) {
+    return {
+      icon: Flame,
+      containerClassName:
+        "bg-gradient-to-br from-orange-400 via-rose-500 to-pink-600 shadow-lg shadow-rose-500/30",
+      iconClassName: "text-white",
+      tierLabel: "\ub3c4\uc804\uc790",
+    };
+  }
+
+  if (level >= 5) {
+    return {
+      icon: BookOpen,
+      containerClassName:
+        "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 shadow-lg shadow-emerald-500/30",
+      iconClassName: "text-white",
+      tierLabel: "\ud559\uc2b5\uc790",
+    };
+  }
+
+  return {
+    icon: Sprout,
+    containerClassName:
+      "bg-gradient-to-br from-lime-300 via-emerald-400 to-green-500 shadow-lg shadow-green-500/30",
+    iconClassName: "text-white",
+    tierLabel: "\uc0c8\uc2f9",
+  };
+}
 
 export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [selectedStudyLevel, setSelectedStudyLevel] = useState<StudyLevel>(getStoredStudyLevel());
-  const fallbackName = user?.email?.split("@")[0] || "사용자";
+  const [progressSummary, setProgressSummary] = useState(() => getStudyProgressSummary());
+  const fallbackName = user?.email?.split("@")[0] || "\uc0ac\uc6a9\uc790";
 
   const userInfo = {
     name: user?.displayName || fallbackName,
     email: user?.email || "user@wordy.com",
     joinDate: user?.metadata.creationTime || "2026-01-15",
-    photoURL: user?.photoURL,
-    level: 12,
-    currentExp: 2450,
-    nextLevelExp: 3000,
+    level: progressSummary.level,
+    currentExp: progressSummary.currentLevelXp,
+    nextLevelExp: progressSummary.nextLevelXp,
   };
 
   const stats = [
-    { label: "연속 학습", value: "12일", icon: Calendar, color: "bg-orange-500" },
-    { label: "학습한 단어", value: "247개", icon: Target, color: "bg-primary" },
-    { label: "퀴즈 완료", value: "42회", icon: Trophy, color: "bg-yellow-500" },
-    { label: "평균 정답률", value: "87%", icon: TrendingUp, color: "bg-blue-500" },
+    { label: "\ub204\uc801 \uacbd\ud5d8\uce58", value: `${progressSummary.totalXp} XP`, icon: Award, color: "bg-orange-500" },
+    { label: "\ud559\uc2b5\ud55c \ub2e8\uc5b4", value: `${progressSummary.uniqueStudiedWords}\uac1c`, icon: Target, color: "bg-primary" },
+    { label: "\ud559\uc2b5 \uc644\ub8cc", value: `${progressSummary.completedSessions}\ud68c`, icon: Trophy, color: "bg-yellow-500" },
+    { label: "\ud3c9\uade0 \uc815\ub2f5\ub960", value: `${progressSummary.accuracyRate}%`, icon: TrendingUp, color: "bg-blue-500" },
   ];
 
-  const achievements = [
-    { name: "첫걸음", description: "첫 단어 학습 완료", icon: "🌱", earned: true },
-    { name: "연습왕", description: "10개 단어 학습", icon: "📘", earned: true },
-    { name: "성실함", description: "7일 연속 학습", icon: "🔥", earned: true },
-    { name: "퀴즈 마스터", description: "10회 퀴즈 완료", icon: "🏆", earned: true },
-    { name: "집중력", description: "퀴즈 만점 5회", icon: "🎯", earned: false },
-    { name: "전문가", description: "100개 단어 학습", icon: "🧠", earned: true },
-  ];
+  const achievements = progressSummary.achievements;
 
   const levelProgress = (userInfo.currentExp / userInfo.nextLevelExp) * 100;
+  const levelTheme = getProfileLevelTheme(userInfo.level);
+  const LevelIcon = levelTheme.icon;
+
+  useEffect(() => {
+    setProgressSummary(getStudyProgressSummary());
+    return subscribeStudyProgress(() => {
+      setProgressSummary(getStudyProgressSummary());
+    });
+  }, []);
 
   const handleLogout = async () => {
     try {
       await signOut();
-      toast.success("로그아웃되었습니다.");
+      toast.success("\ub85c\uadf8\uc544\uc6c3\ub418\uc5c8\uc2b5\ub2c8\ub2e4.");
       navigate("/login");
     } catch {
-      toast.error("로그아웃에 실패했습니다.");
+      toast.error("\ub85c\uadf8\uc544\uc6c3\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4.");
     }
   };
 
   const handleStudyLevelChange = (level: StudyLevel) => {
     setSelectedStudyLevel(level);
     setStoredStudyLevel(level);
-    toast.success(`학습 레벨이 ${level}(으)로 설정되었습니다.`);
+    toast.success(`\ud559\uc2b5 \ub808\ubca8\uc774 ${level}(\uc73c)\ub85c \uc124\uc815\ub418\uc5c8\uc2b5\ub2c8\ub2e4.`);
   };
 
   return (
@@ -78,21 +142,15 @@ export default function Profile() {
         </button>
 
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center overflow-hidden text-4xl">
-            {userInfo.photoURL ? (
-              <img
-                src={userInfo.photoURL}
-                alt={`${userInfo.name} 프로필 이미지`}
-                className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              "🙂"
-            )}
+          <div
+            className={`w-20 h-20 rounded-3xl flex items-center justify-center ${levelTheme.containerClassName}`}
+          >
+            <LevelIcon className={`w-10 h-10 ${levelTheme.iconClassName}`} strokeWidth={2.2} />
           </div>
           <div className="flex-1">
             <h1 className="text-2xl mb-1">{userInfo.name}</h1>
             <p className="text-white/80 text-sm">{userInfo.email}</p>
+            <p className="text-white/70 text-xs mt-1">{`${levelTheme.tierLabel} 등급`}</p>
           </div>
           <Button
             variant="ghost"
@@ -100,7 +158,7 @@ export default function Profile() {
             className="bg-white/20 hover:bg-white/30 text-white border-0"
           >
             <Edit className="w-4 h-4" />
-            <span>프로필 수정</span>
+            <span>{"\ud504\ub85c\ud544 \uc218\uc815"}</span>
           </Button>
         </div>
 
@@ -108,7 +166,7 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Award className="w-5 h-5" />
-              <span>레벨 {userInfo.level}</span>
+              <span>{`\ub808\ubca8 ${userInfo.level}`}</span>
             </div>
             <span className="text-sm">
               {userInfo.currentExp} / {userInfo.nextLevelExp} XP
@@ -116,7 +174,7 @@ export default function Profile() {
           </div>
           <Progress value={levelProgress} className="h-2 bg-white/20" />
           <p className="text-xs text-white/60 mt-2">
-            레벨 {userInfo.level + 1}까지 {userInfo.nextLevelExp - userInfo.currentExp}XP 남음
+            {`\ub808\ubca8 ${userInfo.level + 1}\uae4c\uc9c0 ${userInfo.nextLevelExp - userInfo.currentExp}XP \ub0a8\uc74c`}
           </p>
         </div>
       </div>
@@ -137,9 +195,9 @@ export default function Profile() {
         <div className="bg-white rounded-2xl p-5 border border-border mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-base">학습 레벨 설정</h3>
+              <h3 className="text-base">{"\ud559\uc2b5 \ub808\ubca8 \uc124\uc815"}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                홈의 학습하기에서 표시할 단어 레벨을 고를 수 있어요.
+                {"\ud648\uc758 \ud559\uc2b5\ud558\uae30\uc5d0\uc11c \ud45c\uc2dc\ud560 \ub2e8\uc5b4 \ub808\ubca8\uc744 \uace0\ub97c \uc218 \uc788\uc5b4\uc694."}
               </p>
             </div>
             <Badge variant="secondary" className="bg-primary/10 text-primary">
@@ -164,29 +222,29 @@ export default function Profile() {
         <div className="bg-white rounded-2xl p-5 border border-border mb-6">
           <h3 className="mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <span>학습 통계</span>
+            <span>{"\ud559\uc2b5 \ud1b5\uacc4"}</span>
           </h3>
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">초급 단어</span>
-                <span className="text-sm">85개</span>
+                <span className="text-sm text-muted-foreground">{"\ucd08\uae09 \ub2e8\uc5b4"}</span>
+                <span className="text-sm">{`${progressSummary.levelBreakdown.초급.studied}\uac1c`}</span>
               </div>
-              <Progress value={85} className="h-1.5" />
+              <Progress value={progressSummary.levelBreakdown.초급.progress} className="h-1.5" />
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">중급 단어</span>
-                <span className="text-sm">120개</span>
+                <span className="text-sm text-muted-foreground">{"\uc911\uae09 \ub2e8\uc5b4"}</span>
+                <span className="text-sm">{`${progressSummary.levelBreakdown.중급.studied}\uac1c`}</span>
               </div>
-              <Progress value={65} className="h-1.5" />
+              <Progress value={progressSummary.levelBreakdown.중급.progress} className="h-1.5" />
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">고급 단어</span>
-                <span className="text-sm">42개</span>
+                <span className="text-sm text-muted-foreground">{"\uace0\uae09 \ub2e8\uc5b4"}</span>
+                <span className="text-sm">{`${progressSummary.levelBreakdown.고급.studied}\uac1c`}</span>
               </div>
-              <Progress value={30} className="h-1.5" />
+              <Progress value={progressSummary.levelBreakdown.고급.progress} className="h-1.5" />
             </div>
           </div>
         </div>
@@ -194,7 +252,7 @@ export default function Profile() {
         <div>
           <h3 className="mb-4 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />
-            <span>달성한 업적</span>
+            <span>{"\uc131\uce58 \ubc0f \uc5c5\uc801"}</span>
           </h3>
           <div className="grid grid-cols-3 gap-3">
             {achievements.map((achievement, index) => (
@@ -209,7 +267,7 @@ export default function Profile() {
                 <div className="text-xs text-muted-foreground">{achievement.description}</div>
                 {achievement.earned && (
                   <Badge variant="secondary" className="mt-2 bg-primary/10 text-primary text-xs">
-                    달성
+                    {"\ub2ec\uc131"}
                   </Badge>
                 )}
               </div>
@@ -224,7 +282,7 @@ export default function Profile() {
               month: "long",
               day: "numeric",
             })}
-            부터 함께하고 있어요
+            {"\ubd80\ud130 \ud568\uaed8\ud558\uace0 \uc788\uc5b4\uc694"}
           </p>
         </div>
 
@@ -234,7 +292,7 @@ export default function Profile() {
           className="mt-6 w-full h-14 rounded-2xl border-destructive/30 text-destructive hover:bg-destructive/5"
         >
           <LogOut className="w-5 h-5" />
-          <span>로그아웃</span>
+          <span>{"\ub85c\uadf8\uc544\uc6c3"}</span>
         </Button>
       </div>
     </div>

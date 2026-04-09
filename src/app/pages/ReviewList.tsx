@@ -1,7 +1,8 @@
 import { Link, useSearchParams } from "react-router";
-import { RotateCcw, Calendar, ChevronRight, PlayCircle } from "lucide-react";
-import { Button } from "../components/ui/button";
+import { Calendar, ChevronRight, PlayCircle, RotateCcw } from "lucide-react";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { shuffleArray } from "../lib/random";
 
 interface ReviewItem {
   id: number;
@@ -27,10 +28,11 @@ export default function ReviewList() {
   const [searchParams] = useSearchParams();
   const selectedLevel = searchParams.get("level");
 
-  const filteredReviewItems =
+  const filteredReviewItems = shuffleArray(
     !selectedLevel || selectedLevel === "전체"
       ? reviewItems
-      : reviewItems.filter((item) => item.level === selectedLevel);
+      : reviewItems.filter((item) => item.level === selectedLevel),
+  );
 
   const urgentCount = filteredReviewItems.filter((item) => item.isUrgent).length;
   const totalCount = filteredReviewItems.length;
@@ -112,7 +114,8 @@ export default function ReviewList() {
         <div className="mt-6 bg-accent rounded-2xl p-5 border border-border">
           <h3 className="mb-3">복습 가이드</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            학습창에서 고른 레벨에 맞춰 복습 목록을 보여줍니다. 백엔드 구조는 바꾸지 않고 프론트에서만 필터링합니다.
+            학습창에서 고른 레벨에 맞춰 복습 목록을 보여줍니다. 백엔드 구조는 바꾸지 않고 프론트에서만
+            필터링합니다.
           </p>
         </div>
       </div>

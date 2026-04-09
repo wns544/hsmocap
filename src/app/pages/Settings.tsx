@@ -10,6 +10,25 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 
+const settingsGroups = [
+  {
+    title: "\uacc4\uc815",
+    items: [{ label: "\ud504\ub85c\ud544", icon: User, path: "/app/profile", value: undefined }],
+  },
+  {
+    title: "\ud559\uc2b5 \uc124\uc815",
+    items: [{ label: "\uc77c\uc77c \ud559\uc2b5 \ubaa9\ud45c", path: "/settings/goal", value: "20\uac1c" }],
+  },
+  {
+    title: "\uc9c0\uc6d0",
+    items: [
+      { label: "\ub3c4\uc6c0\ub9d0", icon: HelpCircle, path: "/app/settings/help", value: undefined },
+      { label: "\ud53c\ub4dc\ubc31 \ubcf4\ub0b4\uae30", icon: MessageSquare, path: "/app/settings/feedback", value: undefined },
+      { label: "\uac1c\uc778\uc815\ubcf4 \ubcf4\ud638", icon: Shield, path: "/app/settings/privacy", value: undefined },
+    ],
+  },
+] as const;
+
 export default function Settings() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -17,37 +36,18 @@ export default function Settings() {
   const handleLogout = async () => {
     try {
       await signOut();
-      toast.success("로그아웃되었습니다.");
+      toast.success("\ub85c\uadf8\uc544\uc6c3\ub418\uc5c8\uc2b5\ub2c8\ub2e4.");
       navigate("/login");
     } catch {
-      toast.error("로그아웃에 실패했습니다.");
+      toast.error("\ub85c\uadf8\uc544\uc6c3\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4.");
     }
   };
-
-  const settingsGroups = [
-    {
-      title: "계정",
-      items: [{ label: "프로필", icon: User, path: "/app/profile", hasToggle: false }],
-    },
-    {
-      title: "학습 설정",
-      items: [{ label: "일일 학습 목표", path: "/settings/goal", hasToggle: false, value: "20개" }],
-    },
-    {
-      title: "지원",
-      items: [
-        { label: "도움말", icon: HelpCircle, path: "/settings/help", hasToggle: false },
-        { label: "피드백 보내기", icon: MessageSquare, path: "/settings/feedback", hasToggle: false },
-        { label: "개인정보 보호", icon: Shield, path: "/settings/privacy", hasToggle: false },
-      ],
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background pb-6">
       <div className="bg-white border-b border-border px-6 pt-12 pb-6">
-        <h1 className="text-3xl mb-2">설정</h1>
-        <p className="text-muted-foreground">앱 환경을 원하는 방식으로 조정해보세요.</p>
+        <h1 className="text-3xl mb-2">{"\uc124\uc815"}</h1>
+        <p className="text-muted-foreground">{"\uc571 \ud658\uacbd\uc744 \uc6d0\ud558\ub294 \ubc29\uc2dd\uc73c\ub85c \uc870\uc815\ud574\ubcf4\uc138\uc694."}</p>
       </div>
 
       <div className="px-6 mt-6">
@@ -78,11 +78,11 @@ export default function Settings() {
 
         <div className="bg-white rounded-2xl p-5 border border-border mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-muted-foreground">앱 버전</span>
+            <span className="text-muted-foreground">{"\uc571 \ubc84\uc804"}</span>
             <span>1.0.0</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">최신 업데이트</span>
+            <span className="text-muted-foreground">{"\ucd5c\uc2e0 \uc5c5\ub370\uc774\ud2b8"}</span>
             <span className="text-sm">2026.03.27</span>
           </div>
         </div>
@@ -92,12 +92,12 @@ export default function Settings() {
           className="w-full bg-white rounded-2xl p-5 border border-border flex items-center justify-center gap-2 text-destructive active:bg-muted/30 transition-colors"
         >
           <LogOut className="w-5 h-5" />
-          <span>로그아웃</span>
+          <span>{"\ub85c\uadf8\uc544\uc6c3"}</span>
         </button>
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>Wordy 2026</p>
-          <p className="mt-1">즐겁게 단어를 학습해보세요.</p>
+          <p className="mt-1">{"\uc990\uac81\uac8c \ub2e8\uc5b4\ub97c \ud559\uc2b5\ud574\ubcf4\uc138\uc694."}</p>
         </div>
       </div>
     </div>

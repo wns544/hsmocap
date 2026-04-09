@@ -170,16 +170,10 @@ export default function WordsList() {
                       {item.isFavorite && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
                     </div>
                     <p className="text-muted-foreground mb-3">{item.meaning}</p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center">
                       <Badge variant="secondary" className="text-xs">
                         {item.level}
                       </Badge>
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{ width: `${item.mastery}%` }} />
-                        </div>
-                        <span className="text-xs text-muted-foreground">{item.mastery}%</span>
-                      </div>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground ml-2 flex-shrink-0" />
