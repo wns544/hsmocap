@@ -1,102 +1,4077 @@
 [
-  { "word": "you", "meaning": "너, 당신", "level": "초급", "frequency": 28787591, "frequencyRank": 1, "exampleSentence": "I need you right now.", "exampleTranslation": "나는 지금 네가 필요해.", "quizKoreanBlank": "네가", "quizAnswers": ["네가", "당신이"] },
-  { "word": "i", "meaning": "나", "level": "초급", "frequency": 27086011, "frequencyRank": 2, "exampleSentence": "I am ready now.", "exampleTranslation": "나는 이제 준비됐다.", "quizKoreanBlank": "나는", "quizAnswers": ["나는", "내가"] },
-  { "word": "the", "meaning": "그, 정관사", "level": "초급", "frequency": 22761659, "frequencyRank": 3, "exampleSentence": "The door is open.", "exampleTranslation": "그 문은 열려 있다.", "quizKoreanBlank": "그", "quizAnswers": ["그"] },
-  { "word": "to", "meaning": "~로, ~하기 위해", "level": "초급", "frequency": 17099834, "frequencyRank": 4, "exampleSentence": "I came to help you.", "exampleTranslation": "나는 너를 도우러 왔다.", "quizKoreanBlank": "도우러", "quizAnswers": ["도우러", "돕기 위해"] },
-  { "word": "a", "meaning": "하나의, 어떤", "level": "초급", "frequency": 14484562, "frequencyRank": 5, "exampleSentence": "I saw a bird today.", "exampleTranslation": "나는 오늘 새 한 마리를 봤다.", "quizKoreanBlank": "한 마리", "quizAnswers": ["한 마리", "하나의"] },
-  { "word": "it", "meaning": "그것", "level": "초급", "frequency": 13631703, "frequencyRank": 6, "exampleSentence": "It is very cold outside.", "exampleTranslation": "밖은 그것이 아니라 매우 춥다.", "quizKoreanBlank": "매우", "quizAnswers": ["매우"] },
-  { "word": "and", "meaning": "그리고", "level": "초급", "frequency": 10572938, "frequencyRank": 7, "exampleSentence": "You and I are friends.", "exampleTranslation": "너와 나는 친구다.", "quizKoreanBlank": "와", "quizAnswers": ["와", "그리고"] },
-  { "word": "that", "meaning": "그것, 저것, ~라는 것", "level": "초급", "frequency": 10203742, "frequencyRank": 8, "exampleSentence": "I know that story.", "exampleTranslation": "나는 그 이야기를 안다.", "quizKoreanBlank": "그", "quizAnswers": ["그", "저"] },
-  { "word": "of", "meaning": "~의", "level": "초급", "frequency": 8915110, "frequencyRank": 9, "exampleSentence": "A cup of tea is on the table.", "exampleTranslation": "차 한 잔이 탁자 위에 있다.", "quizKoreanBlank": "한 잔", "quizAnswers": ["한 잔"] },
-  { "word": "is", "meaning": "~이다", "level": "초급", "frequency": 7400675, "frequencyRank": 10, "exampleSentence": "She is my teacher.", "exampleTranslation": "그녀는 내 선생님이다.", "quizKoreanBlank": "이다", "quizAnswers": ["이다", "선생님이다"] },
-  { "word": "in", "meaning": "~안에, ~에서", "level": "초급", "frequency": 7337058, "frequencyRank": 11, "exampleSentence": "My phone is in my bag.", "exampleTranslation": "내 휴대폰은 가방 안에 있다.", "quizKoreanBlank": "안에", "quizAnswers": ["안에"] },
-  { "word": "what", "meaning": "무엇", "level": "초급", "frequency": 6900164, "frequencyRank": 12, "exampleSentence": "What do you want?", "exampleTranslation": "너는 무엇을 원하니?", "quizKoreanBlank": "무엇을", "quizAnswers": ["무엇을", "뭘"] },
-  { "word": "we", "meaning": "우리", "level": "초급", "frequency": 6755687, "frequencyRank": 13, "exampleSentence": "We are late again.", "exampleTranslation": "우리는 또 늦었다.", "quizKoreanBlank": "우리는", "quizAnswers": ["우리는", "우리가"] },
-  { "word": "me", "meaning": "나를, 나에게", "level": "초급", "frequency": 6444985, "frequencyRank": 14, "exampleSentence": "Please call me tonight.", "exampleTranslation": "오늘 밤 나에게 전화해 줘.", "quizKoreanBlank": "나에게", "quizAnswers": ["나에게", "나를"] },
-  { "word": "this", "meaning": "이것, 이", "level": "초급", "frequency": 5739788, "frequencyRank": 15, "exampleSentence": "This book is mine.", "exampleTranslation": "이 책은 내 것이다.", "quizKoreanBlank": "이", "quizAnswers": ["이", "이것"] },
-  { "word": "he", "meaning": "그는", "level": "초급", "frequency": 5516364, "frequencyRank": 16, "exampleSentence": "He looks tired today.", "exampleTranslation": "그는 오늘 피곤해 보인다.", "quizKoreanBlank": "그는", "quizAnswers": ["그는"] },
-  { "word": "for", "meaning": "~을 위해", "level": "초급", "frequency": 5174060, "frequencyRank": 17, "exampleSentence": "This gift is for you.", "exampleTranslation": "이 선물은 너를 위한 것이다.", "quizKoreanBlank": "너를 위한", "quizAnswers": ["너를 위한", "당신을 위한"] },
-  { "word": "my", "meaning": "나의", "level": "초급", "frequency": 4938948, "frequencyRank": 18, "exampleSentence": "My room is very small.", "exampleTranslation": "나의 방은 매우 작다.", "quizKoreanBlank": "나의", "quizAnswers": ["나의", "내"] },
-  { "word": "on", "meaning": "~위에, ~에", "level": "초급", "frequency": 4821861, "frequencyRank": 19, "exampleSentence": "The keys are on the desk.", "exampleTranslation": "열쇠는 책상 위에 있다.", "quizKoreanBlank": "위에", "quizAnswers": ["위에"] },
-  { "word": "have", "meaning": "가지다", "level": "초급", "frequency": 4764010, "frequencyRank": 20, "exampleSentence": "I have a new bag.", "exampleTranslation": "나는 새 가방을 가지고 있다.", "quizKoreanBlank": "가지고 있다", "quizAnswers": ["가지고 있다", "갖고 있다"] },
-  { "word": "your", "meaning": "너의, 당신의", "level": "초급", "frequency": 4610945, "frequencyRank": 21, "exampleSentence": "Your idea is good.", "exampleTranslation": "너의 생각은 좋다.", "quizKoreanBlank": "너의", "quizAnswers": ["너의", "당신의", "네"] },
-  { "word": "do", "meaning": "하다", "level": "초급", "frequency": 4419883, "frequencyRank": 22, "exampleSentence": "What do you do after school?", "exampleTranslation": "너는 방과 후에 무엇을 하니?", "quizKoreanBlank": "하니", "quizAnswers": ["하니", "해"] },
-  { "word": "was", "meaning": "~였다", "level": "초급", "frequency": 4401531, "frequencyRank": 23, "exampleSentence": "It was a long day.", "exampleTranslation": "오늘은 긴 하루였다.", "quizKoreanBlank": "하루였다", "quizAnswers": ["하루였다", "였다"] },
-  { "word": "no", "meaning": "아니, 없다", "level": "초급", "frequency": 4374975, "frequencyRank": 24, "exampleSentence": "No one knows the answer.", "exampleTranslation": "아무도 그 답을 모른다.", "quizKoreanBlank": "아무도", "quizAnswers": ["아무도"] },
-  { "word": "not", "meaning": "아니다, ~않다", "level": "초급", "frequency": 4262273, "frequencyRank": 25, "exampleSentence": "I am not busy today.", "exampleTranslation": "나는 오늘 바쁘지 않다.", "quizKoreanBlank": "않다", "quizAnswers": ["않다", "아니다"] },
-  { "word": "be", "meaning": "~이다, 존재하다", "level": "초급", "frequency": 4210868, "frequencyRank": 26, "exampleSentence": "Be careful on the stairs.", "exampleTranslation": "계단에서 조심해.", "quizKoreanBlank": "조심해", "quizAnswers": ["조심해"] },
-  { "word": "are", "meaning": "~이다, 있다", "level": "초급", "frequency": 4203821, "frequencyRank": 27, "exampleSentence": "You are very kind.", "exampleTranslation": "너는 정말 친절하다.", "quizKoreanBlank": "친절하다", "quizAnswers": ["친절하다", "친절해"] },
-  { "word": "know", "meaning": "알다", "level": "초급", "frequency": 3892394, "frequencyRank": 28, "exampleSentence": "I know your name.", "exampleTranslation": "나는 네 이름을 안다.", "quizKoreanBlank": "안다", "quizAnswers": ["안다", "알고 있다"] },
-  { "word": "can", "meaning": "~할 수 있다", "level": "초급", "frequency": 3826118, "frequencyRank": 29, "exampleSentence": "I can swim well.", "exampleTranslation": "나는 수영을 잘할 수 있다.", "quizKoreanBlank": "할 수 있다", "quizAnswers": ["할 수 있다"] },
-  { "word": "with", "meaning": "~와 함께", "level": "초급", "frequency": 3806977, "frequencyRank": 30, "exampleSentence": "She went with her brother.", "exampleTranslation": "그녀는 남동생과 함께 갔다.", "quizKoreanBlank": "함께", "quizAnswers": ["함께"] },
-  { "word": "but", "meaning": "하지만", "level": "초급", "frequency": 3631462, "frequencyRank": 31, "exampleSentence": "I am tired, but I will finish it.", "exampleTranslation": "나는 피곤하지만 그것을 끝낼 것이다.", "quizKoreanBlank": "하지만", "quizAnswers": ["하지만"] },
-  { "word": "all", "meaning": "모든, 전부", "level": "초급", "frequency": 3544700, "frequencyRank": 32, "exampleSentence": "All the lights are on.", "exampleTranslation": "모든 불이 켜져 있다.", "quizKoreanBlank": "모든", "quizAnswers": ["모든", "전부"] },
-  { "word": "so", "meaning": "그래서, 매우", "level": "초급", "frequency": 3434152, "frequencyRank": 33, "exampleSentence": "I was tired, so I went home early.", "exampleTranslation": "나는 피곤해서 일찍 집에 갔다.", "quizKoreanBlank": "피곤해서", "quizAnswers": ["피곤해서", "그래서"] },
-  { "word": "just", "meaning": "단지, 방금", "level": "초급", "frequency": 3334392, "frequencyRank": 34, "exampleSentence": "I just got here.", "exampleTranslation": "나는 방금 여기 도착했다.", "quizKoreanBlank": "방금", "quizAnswers": ["방금"] },
-  { "word": "there", "meaning": "거기, ~가 있다", "level": "초급", "frequency": 3148528, "frequencyRank": 35, "exampleSentence": "There is a cat outside.", "exampleTranslation": "밖에 고양이가 있다.", "quizKoreanBlank": "있다", "quizAnswers": ["있다"] },
-  { "word": "here", "meaning": "여기", "level": "초급", "frequency": 3138591, "frequencyRank": 36, "exampleSentence": "Come here and sit down.", "exampleTranslation": "여기로 와서 앉아.", "quizKoreanBlank": "여기로", "quizAnswers": ["여기로", "여기"] },
-  { "word": "they", "meaning": "그들", "level": "초급", "frequency": 3060204, "frequencyRank": 37, "exampleSentence": "They play soccer every weekend.", "exampleTranslation": "그들은 매주 주말 축구를 한다.", "quizKoreanBlank": "그들은", "quizAnswers": ["그들은"] },
-  { "word": "like", "meaning": "좋아하다, ~처럼", "level": "초급", "frequency": 2983027, "frequencyRank": 38, "exampleSentence": "They like this song.", "exampleTranslation": "그들은 이 노래를 좋아한다.", "quizKoreanBlank": "좋아한다", "quizAnswers": ["좋아한다", "좋아해"] },
-  { "word": "get", "meaning": "얻다, 받다", "level": "초급", "frequency": 2883193, "frequencyRank": 39, "exampleSentence": "I get good ideas at night.", "exampleTranslation": "나는 밤에 좋은 아이디어를 얻는다.", "quizKoreanBlank": "얻는다", "quizAnswers": ["얻는다", "받는다"] },
-  { "word": "she", "meaning": "그녀는", "level": "초급", "frequency": 2778359, "frequencyRank": 40, "exampleSentence": "She studies every morning.", "exampleTranslation": "그녀는 매일 아침 공부한다.", "quizKoreanBlank": "그녀는", "quizAnswers": ["그녀는"] },
-  { "word": "go", "meaning": "가다", "level": "중급", "frequency": 2738504, "frequencyRank": 41, "exampleSentence": "We go to school together.", "exampleTranslation": "우리는 함께 학교에 간다.", "quizKoreanBlank": "간다", "quizAnswers": ["간다", "가"] },
-  { "word": "if", "meaning": "만약 ~라면", "level": "중급", "frequency": 2630800, "frequencyRank": 42, "exampleSentence": "If you need help, call me.", "exampleTranslation": "만약 도움이 필요하면 나를 불러.", "quizKoreanBlank": "만약", "quizAnswers": ["만약"] },
-  { "word": "right", "meaning": "오른쪽, 맞는", "level": "중급", "frequency": 2576821, "frequencyRank": 43, "exampleSentence": "You are right about that.", "exampleTranslation": "그 점에 대해서는 네가 맞다.", "quizKoreanBlank": "맞다", "quizAnswers": ["맞다"] },
-  { "word": "out", "meaning": "밖으로", "level": "중급", "frequency": 2510010, "frequencyRank": 44, "exampleSentence": "Please go out for a moment.", "exampleTranslation": "잠깐 밖으로 나가 주세요.", "quizKoreanBlank": "밖으로", "quizAnswers": ["밖으로"] },
-  { "word": "about", "meaning": "~에 대하여", "level": "중급", "frequency": 2487348, "frequencyRank": 45, "exampleSentence": "We talked about the plan.", "exampleTranslation": "우리는 그 계획에 대해 이야기했다.", "quizKoreanBlank": "대해", "quizAnswers": ["대해", "관해"] },
-  { "word": "up", "meaning": "위로", "level": "중급", "frequency": 2459855, "frequencyRank": 46, "exampleSentence": "Stand up and come here.", "exampleTranslation": "일어나서 여기로 와.", "quizKoreanBlank": "일어나서", "quizAnswers": ["일어나서", "일어나"] },
-  { "word": "at", "meaning": "~에서, ~에", "level": "중급", "frequency": 2431398, "frequencyRank": 47, "exampleSentence": "She is waiting at the bus stop.", "exampleTranslation": "그녀는 버스 정류장에서 기다리고 있다.", "quizKoreanBlank": "정류장에서", "quizAnswers": ["정류장에서", "에서"] },
-  { "word": "him", "meaning": "그를, 그에게", "level": "중급", "frequency": 2431059, "frequencyRank": 48, "exampleSentence": "I saw him this morning.", "exampleTranslation": "나는 오늘 아침 그를 봤다.", "quizKoreanBlank": "그를", "quizAnswers": ["그를"] },
-  { "word": "now", "meaning": "지금", "level": "중급", "frequency": 2298830, "frequencyRank": 49, "exampleSentence": "We have to leave now.", "exampleTranslation": "우리는 지금 떠나야 한다.", "quizKoreanBlank": "지금", "quizAnswers": ["지금", "이제"] },
-  { "word": "one", "meaning": "하나", "level": "중급", "frequency": 2263956, "frequencyRank": 50, "exampleSentence": "I have one question.", "exampleTranslation": "나는 질문이 하나 있다.", "quizKoreanBlank": "하나", "quizAnswers": ["하나"] },
-  { "word": "come", "meaning": "오다", "level": "중급", "frequency": 2203919, "frequencyRank": 51, "exampleSentence": "Please come here now.", "exampleTranslation": "지금 여기로 와 줘.", "quizKoreanBlank": "와", "quizAnswers": ["와", "오다", "와 줘"] },
-  { "word": "well", "meaning": "잘, 좋은", "level": "중급", "frequency": 2159909, "frequencyRank": 52, "exampleSentence": "She sings very well.", "exampleTranslation": "그녀는 노래를 아주 잘한다.", "quizKoreanBlank": "잘한다", "quizAnswers": ["잘한다", "잘해"] },
-  { "word": "her", "meaning": "그녀를, 그녀의", "level": "중급", "frequency": 2154982, "frequencyRank": 53, "exampleSentence": "I met her at the station.", "exampleTranslation": "나는 역에서 그녀를 만났다.", "quizKoreanBlank": "그녀를", "quizAnswers": ["그녀를"] },
-  { "word": "how", "meaning": "어떻게", "level": "중급", "frequency": 2140365, "frequencyRank": 54, "exampleSentence": "How do you feel today?", "exampleTranslation": "오늘 기분이 어떻게 느껴지니?", "quizKoreanBlank": "어떻게", "quizAnswers": ["어떻게"] },
-  { "word": "yeah", "meaning": "응, 그래", "level": "중급", "frequency": 2000641, "frequencyRank": 55, "exampleSentence": "Yeah, I understand.", "exampleTranslation": "응, 나는 이해했어.", "quizKoreanBlank": "응", "quizAnswers": ["응", "그래"] },
-  { "word": "will", "meaning": "~할 것이다", "level": "중급", "frequency": 1969807, "frequencyRank": 56, "exampleSentence": "I will call you later.", "exampleTranslation": "나는 나중에 너에게 전화할 것이다.", "quizKoreanBlank": "전화할 것이다", "quizAnswers": ["전화할 것이다", "할 것이다"] },
-  { "word": "got", "meaning": "얻었다, 가지게 되었다", "level": "중급", "frequency": 1968389, "frequencyRank": 57, "exampleSentence": "He got a new job.", "exampleTranslation": "그는 새 직업을 얻었다.", "quizKoreanBlank": "얻었다", "quizAnswers": ["얻었다", "가지게 되었다"] },
-  { "word": "want", "meaning": "원하다", "level": "중급", "frequency": 1950845, "frequencyRank": 58, "exampleSentence": "I want some water.", "exampleTranslation": "나는 물을 좀 원한다.", "quizKoreanBlank": "원한다", "quizAnswers": ["원한다", "원해"] },
-  { "word": "think", "meaning": "생각하다", "level": "중급", "frequency": 1839473, "frequencyRank": 59, "exampleSentence": "I think about you often.", "exampleTranslation": "나는 너를 자주 생각한다.", "quizKoreanBlank": "생각한다", "quizAnswers": ["생각한다", "생각해"] },
-  { "word": "as", "meaning": "~로서, ~처럼", "level": "중급", "frequency": 1792220, "frequencyRank": 60, "exampleSentence": "He works as a teacher.", "exampleTranslation": "그는 교사로 일한다.", "quizKoreanBlank": "교사로", "quizAnswers": ["교사로", "로서"] },
-  { "word": "see", "meaning": "보다", "level": "중급", "frequency": 1781493, "frequencyRank": 61, "exampleSentence": "I can see the stars.", "exampleTranslation": "나는 별들을 볼 수 있다.", "quizKoreanBlank": "볼 수 있다", "quizAnswers": ["볼 수 있다", "보다"] },
-  { "word": "did", "meaning": "했다", "level": "중급", "frequency": 1742764, "frequencyRank": 62, "exampleSentence": "What did you say?", "exampleTranslation": "너는 뭐라고 말했니?", "quizKoreanBlank": "말했니", "quizAnswers": ["말했니", "했다"] },
-  { "word": "good", "meaning": "좋은", "level": "중급", "frequency": 1741730, "frequencyRank": 63, "exampleSentence": "This is a good idea.", "exampleTranslation": "이것은 좋은 생각이다.", "quizKoreanBlank": "좋은", "quizAnswers": ["좋은"] },
-  { "word": "who", "meaning": "누구", "level": "중급", "frequency": 1734491, "frequencyRank": 64, "exampleSentence": "Who is at the door?", "exampleTranslation": "문 앞에 있는 사람은 누구니?", "quizKoreanBlank": "누구니", "quizAnswers": ["누구니", "누구"] },
-  { "word": "why", "meaning": "왜", "level": "중급", "frequency": 1722797, "frequencyRank": 65, "exampleSentence": "Why are you upset?", "exampleTranslation": "너는 왜 화가 났니?", "quizKoreanBlank": "왜", "quizAnswers": ["왜"] },
-  { "word": "from", "meaning": "~에서, ~로부터", "level": "중급", "frequency": 1709582, "frequencyRank": 66, "exampleSentence": "This letter is from my friend.", "exampleTranslation": "이 편지는 내 친구에게서 왔다.", "quizKoreanBlank": "친구에게서", "quizAnswers": ["친구에게서", "로부터"] },
-  { "word": "let", "meaning": "허락하다", "level": "중급", "frequency": 1705262, "frequencyRank": 67, "exampleSentence": "Let me try once.", "exampleTranslation": "한 번 내가 해 보게 해 줘.", "quizKoreanBlank": "하게 해 줘", "quizAnswers": ["하게 해 줘", "해보게 해 줘", "허락해 줘"] },
-  { "word": "his", "meaning": "그의", "level": "중급", "frequency": 1666361, "frequencyRank": 68, "exampleSentence": "His bike is new.", "exampleTranslation": "그의 자전거는 새것이다.", "quizKoreanBlank": "그의", "quizAnswers": ["그의"] },
-  { "word": "yes", "meaning": "네, 맞아", "level": "중급", "frequency": 1634050, "frequencyRank": 69, "exampleSentence": "Yes, I agree with you.", "exampleTranslation": "네, 나는 네 말에 동의해.", "quizKoreanBlank": "네", "quizAnswers": ["네", "맞아"] },
-  { "word": "when", "meaning": "언제", "level": "중급", "frequency": 1531731, "frequencyRank": 70, "exampleSentence": "When will you arrive?", "exampleTranslation": "너는 언제 도착할 거니?", "quizKoreanBlank": "언제", "quizAnswers": ["언제"] },
-  { "word": "going", "meaning": "가고 있는", "level": "중급", "frequency": 1520767, "frequencyRank": 71, "exampleSentence": "I am going home now.", "exampleTranslation": "나는 지금 집에 가고 있다.", "quizKoreanBlank": "가고 있다", "quizAnswers": ["가고 있다", "가는 중이다"] },
-  { "word": "time", "meaning": "시간", "level": "중급", "frequency": 1453708, "frequencyRank": 72, "exampleSentence": "We need more time.", "exampleTranslation": "우리에게는 더 많은 시간이 필요하다.", "quizKoreanBlank": "시간이", "quizAnswers": ["시간이", "시간"] },
-  { "word": "an", "meaning": "하나의", "level": "중급", "frequency": 1449181, "frequencyRank": 73, "exampleSentence": "She ate an apple.", "exampleTranslation": "그녀는 사과 한 개를 먹었다.", "quizKoreanBlank": "한 개", "quizAnswers": ["한 개", "하나의"] },
-  { "word": "okay", "meaning": "좋아, 괜찮아", "level": "중급", "frequency": 1428884, "frequencyRank": 74, "exampleSentence": "Okay, let's start.", "exampleTranslation": "좋아, 시작하자.", "quizKoreanBlank": "좋아", "quizAnswers": ["좋아", "괜찮아"] },
-  { "word": "back", "meaning": "뒤로, 돌아와", "level": "중급", "frequency": 1405024, "frequencyRank": 75, "exampleSentence": "Please come back soon.", "exampleTranslation": "곧 돌아와 줘.", "quizKoreanBlank": "돌아와", "quizAnswers": ["돌아와", "뒤로"] },
-  { "word": "look", "meaning": "보다, 바라보다", "level": "중급", "frequency": 1348467, "frequencyRank": 76, "exampleSentence": "Look at the sky.", "exampleTranslation": "하늘을 봐.", "quizKoreanBlank": "봐", "quizAnswers": ["봐", "보아", "보다"] },
-  { "word": "us", "meaning": "우리를, 우리에게", "level": "중급", "frequency": 1346903, "frequencyRank": 77, "exampleSentence": "They invited us to dinner.", "exampleTranslation": "그들은 우리를 저녁 식사에 초대했다.", "quizKoreanBlank": "우리를", "quizAnswers": ["우리를", "우리에게"] },
-  { "word": "would", "meaning": "~할 것이다, ~하곤 했다", "level": "중급", "frequency": 1340070, "frequencyRank": 78, "exampleSentence": "I would help if I could.", "exampleTranslation": "내가 할 수 있다면 도울 텐데.", "quizKoreanBlank": "도울 텐데", "quizAnswers": ["도울 텐데", "할 것이다"] },
-  { "word": "them", "meaning": "그들을, 그들에게", "level": "중급", "frequency": 1327509, "frequencyRank": 79, "exampleSentence": "We saw them at the mall.", "exampleTranslation": "우리는 쇼핑몰에서 그들을 봤다.", "quizKoreanBlank": "그들을", "quizAnswers": ["그들을", "그들에게"] },
-  { "word": "where", "meaning": "어디", "level": "중급", "frequency": 1322226, "frequencyRank": 80, "exampleSentence": "Where did you put it?", "exampleTranslation": "너는 그것을 어디에 두었니?", "quizKoreanBlank": "어디에", "quizAnswers": ["어디에", "어디"] },
-  { "word": "were", "meaning": "~였다, 있었다", "level": "고급", "frequency": 1315964, "frequencyRank": 81, "exampleSentence": "They were happy then.", "exampleTranslation": "그들은 그때 행복했다.", "quizKoreanBlank": "행복했다", "quizAnswers": ["행복했다", "였다"] },
-  { "word": "take", "meaning": "가지다, 데려가다", "level": "고급", "frequency": 1312232, "frequencyRank": 82, "exampleSentence": "Take this book with you.", "exampleTranslation": "이 책을 가지고 가.", "quizKoreanBlank": "가지고 가", "quizAnswers": ["가지고 가", "가져가"] },
-  { "word": "then", "meaning": "그때, 그러면", "level": "고급", "frequency": 1275502, "frequencyRank": 83, "exampleSentence": "Finish your homework, then call me.", "exampleTranslation": "숙제를 끝내고 나서 나에게 전화해.", "quizKoreanBlank": "나서", "quizAnswers": ["나서", "그러면"] },
-  { "word": "had", "meaning": "가졌다, 있었다", "level": "고급", "frequency": 1274537, "frequencyRank": 84, "exampleSentence": "I had no choice.", "exampleTranslation": "나는 선택의 여지가 없었다.", "quizKoreanBlank": "없었다", "quizAnswers": ["없었다"] },
-  { "word": "or", "meaning": "또는", "level": "고급", "frequency": 1267646, "frequencyRank": 85, "exampleSentence": "You can walk or take a bus.", "exampleTranslation": "너는 걸어가거나 버스를 탈 수 있다.", "quizKoreanBlank": "걸어가거나", "quizAnswers": ["걸어가거나", "또는"] },
-  { "word": "been", "meaning": "~이었다, 가본 적이 있다", "level": "고급", "frequency": 1265150, "frequencyRank": 86, "exampleSentence": "I have been there before.", "exampleTranslation": "나는 전에 거기에 가 본 적이 있다.", "quizKoreanBlank": "가 본 적이 있다", "quizAnswers": ["가 본 적이 있다"] },
-  { "word": "our", "meaning": "우리의", "level": "고급", "frequency": 1191941, "frequencyRank": 87, "exampleSentence": "Our team won the game.", "exampleTranslation": "우리의 팀이 그 경기를 이겼다.", "quizKoreanBlank": "우리의", "quizAnswers": ["우리의"] },
-  { "word": "gonna", "meaning": "~할 거야", "level": "고급", "frequency": 1188190, "frequencyRank": 88, "exampleSentence": "I am gonna call him later.", "exampleTranslation": "나는 나중에 그에게 전화할 거야.", "quizKoreanBlank": "할 거야", "quizAnswers": ["할 거야"] },
-  { "word": "tell", "meaning": "말하다, 알려주다", "level": "고급", "frequency": 1176290, "frequencyRank": 89, "exampleSentence": "Tell me the truth.", "exampleTranslation": "나에게 진실을 말해 줘.", "quizKoreanBlank": "말해 줘", "quizAnswers": ["말해 줘", "말해줘", "알려 줘", "알려줘"] },
-  { "word": "really", "meaning": "정말로", "level": "고급", "frequency": 1174710, "frequencyRank": 90, "exampleSentence": "I really miss you.", "exampleTranslation": "나는 정말 네가 보고 싶다.", "quizKoreanBlank": "정말", "quizAnswers": ["정말", "진짜"] },
-  { "word": "man", "meaning": "남자, 사람", "level": "고급", "frequency": 1173588, "frequencyRank": 91, "exampleSentence": "That man is my uncle.", "exampleTranslation": "저 남자는 내 삼촌이다.", "quizKoreanBlank": "남자", "quizAnswers": ["남자", "사람"] },
-  { "word": "some", "meaning": "몇몇의, 어떤", "level": "고급", "frequency": 1166914, "frequencyRank": 92, "exampleSentence": "I need some help.", "exampleTranslation": "나는 약간의 도움이 필요하다.", "quizKoreanBlank": "약간의", "quizAnswers": ["약간의", "어떤"] },
-  { "word": "say", "meaning": "말하다", "level": "고급", "frequency": 1153915, "frequencyRank": 93, "exampleSentence": "Say it again, please.", "exampleTranslation": "그것을 다시 말해 줘.", "quizKoreanBlank": "말해 줘", "quizAnswers": ["말해 줘", "말해줘"] },
-  { "word": "hey", "meaning": "이봐, 야", "level": "고급", "frequency": 1149292, "frequencyRank": 94, "exampleSentence": "Hey, wait for me.", "exampleTranslation": "이봐, 나를 기다려.", "quizKoreanBlank": "이봐", "quizAnswers": ["이봐", "야"] },
-  { "word": "could", "meaning": "~할 수 있었다", "level": "고급", "frequency": 1111837, "frequencyRank": 95, "exampleSentence": "Could you open the window?", "exampleTranslation": "창문을 열어 줄 수 있니?", "quizKoreanBlank": "열어 줄 수 있니", "quizAnswers": ["열어 줄 수 있니", "할 수 있니"] },
-  { "word": "by", "meaning": "~에 의해, 곁에", "level": "고급", "frequency": 1090424, "frequencyRank": 96, "exampleSentence": "The house is by the river.", "exampleTranslation": "그 집은 강 옆에 있다.", "quizKoreanBlank": "옆에", "quizAnswers": ["옆에", "곁에"] },
-  { "word": "need", "meaning": "필요하다", "level": "고급", "frequency": 1040131, "frequencyRank": 97, "exampleSentence": "We need your help.", "exampleTranslation": "우리는 네 도움이 필요하다.", "quizKoreanBlank": "필요하다", "quizAnswers": ["필요하다", "필요해"] },
-  { "word": "something", "meaning": "무언가", "level": "고급", "frequency": 1038638, "frequencyRank": 98, "exampleSentence": "I heard something strange.", "exampleTranslation": "나는 이상한 무언가를 들었다.", "quizKoreanBlank": "무언가를", "quizAnswers": ["무언가를", "무언가"] },
-  { "word": "has", "meaning": "가지고 있다", "level": "고급", "frequency": 1035310, "frequencyRank": 99, "exampleSentence": "She has a lot of homework.", "exampleTranslation": "그녀는 숙제가 많이 있다.", "quizKoreanBlank": "많이 있다", "quizAnswers": ["많이 있다", "가지고 있다"] },
-  { "word": "too", "meaning": "너무, 또한", "level": "고급", "frequency": 1022558, "frequencyRank": 100, "exampleSentence": "It is too expensive.", "exampleTranslation": "그것은 너무 비싸다.", "quizKoreanBlank": "너무", "quizAnswers": ["너무"] }
+  {
+    "word": "arrive",
+    "meaning": "도착하다",
+    "exampleSentence": "Please arrive at the station by nine.",
+    "exampleTranslation": "아홉 시까지 역에 도착해.",
+    "quizKoreanBlank": "도착해",
+    "quizAnswers": [
+      "도착해",
+      "도착하세요"
+    ],
+    "level": "초급",
+    "frequency": 900000,
+    "frequencyRank": 1
+  },
+  {
+    "word": "ask",
+    "meaning": "묻다, 부탁하다",
+    "exampleSentence": "Ask the teacher after class.",
+    "exampleTranslation": "수업 후에 선생님께 물어봐.",
+    "quizKoreanBlank": "물어봐",
+    "quizAnswers": [
+      "물어봐",
+      "질문해"
+    ],
+    "level": "초급",
+    "frequency": 899863,
+    "frequencyRank": 2
+  },
+  {
+    "word": "bake",
+    "meaning": "굽다",
+    "exampleSentence": "My father baked bread this morning.",
+    "exampleTranslation": "우리 아버지는 오늘 아침 빵을 구우셨다.",
+    "quizKoreanBlank": "구우셨다",
+    "quizAnswers": [
+      "구우셨다",
+      "구웠다"
+    ],
+    "level": "초급",
+    "frequency": 899726,
+    "frequencyRank": 3
+  },
+  {
+    "word": "borrow",
+    "meaning": "빌리다",
+    "exampleSentence": "I borrowed a pen from Mina.",
+    "exampleTranslation": "나는 미나에게서 펜을 빌렸다.",
+    "quizKoreanBlank": "빌렸다",
+    "quizAnswers": [
+      "빌렸다",
+      "빌려 왔다"
+    ],
+    "level": "초급",
+    "frequency": 899589,
+    "frequencyRank": 4
+  },
+  {
+    "word": "bring",
+    "meaning": "가져오다",
+    "exampleSentence": "Please bring your notebook tomorrow.",
+    "exampleTranslation": "내일 공책을 가져와.",
+    "quizKoreanBlank": "가져와",
+    "quizAnswers": [
+      "가져와",
+      "가져오세요"
+    ],
+    "level": "초급",
+    "frequency": 899452,
+    "frequencyRank": 5
+  },
+  {
+    "word": "build",
+    "meaning": "짓다, 만들다",
+    "exampleSentence": "They plan to build a small bridge here.",
+    "exampleTranslation": "그들은 여기 작은 다리를 지을 계획이다.",
+    "quizKoreanBlank": "지을",
+    "quizAnswers": [
+      "지을",
+      "만들"
+    ],
+    "level": "초급",
+    "frequency": 899315,
+    "frequencyRank": 6
+  },
+  {
+    "word": "buy",
+    "meaning": "사다",
+    "exampleSentence": "I need to buy a new charger.",
+    "exampleTranslation": "나는 새 충전기를 사야 한다.",
+    "quizKoreanBlank": "사야 한다",
+    "quizAnswers": [
+      "사야 한다",
+      "사야 해"
+    ],
+    "level": "초급",
+    "frequency": 899178,
+    "frequencyRank": 7
+  },
+  {
+    "word": "call",
+    "meaning": "전화하다, 부르다",
+    "exampleSentence": "Call me when you get home.",
+    "exampleTranslation": "집에 도착하면 나에게 전화해.",
+    "quizKoreanBlank": "전화해",
+    "quizAnswers": [
+      "전화해",
+      "연락해"
+    ],
+    "level": "초급",
+    "frequency": 899041,
+    "frequencyRank": 8
+  },
+  {
+    "word": "carry",
+    "meaning": "나르다",
+    "exampleSentence": "He carried the box upstairs.",
+    "exampleTranslation": "그는 상자를 위층으로 날랐다.",
+    "quizKoreanBlank": "날랐다",
+    "quizAnswers": [
+      "날랐다",
+      "옮겼다"
+    ],
+    "level": "초급",
+    "frequency": 898904,
+    "frequencyRank": 9
+  },
+  {
+    "word": "catch",
+    "meaning": "잡다",
+    "exampleSentence": "She caught the last bus.",
+    "exampleTranslation": "그녀는 막차를 탔다.",
+    "quizKoreanBlank": "탔다",
+    "quizAnswers": [
+      "탔다",
+      "잡았다"
+    ],
+    "level": "초급",
+    "frequency": 898767,
+    "frequencyRank": 10
+  },
+  {
+    "word": "change",
+    "meaning": "바꾸다",
+    "exampleSentence": "I changed my password yesterday.",
+    "exampleTranslation": "나는 어제 비밀번호를 바꿨다.",
+    "quizKoreanBlank": "바꿨다",
+    "quizAnswers": [
+      "바꿨다",
+      "변경했다"
+    ],
+    "level": "초급",
+    "frequency": 898630,
+    "frequencyRank": 11
+  },
+  {
+    "word": "check",
+    "meaning": "확인하다",
+    "exampleSentence": "Check the time before you leave.",
+    "exampleTranslation": "나가기 전에 시간을 확인해.",
+    "quizKoreanBlank": "확인해",
+    "quizAnswers": [
+      "확인해",
+      "체크해"
+    ],
+    "level": "초급",
+    "frequency": 898493,
+    "frequencyRank": 12
+  },
+  {
+    "word": "choose",
+    "meaning": "고르다",
+    "exampleSentence": "Choose one color for the poster.",
+    "exampleTranslation": "포스터에 쓸 색 하나를 골라.",
+    "quizKoreanBlank": "골라",
+    "quizAnswers": [
+      "골라",
+      "선택해"
+    ],
+    "level": "초급",
+    "frequency": 898356,
+    "frequencyRank": 13
+  },
+  {
+    "word": "clean",
+    "meaning": "청소하다",
+    "exampleSentence": "We cleaned the kitchen together.",
+    "exampleTranslation": "우리는 함께 부엌을 청소했다.",
+    "quizKoreanBlank": "청소했다",
+    "quizAnswers": [
+      "청소했다",
+      "치웠다"
+    ],
+    "level": "초급",
+    "frequency": 898219,
+    "frequencyRank": 14
+  },
+  {
+    "word": "climb",
+    "meaning": "오르다",
+    "exampleSentence": "The children climbed the hill slowly.",
+    "exampleTranslation": "아이들은 천천히 언덕을 올랐다.",
+    "quizKoreanBlank": "올랐다",
+    "quizAnswers": [
+      "올랐다",
+      "올라갔다"
+    ],
+    "level": "초급",
+    "frequency": 898082,
+    "frequencyRank": 15
+  },
+  {
+    "word": "close",
+    "meaning": "닫다",
+    "exampleSentence": "Please close the window before bed.",
+    "exampleTranslation": "자기 전에 창문을 닫아.",
+    "quizKoreanBlank": "닫아",
+    "quizAnswers": [
+      "닫아",
+      "닫으세요"
+    ],
+    "level": "초급",
+    "frequency": 897945,
+    "frequencyRank": 16
+  },
+  {
+    "word": "collect",
+    "meaning": "모으다",
+    "exampleSentence": "She collects postcards from many cities.",
+    "exampleTranslation": "그녀는 여러 도시의 엽서를 모은다.",
+    "quizKoreanBlank": "모은다",
+    "quizAnswers": [
+      "모은다",
+      "수집한다"
+    ],
+    "level": "초급",
+    "frequency": 897808,
+    "frequencyRank": 17
+  },
+  {
+    "word": "cook",
+    "meaning": "요리하다",
+    "exampleSentence": "My brother cooks dinner on Sundays.",
+    "exampleTranslation": "내 동생은 일요일마다 저녁을 요리한다.",
+    "quizKoreanBlank": "요리한다",
+    "quizAnswers": [
+      "요리한다",
+      "만든다"
+    ],
+    "level": "초급",
+    "frequency": 897671,
+    "frequencyRank": 18
+  },
+  {
+    "word": "copy",
+    "meaning": "복사하다, 따라 쓰다",
+    "exampleSentence": "Copy the sentence into your notebook.",
+    "exampleTranslation": "그 문장을 공책에 따라 써.",
+    "quizKoreanBlank": "따라 써",
+    "quizAnswers": [
+      "따라 써",
+      "복사해"
+    ],
+    "level": "초급",
+    "frequency": 897534,
+    "frequencyRank": 19
+  },
+  {
+    "word": "count",
+    "meaning": "세다",
+    "exampleSentence": "Count the tickets once more.",
+    "exampleTranslation": "표를 한 번 더 세어 봐.",
+    "quizKoreanBlank": "세어 봐",
+    "quizAnswers": [
+      "세어 봐",
+      "세어봐"
+    ],
+    "level": "초급",
+    "frequency": 897397,
+    "frequencyRank": 20
+  },
+  {
+    "word": "cut",
+    "meaning": "자르다",
+    "exampleSentence": "I cut the paper into two pieces.",
+    "exampleTranslation": "나는 종이를 두 조각으로 잘랐다.",
+    "quizKoreanBlank": "잘랐다",
+    "quizAnswers": [
+      "잘랐다",
+      "오렸다"
+    ],
+    "level": "초급",
+    "frequency": 897260,
+    "frequencyRank": 21
+  },
+  {
+    "word": "dance",
+    "meaning": "춤추다",
+    "exampleSentence": "They danced all night at the party.",
+    "exampleTranslation": "그들은 파티에서 밤새 춤췄다.",
+    "quizKoreanBlank": "춤췄다",
+    "quizAnswers": [
+      "춤췄다",
+      "춤을 췄다"
+    ],
+    "level": "초급",
+    "frequency": 897123,
+    "frequencyRank": 22
+  },
+  {
+    "word": "decide",
+    "meaning": "결정하다",
+    "exampleSentence": "We decided to leave early.",
+    "exampleTranslation": "우리는 일찍 떠나기로 결정했다.",
+    "quizKoreanBlank": "결정했다",
+    "quizAnswers": [
+      "결정했다",
+      "정했다"
+    ],
+    "level": "초급",
+    "frequency": 896986,
+    "frequencyRank": 23
+  },
+  {
+    "word": "deliver",
+    "meaning": "배달하다, 전달하다",
+    "exampleSentence": "The driver delivered the package on time.",
+    "exampleTranslation": "기사는 제시간에 소포를 배달했다.",
+    "quizKoreanBlank": "배달했다",
+    "quizAnswers": [
+      "배달했다",
+      "전달했다"
+    ],
+    "level": "초급",
+    "frequency": 896849,
+    "frequencyRank": 24
+  },
+  {
+    "word": "draw",
+    "meaning": "그리다",
+    "exampleSentence": "She drew a cat on the board.",
+    "exampleTranslation": "그녀는 칠판에 고양이를 그렸다.",
+    "quizKoreanBlank": "그렸다",
+    "quizAnswers": [
+      "그렸다"
+    ],
+    "level": "초급",
+    "frequency": 896712,
+    "frequencyRank": 25
+  },
+  {
+    "word": "drive",
+    "meaning": "운전하다",
+    "exampleSentence": "My uncle drives to work every day.",
+    "exampleTranslation": "우리 삼촌은 매일 차를 몰고 출근한다.",
+    "quizKoreanBlank": "몰고 출근한다",
+    "quizAnswers": [
+      "몰고 출근한다",
+      "운전해서 출근한다"
+    ],
+    "level": "초급",
+    "frequency": 896575,
+    "frequencyRank": 26
+  },
+  {
+    "word": "drop",
+    "meaning": "떨어뜨리다",
+    "exampleSentence": "I dropped my keys near the gate.",
+    "exampleTranslation": "나는 문 근처에서 열쇠를 떨어뜨렸다.",
+    "quizKoreanBlank": "떨어뜨렸다",
+    "quizAnswers": [
+      "떨어뜨렸다"
+    ],
+    "level": "초급",
+    "frequency": 896438,
+    "frequencyRank": 27
+  },
+  {
+    "word": "enter",
+    "meaning": "들어가다",
+    "exampleSentence": "Do not enter this room now.",
+    "exampleTranslation": "지금은 이 방에 들어가지 마.",
+    "quizKoreanBlank": "들어가지 마",
+    "quizAnswers": [
+      "들어가지 마",
+      "들어가지 마라"
+    ],
+    "level": "초급",
+    "frequency": 896301,
+    "frequencyRank": 28
+  },
+  {
+    "word": "explain",
+    "meaning": "설명하다",
+    "exampleSentence": "Can you explain this rule again?",
+    "exampleTranslation": "이 규칙을 다시 설명해 줄 수 있니?",
+    "quizKoreanBlank": "설명해 줄 수 있니",
+    "quizAnswers": [
+      "설명해 줄 수 있니",
+      "설명해줄 수 있니"
+    ],
+    "level": "초급",
+    "frequency": 896164,
+    "frequencyRank": 29
+  },
+  {
+    "word": "finish",
+    "meaning": "끝내다",
+    "exampleSentence": "I finished my homework before dinner.",
+    "exampleTranslation": "나는 저녁 전에 숙제를 끝냈다.",
+    "quizKoreanBlank": "끝냈다",
+    "quizAnswers": [
+      "끝냈다",
+      "마쳤다"
+    ],
+    "level": "초급",
+    "frequency": 896027,
+    "frequencyRank": 30
+  },
+  {
+    "word": "fix",
+    "meaning": "고치다",
+    "exampleSentence": "He fixed the broken chair.",
+    "exampleTranslation": "그는 부서진 의자를 고쳤다.",
+    "quizKoreanBlank": "고쳤다",
+    "quizAnswers": [
+      "고쳤다",
+      "수리했다"
+    ],
+    "level": "초급",
+    "frequency": 895890,
+    "frequencyRank": 31
+  },
+  {
+    "word": "follow",
+    "meaning": "따라가다, 따르다",
+    "exampleSentence": "Follow me to the library.",
+    "exampleTranslation": "도서관까지 나를 따라와.",
+    "quizKoreanBlank": "따라와",
+    "quizAnswers": [
+      "따라와",
+      "따라오세요"
+    ],
+    "level": "초급",
+    "frequency": 895753,
+    "frequencyRank": 32
+  },
+  {
+    "word": "happen",
+    "meaning": "일어나다",
+    "exampleSentence": "What happened after the meeting?",
+    "exampleTranslation": "회의 후에 무슨 일이 일어났니?",
+    "quizKoreanBlank": "일어났니",
+    "quizAnswers": [
+      "일어났니",
+      "생겼니"
+    ],
+    "level": "초급",
+    "frequency": 895616,
+    "frequencyRank": 33
+  },
+  {
+    "word": "help",
+    "meaning": "돕다",
+    "exampleSentence": "Thank you for helping me move.",
+    "exampleTranslation": "이사하는 걸 도와줘서 고마워.",
+    "quizKoreanBlank": "도와줘서",
+    "quizAnswers": [
+      "도와줘서",
+      "도와 주어서"
+    ],
+    "level": "초급",
+    "frequency": 895479,
+    "frequencyRank": 34
+  },
+  {
+    "word": "invite",
+    "meaning": "초대하다",
+    "exampleSentence": "She invited us to her house.",
+    "exampleTranslation": "그녀는 우리를 자기 집에 초대했다.",
+    "quizKoreanBlank": "초대했다",
+    "quizAnswers": [
+      "초대했다"
+    ],
+    "level": "초급",
+    "frequency": 895342,
+    "frequencyRank": 35
+  },
+  {
+    "word": "join",
+    "meaning": "참여하다",
+    "exampleSentence": "I joined the school band last year.",
+    "exampleTranslation": "나는 작년에 학교 밴드에 들어갔다.",
+    "quizKoreanBlank": "들어갔다",
+    "quizAnswers": [
+      "들어갔다",
+      "참여했다"
+    ],
+    "level": "초급",
+    "frequency": 895205,
+    "frequencyRank": 36
+  },
+  {
+    "word": "jump",
+    "meaning": "뛰어오르다",
+    "exampleSentence": "The dog jumped over the puddle.",
+    "exampleTranslation": "그 개는 물웅덩이를 뛰어넘었다.",
+    "quizKoreanBlank": "뛰어넘었다",
+    "quizAnswers": [
+      "뛰어넘었다",
+      "점프했다"
+    ],
+    "level": "초급",
+    "frequency": 895068,
+    "frequencyRank": 37
+  },
+  {
+    "word": "keep",
+    "meaning": "유지하다, 보관하다",
+    "exampleSentence": "Keep this ticket in your bag.",
+    "exampleTranslation": "이 표를 가방 안에 잘 보관해.",
+    "quizKoreanBlank": "보관해",
+    "quizAnswers": [
+      "보관해",
+      "간직해"
+    ],
+    "level": "초급",
+    "frequency": 894931,
+    "frequencyRank": 38
+  },
+  {
+    "word": "knock",
+    "meaning": "두드리다",
+    "exampleSentence": "Knock on the door before entering.",
+    "exampleTranslation": "들어가기 전에 문을 두드려.",
+    "quizKoreanBlank": "두드려",
+    "quizAnswers": [
+      "두드려"
+    ],
+    "level": "초급",
+    "frequency": 894794,
+    "frequencyRank": 39
+  },
+  {
+    "word": "laugh",
+    "meaning": "웃다",
+    "exampleSentence": "Everyone laughed at his joke.",
+    "exampleTranslation": "모두가 그의 농담에 웃었다.",
+    "quizKoreanBlank": "웃었다",
+    "quizAnswers": [
+      "웃었다"
+    ],
+    "level": "초급",
+    "frequency": 894657,
+    "frequencyRank": 40
+  },
+  {
+    "word": "learn",
+    "meaning": "배우다",
+    "exampleSentence": "I want to learn basic French.",
+    "exampleTranslation": "나는 기본 프랑스어를 배우고 싶다.",
+    "quizKoreanBlank": "배우고 싶다",
+    "quizAnswers": [
+      "배우고 싶다",
+      "익히고 싶다"
+    ],
+    "level": "초급",
+    "frequency": 894520,
+    "frequencyRank": 41
+  },
+  {
+    "word": "lend",
+    "meaning": "빌려주다",
+    "exampleSentence": "Can you lend me your umbrella?",
+    "exampleTranslation": "우산 좀 빌려줄 수 있니?",
+    "quizKoreanBlank": "빌려줄 수 있니",
+    "quizAnswers": [
+      "빌려줄 수 있니",
+      "빌려 주겠니"
+    ],
+    "level": "초급",
+    "frequency": 894383,
+    "frequencyRank": 42
+  },
+  {
+    "word": "leave",
+    "meaning": "떠나다, 남기다",
+    "exampleSentence": "The train leaves in ten minutes.",
+    "exampleTranslation": "기차는 십 분 뒤에 출발한다.",
+    "quizKoreanBlank": "출발한다",
+    "quizAnswers": [
+      "출발한다",
+      "떠난다"
+    ],
+    "level": "초급",
+    "frequency": 894246,
+    "frequencyRank": 43
+  },
+  {
+    "word": "listen",
+    "meaning": "듣다",
+    "exampleSentence": "Please listen to the announcement.",
+    "exampleTranslation": "안내 방송을 잘 들어 주세요.",
+    "quizKoreanBlank": "들어 주세요",
+    "quizAnswers": [
+      "들어 주세요",
+      "들어줘"
+    ],
+    "level": "초급",
+    "frequency": 894109,
+    "frequencyRank": 44
+  },
+  {
+    "word": "lose",
+    "meaning": "잃어버리다",
+    "exampleSentence": "Do not lose your receipt.",
+    "exampleTranslation": "영수증을 잃어버리지 마.",
+    "quizKoreanBlank": "잃어버리지 마",
+    "quizAnswers": [
+      "잃어버리지 마",
+      "잃지 마"
+    ],
+    "level": "초급",
+    "frequency": 893972,
+    "frequencyRank": 45
+  },
+  {
+    "word": "make",
+    "meaning": "만들다",
+    "exampleSentence": "We made lunch together.",
+    "exampleTranslation": "우리는 함께 점심을 만들었다.",
+    "quizKoreanBlank": "만들었다",
+    "quizAnswers": [
+      "만들었다"
+    ],
+    "level": "초급",
+    "frequency": 893835,
+    "frequencyRank": 46
+  },
+  {
+    "word": "meet",
+    "meaning": "만나다",
+    "exampleSentence": "Let's meet in front of the cafe.",
+    "exampleTranslation": "카페 앞에서 만나자.",
+    "quizKoreanBlank": "만나자",
+    "quizAnswers": [
+      "만나자",
+      "보자"
+    ],
+    "level": "초급",
+    "frequency": 893698,
+    "frequencyRank": 47
+  },
+  {
+    "word": "move",
+    "meaning": "움직이다, 이사하다",
+    "exampleSentence": "They moved to a new apartment.",
+    "exampleTranslation": "그들은 새 아파트로 이사했다.",
+    "quizKoreanBlank": "이사했다",
+    "quizAnswers": [
+      "이사했다",
+      "옮겼다"
+    ],
+    "level": "초급",
+    "frequency": 893561,
+    "frequencyRank": 48
+  },
+  {
+    "word": "open",
+    "meaning": "열다",
+    "exampleSentence": "Open the box carefully.",
+    "exampleTranslation": "상자를 조심히 열어.",
+    "quizKoreanBlank": "열어",
+    "quizAnswers": [
+      "열어",
+      "열어라"
+    ],
+    "level": "초급",
+    "frequency": 893424,
+    "frequencyRank": 49
+  },
+  {
+    "word": "pack",
+    "meaning": "짐을 싸다",
+    "exampleSentence": "I packed my bag last night.",
+    "exampleTranslation": "나는 어젯밤 가방에 짐을 쌌다.",
+    "quizKoreanBlank": "짐을 쌌다",
+    "quizAnswers": [
+      "짐을 쌌다",
+      "챙겼다"
+    ],
+    "level": "초급",
+    "frequency": 893287,
+    "frequencyRank": 50
+  },
+  {
+    "word": "paint",
+    "meaning": "칠하다, 그리다",
+    "exampleSentence": "They painted the wall white.",
+    "exampleTranslation": "그들은 벽을 하얗게 칠했다.",
+    "quizKoreanBlank": "칠했다",
+    "quizAnswers": [
+      "칠했다",
+      "페인트칠했다"
+    ],
+    "level": "초급",
+    "frequency": 893150,
+    "frequencyRank": 51
+  },
+  {
+    "word": "pass",
+    "meaning": "지나가다, 건네주다",
+    "exampleSentence": "Please pass the salt to me.",
+    "exampleTranslation": "소금을 나에게 건네줘.",
+    "quizKoreanBlank": "건네줘",
+    "quizAnswers": [
+      "건네줘",
+      "건네 주세요"
+    ],
+    "level": "초급",
+    "frequency": 893013,
+    "frequencyRank": 52
+  },
+  {
+    "word": "pay",
+    "meaning": "지불하다",
+    "exampleSentence": "I paid for the ticket online.",
+    "exampleTranslation": "나는 그 표를 온라인으로 결제했다.",
+    "quizKoreanBlank": "결제했다",
+    "quizAnswers": [
+      "결제했다",
+      "지불했다"
+    ],
+    "level": "초급",
+    "frequency": 892876,
+    "frequencyRank": 53
+  },
+  {
+    "word": "pick up",
+    "meaning": "집다, 데리러 가다",
+    "exampleSentence": "I will pick up the parcel after lunch.",
+    "exampleTranslation": "나는 점심 후에 소포를 찾아올 것이다.",
+    "quizKoreanBlank": "찾아올 것이다",
+    "quizAnswers": [
+      "찾아올 것이다",
+      "가지러 갈 것이다"
+    ],
+    "level": "초급",
+    "frequency": 892739,
+    "frequencyRank": 54
+  },
+  {
+    "word": "plan",
+    "meaning": "계획하다",
+    "exampleSentence": "We are planning a short trip.",
+    "exampleTranslation": "우리는 짧은 여행을 계획하고 있다.",
+    "quizKoreanBlank": "계획하고 있다",
+    "quizAnswers": [
+      "계획하고 있다",
+      "준비하고 있다"
+    ],
+    "level": "초급",
+    "frequency": 892602,
+    "frequencyRank": 55
+  },
+  {
+    "word": "practice",
+    "meaning": "연습하다",
+    "exampleSentence": "She practices the piano every evening.",
+    "exampleTranslation": "그녀는 매일 저녁 피아노를 연습한다.",
+    "quizKoreanBlank": "연습한다",
+    "quizAnswers": [
+      "연습한다"
+    ],
+    "level": "초급",
+    "frequency": 892465,
+    "frequencyRank": 56
+  },
+  {
+    "word": "prepare",
+    "meaning": "준비하다",
+    "exampleSentence": "Please prepare your passport first.",
+    "exampleTranslation": "먼저 여권을 준비해.",
+    "quizKoreanBlank": "준비해",
+    "quizAnswers": [
+      "준비해",
+      "챙겨"
+    ],
+    "level": "초급",
+    "frequency": 892328,
+    "frequencyRank": 57
+  },
+  {
+    "word": "press",
+    "meaning": "누르다",
+    "exampleSentence": "Press this button to start.",
+    "exampleTranslation": "시작하려면 이 버튼을 눌러.",
+    "quizKoreanBlank": "눌러",
+    "quizAnswers": [
+      "눌러"
+    ],
+    "level": "초급",
+    "frequency": 892191,
+    "frequencyRank": 58
+  },
+  {
+    "word": "pull",
+    "meaning": "당기다",
+    "exampleSentence": "Pull the handle toward you.",
+    "exampleTranslation": "손잡이를 네 쪽으로 당겨.",
+    "quizKoreanBlank": "당겨",
+    "quizAnswers": [
+      "당겨"
+    ],
+    "level": "초급",
+    "frequency": 892054,
+    "frequencyRank": 59
+  },
+  {
+    "word": "push",
+    "meaning": "밀다",
+    "exampleSentence": "Push the cart slowly.",
+    "exampleTranslation": "카트를 천천히 밀어.",
+    "quizKoreanBlank": "밀어",
+    "quizAnswers": [
+      "밀어"
+    ],
+    "level": "초급",
+    "frequency": 891917,
+    "frequencyRank": 60
+  },
+  {
+    "word": "reach",
+    "meaning": "도착하다, 닿다",
+    "exampleSentence": "We reached the top before noon.",
+    "exampleTranslation": "우리는 정오 전에 정상에 도착했다.",
+    "quizKoreanBlank": "도착했다",
+    "quizAnswers": [
+      "도착했다",
+      "올라갔다"
+    ],
+    "level": "초급",
+    "frequency": 891780,
+    "frequencyRank": 61
+  },
+  {
+    "word": "remember",
+    "meaning": "기억하다",
+    "exampleSentence": "Remember my address this time.",
+    "exampleTranslation": "이번에는 내 주소를 기억해.",
+    "quizKoreanBlank": "기억해",
+    "quizAnswers": [
+      "기억해"
+    ],
+    "level": "초급",
+    "frequency": 891643,
+    "frequencyRank": 62
+  },
+  {
+    "word": "repeat",
+    "meaning": "반복하다",
+    "exampleSentence": "Could you repeat that word?",
+    "exampleTranslation": "그 단어를 다시 말해 줄래?",
+    "quizKoreanBlank": "다시 말해 줄래",
+    "quizAnswers": [
+      "다시 말해 줄래",
+      "반복해 줄래"
+    ],
+    "level": "초급",
+    "frequency": 891506,
+    "frequencyRank": 63
+  },
+  {
+    "word": "rest",
+    "meaning": "쉬다",
+    "exampleSentence": "You should rest after lunch.",
+    "exampleTranslation": "점심 후에는 쉬어야 한다.",
+    "quizKoreanBlank": "쉬어야 한다",
+    "quizAnswers": [
+      "쉬어야 한다",
+      "쉬어야 해"
+    ],
+    "level": "초급",
+    "frequency": 891369,
+    "frequencyRank": 64
+  },
+  {
+    "word": "return",
+    "meaning": "돌아오다, 반납하다",
+    "exampleSentence": "Please return the book by Friday.",
+    "exampleTranslation": "금요일까지 책을 반납해.",
+    "quizKoreanBlank": "반납해",
+    "quizAnswers": [
+      "반납해",
+      "돌려줘"
+    ],
+    "level": "초급",
+    "frequency": 891232,
+    "frequencyRank": 65
+  },
+  {
+    "word": "ride",
+    "meaning": "타다",
+    "exampleSentence": "We rode the subway together.",
+    "exampleTranslation": "우리는 함께 지하철을 탔다.",
+    "quizKoreanBlank": "탔다",
+    "quizAnswers": [
+      "탔다"
+    ],
+    "level": "초급",
+    "frequency": 891095,
+    "frequencyRank": 66
+  },
+  {
+    "word": "save",
+    "meaning": "저장하다, 아끼다",
+    "exampleSentence": "Save the file before closing it.",
+    "exampleTranslation": "파일을 닫기 전에 저장해.",
+    "quizKoreanBlank": "저장해",
+    "quizAnswers": [
+      "저장해"
+    ],
+    "level": "초급",
+    "frequency": 890958,
+    "frequencyRank": 67
+  },
+  {
+    "word": "send",
+    "meaning": "보내다",
+    "exampleSentence": "I sent the photo to my friend.",
+    "exampleTranslation": "나는 친구에게 사진을 보냈다.",
+    "quizKoreanBlank": "보냈다",
+    "quizAnswers": [
+      "보냈다"
+    ],
+    "level": "초급",
+    "frequency": 890821,
+    "frequencyRank": 68
+  },
+  {
+    "word": "share",
+    "meaning": "공유하다",
+    "exampleSentence": "Please share your notes with me.",
+    "exampleTranslation": "필기를 나와 공유해 줘.",
+    "quizKoreanBlank": "공유해 줘",
+    "quizAnswers": [
+      "공유해 줘",
+      "보여 줘"
+    ],
+    "level": "초급",
+    "frequency": 890684,
+    "frequencyRank": 69
+  },
+  {
+    "word": "shout",
+    "meaning": "외치다",
+    "exampleSentence": "Do not shout in the hallway.",
+    "exampleTranslation": "복도에서 소리치지 마.",
+    "quizKoreanBlank": "소리치지 마",
+    "quizAnswers": [
+      "소리치지 마",
+      "외치지 마"
+    ],
+    "level": "초급",
+    "frequency": 890547,
+    "frequencyRank": 70
+  },
+  {
+    "word": "smile",
+    "meaning": "미소 짓다",
+    "exampleSentence": "She smiled at the child.",
+    "exampleTranslation": "그녀는 아이에게 미소 지었다.",
+    "quizKoreanBlank": "미소 지었다",
+    "quizAnswers": [
+      "미소 지었다",
+      "웃어 주었다"
+    ],
+    "level": "초급",
+    "frequency": 890410,
+    "frequencyRank": 71
+  },
+  {
+    "word": "start",
+    "meaning": "시작하다",
+    "exampleSentence": "The movie starts at seven.",
+    "exampleTranslation": "영화는 일곱 시에 시작한다.",
+    "quizKoreanBlank": "시작한다",
+    "quizAnswers": [
+      "시작한다"
+    ],
+    "level": "초급",
+    "frequency": 890273,
+    "frequencyRank": 72
+  },
+  {
+    "word": "stay",
+    "meaning": "머무르다",
+    "exampleSentence": "We stayed at a small hotel.",
+    "exampleTranslation": "우리는 작은 호텔에 묵었다.",
+    "quizKoreanBlank": "묵었다",
+    "quizAnswers": [
+      "묵었다",
+      "머물렀다"
+    ],
+    "level": "초급",
+    "frequency": 890136,
+    "frequencyRank": 73
+  },
+  {
+    "word": "stop",
+    "meaning": "멈추다",
+    "exampleSentence": "The bus stopped in front of the bank.",
+    "exampleTranslation": "버스가 은행 앞에 멈췄다.",
+    "quizKoreanBlank": "멈췄다",
+    "quizAnswers": [
+      "멈췄다",
+      "섰다"
+    ],
+    "level": "초급",
+    "frequency": 889999,
+    "frequencyRank": 74
+  },
+  {
+    "word": "study",
+    "meaning": "공부하다",
+    "exampleSentence": "I studied English for two hours.",
+    "exampleTranslation": "나는 두 시간 동안 영어를 공부했다.",
+    "quizKoreanBlank": "공부했다",
+    "quizAnswers": [
+      "공부했다"
+    ],
+    "level": "초급",
+    "frequency": 889862,
+    "frequencyRank": 75
+  },
+  {
+    "word": "talk",
+    "meaning": "말하다",
+    "exampleSentence": "Let's talk after dinner.",
+    "exampleTranslation": "저녁을 먹고 이야기하자.",
+    "quizKoreanBlank": "이야기하자",
+    "quizAnswers": [
+      "이야기하자",
+      "말하자"
+    ],
+    "level": "초급",
+    "frequency": 889725,
+    "frequencyRank": 76
+  },
+  {
+    "word": "travel",
+    "meaning": "여행하다",
+    "exampleSentence": "My parents travel every spring.",
+    "exampleTranslation": "우리 부모님은 매년 봄에 여행하신다.",
+    "quizKoreanBlank": "여행하신다",
+    "quizAnswers": [
+      "여행하신다",
+      "여행 간다"
+    ],
+    "level": "초급",
+    "frequency": 889588,
+    "frequencyRank": 77
+  },
+  {
+    "word": "try",
+    "meaning": "시도하다",
+    "exampleSentence": "Try this soup before it gets cold.",
+    "exampleTranslation": "식기 전에 이 수프를 먹어 봐.",
+    "quizKoreanBlank": "먹어 봐",
+    "quizAnswers": [
+      "먹어 봐",
+      "시도해 봐"
+    ],
+    "level": "초급",
+    "frequency": 889451,
+    "frequencyRank": 78
+  },
+  {
+    "word": "turn on",
+    "meaning": "켜다",
+    "exampleSentence": "Turn on the lamp, please.",
+    "exampleTranslation": "전등을 켜 줘.",
+    "quizKoreanBlank": "켜 줘",
+    "quizAnswers": [
+      "켜 줘",
+      "켜줘"
+    ],
+    "level": "초급",
+    "frequency": 889314,
+    "frequencyRank": 79
+  },
+  {
+    "word": "turn off",
+    "meaning": "끄다",
+    "exampleSentence": "Turn off the fan before leaving.",
+    "exampleTranslation": "나가기 전에 선풍기를 꺼.",
+    "quizKoreanBlank": "꺼",
+    "quizAnswers": [
+      "꺼",
+      "꺼라"
+    ],
+    "level": "초급",
+    "frequency": 889177,
+    "frequencyRank": 80
+  },
+  {
+    "word": "use",
+    "meaning": "사용하다",
+    "exampleSentence": "You can use my umbrella.",
+    "exampleTranslation": "내 우산을 사용해도 된다.",
+    "quizKoreanBlank": "사용해도 된다",
+    "quizAnswers": [
+      "사용해도 된다",
+      "써도 된다"
+    ],
+    "level": "초급",
+    "frequency": 889040,
+    "frequencyRank": 81
+  },
+  {
+    "word": "visit",
+    "meaning": "방문하다",
+    "exampleSentence": "We visited our grandparents last weekend.",
+    "exampleTranslation": "우리는 지난 주말에 조부모님을 찾아뵈었다.",
+    "quizKoreanBlank": "찾아뵈었다",
+    "quizAnswers": [
+      "찾아뵈었다",
+      "방문했다"
+    ],
+    "level": "초급",
+    "frequency": 888903,
+    "frequencyRank": 82
+  },
+  {
+    "word": "wait",
+    "meaning": "기다리다",
+    "exampleSentence": "Please wait outside for a moment.",
+    "exampleTranslation": "잠깐 밖에서 기다려.",
+    "quizKoreanBlank": "기다려",
+    "quizAnswers": [
+      "기다려"
+    ],
+    "level": "초급",
+    "frequency": 888766,
+    "frequencyRank": 83
+  },
+  {
+    "word": "walk",
+    "meaning": "걷다",
+    "exampleSentence": "I walked home in the rain.",
+    "exampleTranslation": "나는 비를 맞으며 집까지 걸었다.",
+    "quizKoreanBlank": "걸었다",
+    "quizAnswers": [
+      "걸었다"
+    ],
+    "level": "초급",
+    "frequency": 888629,
+    "frequencyRank": 84
+  },
+  {
+    "word": "wash",
+    "meaning": "씻다, 세탁하다",
+    "exampleSentence": "Wash your hands before dinner.",
+    "exampleTranslation": "저녁 먹기 전에 손을 씻어.",
+    "quizKoreanBlank": "씻어",
+    "quizAnswers": [
+      "씻어"
+    ],
+    "level": "초급",
+    "frequency": 888492,
+    "frequencyRank": 85
+  },
+  {
+    "word": "wear",
+    "meaning": "입다, 착용하다",
+    "exampleSentence": "She wore a blue jacket today.",
+    "exampleTranslation": "그녀는 오늘 파란 재킷을 입었다.",
+    "quizKoreanBlank": "입었다",
+    "quizAnswers": [
+      "입었다",
+      "걸쳤다"
+    ],
+    "level": "초급",
+    "frequency": 888355,
+    "frequencyRank": 86
+  },
+  {
+    "word": "win",
+    "meaning": "이기다",
+    "exampleSentence": "Our team won the final game.",
+    "exampleTranslation": "우리 팀이 결승전에서 이겼다.",
+    "quizKoreanBlank": "이겼다",
+    "quizAnswers": [
+      "이겼다",
+      "승리했다"
+    ],
+    "level": "초급",
+    "frequency": 888218,
+    "frequencyRank": 87
+  },
+  {
+    "word": "write",
+    "meaning": "쓰다",
+    "exampleSentence": "Write your name on the form.",
+    "exampleTranslation": "서식에 이름을 써.",
+    "quizKoreanBlank": "써",
+    "quizAnswers": [
+      "써",
+      "적어"
+    ],
+    "level": "초급",
+    "frequency": 888081,
+    "frequencyRank": 88
+  },
+  {
+    "word": "wake up",
+    "meaning": "잠에서 깨다",
+    "exampleSentence": "I wake up at six on weekdays.",
+    "exampleTranslation": "나는 평일마다 여섯 시에 일어난다.",
+    "quizKoreanBlank": "일어난다",
+    "quizAnswers": [
+      "일어난다",
+      "잠에서 깬다"
+    ],
+    "level": "초급",
+    "frequency": 887944,
+    "frequencyRank": 89
+  },
+  {
+    "word": "stand up",
+    "meaning": "일어서다",
+    "exampleSentence": "Please stand up when your name is called.",
+    "exampleTranslation": "이름이 불리면 일어서세요.",
+    "quizKoreanBlank": "일어서세요",
+    "quizAnswers": [
+      "일어서세요",
+      "일어나세요"
+    ],
+    "level": "초급",
+    "frequency": 887807,
+    "frequencyRank": 90
+  },
+  {
+    "word": "sit down",
+    "meaning": "앉다",
+    "exampleSentence": "Sit down and relax for a minute.",
+    "exampleTranslation": "앉아서 잠깐 쉬어.",
+    "quizKoreanBlank": "앉아서",
+    "quizAnswers": [
+      "앉아서",
+      "앉아"
+    ],
+    "level": "초급",
+    "frequency": 887670,
+    "frequencyRank": 91
+  },
+  {
+    "word": "come in",
+    "meaning": "들어오다",
+    "exampleSentence": "Come in and take a seat.",
+    "exampleTranslation": "들어와서 자리에 앉아.",
+    "quizKoreanBlank": "들어와서",
+    "quizAnswers": [
+      "들어와서",
+      "들어와"
+    ],
+    "level": "초급",
+    "frequency": 887533,
+    "frequencyRank": 92
+  },
+  {
+    "word": "go out",
+    "meaning": "외출하다, 나가다",
+    "exampleSentence": "We went out for dinner yesterday.",
+    "exampleTranslation": "우리는 어제 저녁을 먹으러 나갔다.",
+    "quizKoreanBlank": "나갔다",
+    "quizAnswers": [
+      "나갔다",
+      "외출했다"
+    ],
+    "level": "초급",
+    "frequency": 887396,
+    "frequencyRank": 93
+  },
+  {
+    "word": "look for",
+    "meaning": "찾다",
+    "exampleSentence": "I am looking for my glasses.",
+    "exampleTranslation": "나는 안경을 찾고 있다.",
+    "quizKoreanBlank": "찾고 있다",
+    "quizAnswers": [
+      "찾고 있다",
+      "찾는 중이다"
+    ],
+    "level": "초급",
+    "frequency": 887259,
+    "frequencyRank": 94
+  },
+  {
+    "word": "take out",
+    "meaning": "꺼내다",
+    "exampleSentence": "Take out the notebook from your bag.",
+    "exampleTranslation": "가방에서 공책을 꺼내.",
+    "quizKoreanBlank": "꺼내",
+    "quizAnswers": [
+      "꺼내"
+    ],
+    "level": "초급",
+    "frequency": 887122,
+    "frequencyRank": 95
+  },
+  {
+    "word": "come back",
+    "meaning": "돌아오다",
+    "exampleSentence": "Please come back before dark.",
+    "exampleTranslation": "어두워지기 전에 돌아와.",
+    "quizKoreanBlank": "돌아와",
+    "quizAnswers": [
+      "돌아와"
+    ],
+    "level": "초급",
+    "frequency": 886985,
+    "frequencyRank": 96
+  },
+  {
+    "word": "grow up",
+    "meaning": "자라다",
+    "exampleSentence": "He grew up in a small town.",
+    "exampleTranslation": "그는 작은 마을에서 자랐다.",
+    "quizKoreanBlank": "자랐다",
+    "quizAnswers": [
+      "자랐다"
+    ],
+    "level": "초급",
+    "frequency": 886848,
+    "frequencyRank": 97
+  },
+  {
+    "word": "farmer",
+    "meaning": "농부",
+    "exampleSentence": "The farmer works from early morning.",
+    "exampleTranslation": "그 농부는 이른 아침부터 일한다.",
+    "quizKoreanBlank": "농부는",
+    "quizAnswers": [
+      "농부는",
+      "농부가"
+    ],
+    "level": "초급",
+    "frequency": 886711,
+    "frequencyRank": 98
+  },
+  {
+    "word": "fence",
+    "meaning": "울타리",
+    "exampleSentence": "The dog jumped over the fence.",
+    "exampleTranslation": "그 개는 울타리를 뛰어넘었다.",
+    "quizKoreanBlank": "울타리를",
+    "quizAnswers": [
+      "울타리를"
+    ],
+    "level": "초급",
+    "frequency": 886574,
+    "frequencyRank": 99
+  },
+  {
+    "word": "gloves",
+    "meaning": "장갑",
+    "exampleSentence": "Wear gloves in this cold weather.",
+    "exampleTranslation": "이 추운 날씨에는 장갑을 껴.",
+    "quizKoreanBlank": "장갑을",
+    "quizAnswers": [
+      "장갑을"
+    ],
+    "level": "초급",
+    "frequency": 886437,
+    "frequencyRank": 100
+  },
+  {
+    "word": "afford",
+    "meaning": "여유가 있다",
+    "exampleSentence": "I cannot afford a new laptop now.",
+    "exampleTranslation": "나는 지금 새 노트북을 살 여유가 없다.",
+    "quizKoreanBlank": "살 여유가 없다",
+    "quizAnswers": [
+      "살 여유가 없다",
+      "감당할 수 없다"
+    ],
+    "level": "중급",
+    "frequency": 600000,
+    "frequencyRank": 1
+  },
+  {
+    "word": "announce",
+    "meaning": "발표하다",
+    "exampleSentence": "They will announce the winners tomorrow.",
+    "exampleTranslation": "그들은 내일 우승자를 발표할 것이다.",
+    "quizKoreanBlank": "발표할 것이다",
+    "quizAnswers": [
+      "발표할 것이다",
+      "알릴 것이다"
+    ],
+    "level": "중급",
+    "frequency": 599863,
+    "frequencyRank": 2
+  },
+  {
+    "word": "apologize",
+    "meaning": "사과하다",
+    "exampleSentence": "You should apologize for being late.",
+    "exampleTranslation": "늦은 것에 대해 사과해야 한다.",
+    "quizKoreanBlank": "사과해야 한다",
+    "quizAnswers": [
+      "사과해야 한다"
+    ],
+    "level": "중급",
+    "frequency": 599726,
+    "frequencyRank": 3
+  },
+  {
+    "word": "apply",
+    "meaning": "지원하다, 적용하다",
+    "exampleSentence": "She plans to apply for the internship.",
+    "exampleTranslation": "그녀는 그 인턴십에 지원할 계획이다.",
+    "quizKoreanBlank": "지원할",
+    "quizAnswers": [
+      "지원할",
+      "신청할"
+    ],
+    "level": "중급",
+    "frequency": 599589,
+    "frequencyRank": 4
+  },
+  {
+    "word": "arrange",
+    "meaning": "정리하다, 준비하다",
+    "exampleSentence": "We arranged the chairs in a circle.",
+    "exampleTranslation": "우리는 의자들을 원 모양으로 배치했다.",
+    "quizKoreanBlank": "배치했다",
+    "quizAnswers": [
+      "배치했다",
+      "정리했다"
+    ],
+    "level": "중급",
+    "frequency": 599452,
+    "frequencyRank": 5
+  },
+  {
+    "word": "attach",
+    "meaning": "붙이다, 첨부하다",
+    "exampleSentence": "Please attach the file to the email.",
+    "exampleTranslation": "이메일에 파일을 첨부해 주세요.",
+    "quizKoreanBlank": "첨부해 주세요",
+    "quizAnswers": [
+      "첨부해 주세요",
+      "붙여 주세요"
+    ],
+    "level": "중급",
+    "frequency": 599315,
+    "frequencyRank": 6
+  },
+  {
+    "word": "avoid",
+    "meaning": "피하다",
+    "exampleSentence": "Try to avoid heavy traffic this evening.",
+    "exampleTranslation": "오늘 저녁에는 심한 교통 체증을 피하려고 해.",
+    "quizKoreanBlank": "피하려고 해",
+    "quizAnswers": [
+      "피하려고 해",
+      "피해 봐"
+    ],
+    "level": "중급",
+    "frequency": 599178,
+    "frequencyRank": 7
+  },
+  {
+    "word": "balance",
+    "meaning": "균형을 잡다",
+    "exampleSentence": "It is hard to balance work and study.",
+    "exampleTranslation": "일과 공부의 균형을 잡기는 어렵다.",
+    "quizKoreanBlank": "균형을 잡기는",
+    "quizAnswers": [
+      "균형을 잡기는",
+      "조절하기는"
+    ],
+    "level": "중급",
+    "frequency": 599041,
+    "frequencyRank": 8
+  },
+  {
+    "word": "behave",
+    "meaning": "행동하다",
+    "exampleSentence": "The children behaved well at the museum.",
+    "exampleTranslation": "아이들은 박물관에서 얌전히 행동했다.",
+    "quizKoreanBlank": "행동했다",
+    "quizAnswers": [
+      "행동했다",
+      "굴었다"
+    ],
+    "level": "중급",
+    "frequency": 598904,
+    "frequencyRank": 9
+  },
+  {
+    "word": "belong",
+    "meaning": "속하다",
+    "exampleSentence": "This seat belongs to my friend.",
+    "exampleTranslation": "이 자리는 내 친구의 것이다.",
+    "quizKoreanBlank": "친구의 것이다",
+    "quizAnswers": [
+      "친구의 것이다",
+      "친구에게 속한다"
+    ],
+    "level": "중급",
+    "frequency": 598767,
+    "frequencyRank": 10
+  },
+  {
+    "word": "compare",
+    "meaning": "비교하다",
+    "exampleSentence": "Compare the two photos carefully.",
+    "exampleTranslation": "두 사진을 자세히 비교해 봐.",
+    "quizKoreanBlank": "비교해 봐",
+    "quizAnswers": [
+      "비교해 봐",
+      "비교해봐"
+    ],
+    "level": "중급",
+    "frequency": 598630,
+    "frequencyRank": 11
+  },
+  {
+    "word": "complain",
+    "meaning": "불평하다",
+    "exampleSentence": "He complained about the noise all night.",
+    "exampleTranslation": "그는 밤새 소음에 대해 불평했다.",
+    "quizKoreanBlank": "불평했다",
+    "quizAnswers": [
+      "불평했다"
+    ],
+    "level": "중급",
+    "frequency": 598493,
+    "frequencyRank": 12
+  },
+  {
+    "word": "confirm",
+    "meaning": "확인하다",
+    "exampleSentence": "Please confirm your reservation today.",
+    "exampleTranslation": "오늘 예약을 확인해 주세요.",
+    "quizKoreanBlank": "확인해 주세요",
+    "quizAnswers": [
+      "확인해 주세요",
+      "확정해 주세요"
+    ],
+    "level": "중급",
+    "frequency": 598356,
+    "frequencyRank": 13
+  },
+  {
+    "word": "connect",
+    "meaning": "연결하다",
+    "exampleSentence": "Connect the printer to the computer.",
+    "exampleTranslation": "프린터를 컴퓨터에 연결해.",
+    "quizKoreanBlank": "연결해",
+    "quizAnswers": [
+      "연결해"
+    ],
+    "level": "중급",
+    "frequency": 598219,
+    "frequencyRank": 14
+  },
+  {
+    "word": "consider",
+    "meaning": "고려하다",
+    "exampleSentence": "We are considering another option.",
+    "exampleTranslation": "우리는 다른 선택지를 고려하고 있다.",
+    "quizKoreanBlank": "고려하고 있다",
+    "quizAnswers": [
+      "고려하고 있다"
+    ],
+    "level": "중급",
+    "frequency": 598082,
+    "frequencyRank": 15
+  },
+  {
+    "word": "contact",
+    "meaning": "연락하다",
+    "exampleSentence": "Contact me if the plan changes.",
+    "exampleTranslation": "계획이 바뀌면 나에게 연락해.",
+    "quizKoreanBlank": "연락해",
+    "quizAnswers": [
+      "연락해"
+    ],
+    "level": "중급",
+    "frequency": 597945,
+    "frequencyRank": 16
+  },
+  {
+    "word": "continue",
+    "meaning": "계속하다",
+    "exampleSentence": "Please continue reading page ten.",
+    "exampleTranslation": "십 쪽 읽기를 계속해 주세요.",
+    "quizKoreanBlank": "계속해 주세요",
+    "quizAnswers": [
+      "계속해 주세요",
+      "이어가 주세요"
+    ],
+    "level": "중급",
+    "frequency": 597808,
+    "frequencyRank": 17
+  },
+  {
+    "word": "contribute",
+    "meaning": "기여하다",
+    "exampleSentence": "Everyone contributed a good idea.",
+    "exampleTranslation": "모두가 좋은 아이디어를 하나씩 보탰다.",
+    "quizKoreanBlank": "보탰다",
+    "quizAnswers": [
+      "보탰다",
+      "기여했다"
+    ],
+    "level": "중급",
+    "frequency": 597671,
+    "frequencyRank": 18
+  },
+  {
+    "word": "convince",
+    "meaning": "설득하다",
+    "exampleSentence": "I finally convinced him to join us.",
+    "exampleTranslation": "나는 마침내 그를 우리와 함께하자고 설득했다.",
+    "quizKoreanBlank": "설득했다",
+    "quizAnswers": [
+      "설득했다"
+    ],
+    "level": "중급",
+    "frequency": 597534,
+    "frequencyRank": 19
+  },
+  {
+    "word": "depend on",
+    "meaning": "의지하다, 달려 있다",
+    "exampleSentence": "The schedule depends on the weather.",
+    "exampleTranslation": "일정은 날씨에 달려 있다.",
+    "quizKoreanBlank": "달려 있다",
+    "quizAnswers": [
+      "달려 있다",
+      "좌우된다"
+    ],
+    "level": "중급",
+    "frequency": 597397,
+    "frequencyRank": 20
+  },
+  {
+    "word": "describe",
+    "meaning": "묘사하다",
+    "exampleSentence": "Describe the painting in one sentence.",
+    "exampleTranslation": "그 그림을 한 문장으로 묘사해 봐.",
+    "quizKoreanBlank": "묘사해 봐",
+    "quizAnswers": [
+      "묘사해 봐",
+      "설명해 봐"
+    ],
+    "level": "중급",
+    "frequency": 597260,
+    "frequencyRank": 21
+  },
+  {
+    "word": "develop",
+    "meaning": "발전시키다, 개발하다",
+    "exampleSentence": "She wants to develop a new app.",
+    "exampleTranslation": "그녀는 새 앱을 개발하고 싶어 한다.",
+    "quizKoreanBlank": "개발하고 싶어 한다",
+    "quizAnswers": [
+      "개발하고 싶어 한다",
+      "만들고 싶어 한다"
+    ],
+    "level": "중급",
+    "frequency": 597123,
+    "frequencyRank": 22
+  },
+  {
+    "word": "discover",
+    "meaning": "발견하다",
+    "exampleSentence": "We discovered a quiet cafe nearby.",
+    "exampleTranslation": "우리는 근처에서 조용한 카페를 발견했다.",
+    "quizKoreanBlank": "발견했다",
+    "quizAnswers": [
+      "발견했다",
+      "찾아냈다"
+    ],
+    "level": "중급",
+    "frequency": 596986,
+    "frequencyRank": 23
+  },
+  {
+    "word": "encourage",
+    "meaning": "격려하다",
+    "exampleSentence": "My coach encouraged me to keep going.",
+    "exampleTranslation": "코치는 내가 계속 가도록 격려했다.",
+    "quizKoreanBlank": "격려했다",
+    "quizAnswers": [
+      "격려했다",
+      "응원했다"
+    ],
+    "level": "중급",
+    "frequency": 596849,
+    "frequencyRank": 24
+  },
+  {
+    "word": "exchange",
+    "meaning": "교환하다",
+    "exampleSentence": "Can I exchange this shirt for a larger one?",
+    "exampleTranslation": "이 셔츠를 더 큰 것으로 교환할 수 있을까요?",
+    "quizKoreanBlank": "교환할 수 있을까요",
+    "quizAnswers": [
+      "교환할 수 있을까요",
+      "바꿀 수 있을까요"
+    ],
+    "level": "중급",
+    "frequency": 596712,
+    "frequencyRank": 25
+  },
+  {
+    "word": "experience",
+    "meaning": "경험하다",
+    "exampleSentence": "I experienced a long delay at the airport.",
+    "exampleTranslation": "나는 공항에서 긴 지연을 겪었다.",
+    "quizKoreanBlank": "겪었다",
+    "quizAnswers": [
+      "겪었다",
+      "경험했다"
+    ],
+    "level": "중급",
+    "frequency": 596575,
+    "frequencyRank": 26
+  },
+  {
+    "word": "focus on",
+    "meaning": "집중하다",
+    "exampleSentence": "Please focus on the main question.",
+    "exampleTranslation": "핵심 질문에 집중해 주세요.",
+    "quizKoreanBlank": "집중해 주세요",
+    "quizAnswers": [
+      "집중해 주세요",
+      "집중해"
+    ],
+    "level": "중급",
+    "frequency": 596438,
+    "frequencyRank": 27
+  },
+  {
+    "word": "figure out",
+    "meaning": "알아내다",
+    "exampleSentence": "We need to figure out the cause.",
+    "exampleTranslation": "우리는 원인을 알아내야 한다.",
+    "quizKoreanBlank": "알아내야 한다",
+    "quizAnswers": [
+      "알아내야 한다",
+      "파악해야 한다"
+    ],
+    "level": "중급",
+    "frequency": 596301,
+    "frequencyRank": 28
+  },
+  {
+    "word": "fill out",
+    "meaning": "작성하다",
+    "exampleSentence": "Fill out this form in black ink.",
+    "exampleTranslation": "이 서류를 검은 펜으로 작성해.",
+    "quizKoreanBlank": "작성해",
+    "quizAnswers": [
+      "작성해",
+      "기입해"
+    ],
+    "level": "중급",
+    "frequency": 596164,
+    "frequencyRank": 29
+  },
+  {
+    "word": "get along",
+    "meaning": "잘 지내다",
+    "exampleSentence": "Do you get along with your coworkers?",
+    "exampleTranslation": "너는 동료들과 잘 지내니?",
+    "quizKoreanBlank": "잘 지내니",
+    "quizAnswers": [
+      "잘 지내니",
+      "사이가 좋니"
+    ],
+    "level": "중급",
+    "frequency": 596027,
+    "frequencyRank": 30
+  },
+  {
+    "word": "get back",
+    "meaning": "돌아오다",
+    "exampleSentence": "I will get back before noon.",
+    "exampleTranslation": "나는 정오 전에 돌아올 것이다.",
+    "quizKoreanBlank": "돌아올 것이다",
+    "quizAnswers": [
+      "돌아올 것이다",
+      "복귀할 것이다"
+    ],
+    "level": "중급",
+    "frequency": 595890,
+    "frequencyRank": 31
+  },
+  {
+    "word": "give away",
+    "meaning": "나눠 주다",
+    "exampleSentence": "They gave away free samples outside.",
+    "exampleTranslation": "그들은 밖에서 무료 샘플을 나눠 주었다.",
+    "quizKoreanBlank": "나눠 주었다",
+    "quizAnswers": [
+      "나눠 주었다",
+      "배포했다"
+    ],
+    "level": "중급",
+    "frequency": 595753,
+    "frequencyRank": 32
+  },
+  {
+    "word": "go over",
+    "meaning": "검토하다",
+    "exampleSentence": "Let's go over the report once more.",
+    "exampleTranslation": "보고서를 한 번 더 검토하자.",
+    "quizKoreanBlank": "검토하자",
+    "quizAnswers": [
+      "검토하자",
+      "훑어보자"
+    ],
+    "level": "중급",
+    "frequency": 595616,
+    "frequencyRank": 33
+  },
+  {
+    "word": "hand in",
+    "meaning": "제출하다",
+    "exampleSentence": "Please hand in your essay by Monday.",
+    "exampleTranslation": "월요일까지 에세이를 제출해 주세요.",
+    "quizKoreanBlank": "제출해 주세요",
+    "quizAnswers": [
+      "제출해 주세요",
+      "내 주세요"
+    ],
+    "level": "중급",
+    "frequency": 595479,
+    "frequencyRank": 34
+  },
+  {
+    "word": "hang out",
+    "meaning": "어울려 놀다",
+    "exampleSentence": "We hung out at the river park.",
+    "exampleTranslation": "우리는 강변 공원에서 함께 시간을 보냈다.",
+    "quizKoreanBlank": "함께 시간을 보냈다",
+    "quizAnswers": [
+      "함께 시간을 보냈다",
+      "어울려 놀았다"
+    ],
+    "level": "중급",
+    "frequency": 595342,
+    "frequencyRank": 35
+  },
+  {
+    "word": "keep on",
+    "meaning": "계속하다",
+    "exampleSentence": "Keep on practicing every day.",
+    "exampleTranslation": "매일 계속 연습해.",
+    "quizKoreanBlank": "계속 연습해",
+    "quizAnswers": [
+      "계속 연습해",
+      "계속해"
+    ],
+    "level": "중급",
+    "frequency": 595205,
+    "frequencyRank": 36
+  },
+  {
+    "word": "look after",
+    "meaning": "돌보다",
+    "exampleSentence": "She looks after her younger brother.",
+    "exampleTranslation": "그녀는 남동생을 돌본다.",
+    "quizKoreanBlank": "돌본다",
+    "quizAnswers": [
+      "돌본다",
+      "보살핀다"
+    ],
+    "level": "중급",
+    "frequency": 595068,
+    "frequencyRank": 37
+  },
+  {
+    "word": "look around",
+    "meaning": "둘러보다",
+    "exampleSentence": "We looked around the bookstore for an hour.",
+    "exampleTranslation": "우리는 한 시간 동안 서점을 둘러보았다.",
+    "quizKoreanBlank": "둘러보았다",
+    "quizAnswers": [
+      "둘러보았다",
+      "구경했다"
+    ],
+    "level": "중급",
+    "frequency": 594931,
+    "frequencyRank": 38
+  },
+  {
+    "word": "look forward to",
+    "meaning": "기대하다",
+    "exampleSentence": "I look forward to the holiday.",
+    "exampleTranslation": "나는 그 휴가를 기대하고 있다.",
+    "quizKoreanBlank": "기대하고 있다",
+    "quizAnswers": [
+      "기대하고 있다"
+    ],
+    "level": "중급",
+    "frequency": 594794,
+    "frequencyRank": 39
+  },
+  {
+    "word": "make up",
+    "meaning": "지어내다, 화해하다",
+    "exampleSentence": "He made up an excuse again.",
+    "exampleTranslation": "그는 또 변명을 지어냈다.",
+    "quizKoreanBlank": "지어냈다",
+    "quizAnswers": [
+      "지어냈다",
+      "만들어 냈다"
+    ],
+    "level": "중급",
+    "frequency": 594657,
+    "frequencyRank": 40
+  },
+  {
+    "word": "notice",
+    "meaning": "알아차리다",
+    "exampleSentence": "Did you notice the new sign?",
+    "exampleTranslation": "새 표지판을 알아차렸니?",
+    "quizKoreanBlank": "알아차렸니",
+    "quizAnswers": [
+      "알아차렸니",
+      "봤니"
+    ],
+    "level": "중급",
+    "frequency": 594520,
+    "frequencyRank": 41
+  },
+  {
+    "word": "offer",
+    "meaning": "제안하다, 제공하다",
+    "exampleSentence": "They offered us warm tea.",
+    "exampleTranslation": "그들은 우리에게 따뜻한 차를 권했다.",
+    "quizKoreanBlank": "권했다",
+    "quizAnswers": [
+      "권했다",
+      "제공했다"
+    ],
+    "level": "중급",
+    "frequency": 594383,
+    "frequencyRank": 42
+  },
+  {
+    "word": "organize",
+    "meaning": "정리하다, 조직하다",
+    "exampleSentence": "I need to organize my files tonight.",
+    "exampleTranslation": "나는 오늘 밤 파일을 정리해야 한다.",
+    "quizKoreanBlank": "정리해야 한다",
+    "quizAnswers": [
+      "정리해야 한다"
+    ],
+    "level": "중급",
+    "frequency": 594246,
+    "frequencyRank": 43
+  },
+  {
+    "word": "participate",
+    "meaning": "참여하다",
+    "exampleSentence": "Many students participated in the event.",
+    "exampleTranslation": "많은 학생들이 그 행사에 참여했다.",
+    "quizKoreanBlank": "참여했다",
+    "quizAnswers": [
+      "참여했다"
+    ],
+    "level": "중급",
+    "frequency": 594109,
+    "frequencyRank": 44
+  },
+  {
+    "word": "perform",
+    "meaning": "수행하다, 공연하다",
+    "exampleSentence": "The band performed three songs.",
+    "exampleTranslation": "그 밴드는 세 곡을 공연했다.",
+    "quizKoreanBlank": "공연했다",
+    "quizAnswers": [
+      "공연했다",
+      "연주했다"
+    ],
+    "level": "중급",
+    "frequency": 593972,
+    "frequencyRank": 45
+  },
+  {
+    "word": "point out",
+    "meaning": "지적하다",
+    "exampleSentence": "She pointed out a small mistake.",
+    "exampleTranslation": "그녀는 작은 실수를 지적했다.",
+    "quizKoreanBlank": "지적했다",
+    "quizAnswers": [
+      "지적했다"
+    ],
+    "level": "중급",
+    "frequency": 593835,
+    "frequencyRank": 46
+  },
+  {
+    "word": "prefer",
+    "meaning": "선호하다",
+    "exampleSentence": "I prefer tea to coffee in the evening.",
+    "exampleTranslation": "나는 저녁에는 커피보다 차를 더 선호한다.",
+    "quizKoreanBlank": "더 선호한다",
+    "quizAnswers": [
+      "더 선호한다",
+      "좋아한다"
+    ],
+    "level": "중급",
+    "frequency": 593698,
+    "frequencyRank": 47
+  },
+  {
+    "word": "prepare for",
+    "meaning": "대비하다",
+    "exampleSentence": "We are preparing for the final exam.",
+    "exampleTranslation": "우리는 기말고사에 대비하고 있다.",
+    "quizKoreanBlank": "대비하고 있다",
+    "quizAnswers": [
+      "대비하고 있다",
+      "준비하고 있다"
+    ],
+    "level": "중급",
+    "frequency": 593561,
+    "frequencyRank": 48
+  },
+  {
+    "word": "prevent",
+    "meaning": "막다, 예방하다",
+    "exampleSentence": "This medicine helps prevent a cold.",
+    "exampleTranslation": "이 약은 감기를 예방하는 데 도움이 된다.",
+    "quizKoreanBlank": "예방하는 데",
+    "quizAnswers": [
+      "예방하는 데",
+      "막는 데"
+    ],
+    "level": "중급",
+    "frequency": 593424,
+    "frequencyRank": 49
+  },
+  {
+    "word": "promise",
+    "meaning": "약속하다",
+    "exampleSentence": "I promised to call my mother.",
+    "exampleTranslation": "나는 어머니께 전화하겠다고 약속했다.",
+    "quizKoreanBlank": "약속했다",
+    "quizAnswers": [
+      "약속했다"
+    ],
+    "level": "중급",
+    "frequency": 593287,
+    "frequencyRank": 50
+  },
+  {
+    "word": "protect",
+    "meaning": "보호하다",
+    "exampleSentence": "These gloves protect your hands.",
+    "exampleTranslation": "이 장갑은 손을 보호해 준다.",
+    "quizKoreanBlank": "보호해 준다",
+    "quizAnswers": [
+      "보호해 준다",
+      "보호한다"
+    ],
+    "level": "중급",
+    "frequency": 593150,
+    "frequencyRank": 51
+  },
+  {
+    "word": "put away",
+    "meaning": "치워 두다",
+    "exampleSentence": "Put away the dishes after dinner.",
+    "exampleTranslation": "저녁을 먹고 나서 그릇을 치워 둬.",
+    "quizKoreanBlank": "치워 둬",
+    "quizAnswers": [
+      "치워 둬",
+      "정리해 둬"
+    ],
+    "level": "중급",
+    "frequency": 593013,
+    "frequencyRank": 52
+  },
+  {
+    "word": "put on",
+    "meaning": "착용하다",
+    "exampleSentence": "Put on your coat before going outside.",
+    "exampleTranslation": "밖에 나가기 전에 코트를 입어.",
+    "quizKoreanBlank": "입어",
+    "quizAnswers": [
+      "입어",
+      "걸쳐"
+    ],
+    "level": "중급",
+    "frequency": 592876,
+    "frequencyRank": 53
+  },
+  {
+    "word": "put together",
+    "meaning": "조립하다",
+    "exampleSentence": "He put together the new shelf.",
+    "exampleTranslation": "그는 새 선반을 조립했다.",
+    "quizKoreanBlank": "조립했다",
+    "quizAnswers": [
+      "조립했다"
+    ],
+    "level": "중급",
+    "frequency": 592739,
+    "frequencyRank": 54
+  },
+  {
+    "word": "receive",
+    "meaning": "받다",
+    "exampleSentence": "I received your message this morning.",
+    "exampleTranslation": "나는 오늘 아침 네 메시지를 받았다.",
+    "quizKoreanBlank": "받았다",
+    "quizAnswers": [
+      "받았다"
+    ],
+    "level": "중급",
+    "frequency": 592602,
+    "frequencyRank": 55
+  },
+  {
+    "word": "recommend",
+    "meaning": "추천하다",
+    "exampleSentence": "Can you recommend a good restaurant?",
+    "exampleTranslation": "괜찮은 식당 하나 추천해 줄래?",
+    "quizKoreanBlank": "추천해 줄래",
+    "quizAnswers": [
+      "추천해 줄래",
+      "추천해줄래"
+    ],
+    "level": "중급",
+    "frequency": 592465,
+    "frequencyRank": 56
+  },
+  {
+    "word": "reduce",
+    "meaning": "줄이다",
+    "exampleSentence": "We need to reduce waste in the office.",
+    "exampleTranslation": "우리는 사무실의 낭비를 줄여야 한다.",
+    "quizKoreanBlank": "줄여야 한다",
+    "quizAnswers": [
+      "줄여야 한다"
+    ],
+    "level": "중급",
+    "frequency": 592328,
+    "frequencyRank": 57
+  },
+  {
+    "word": "reflect",
+    "meaning": "반영하다, 되돌아보다",
+    "exampleSentence": "The survey reflects customer needs.",
+    "exampleTranslation": "그 설문은 고객의 요구를 반영한다.",
+    "quizKoreanBlank": "반영한다",
+    "quizAnswers": [
+      "반영한다"
+    ],
+    "level": "중급",
+    "frequency": 592191,
+    "frequencyRank": 58
+  },
+  {
+    "word": "refuse",
+    "meaning": "거절하다",
+    "exampleSentence": "She refused the offer politely.",
+    "exampleTranslation": "그녀는 그 제안을 정중히 거절했다.",
+    "quizKoreanBlank": "거절했다",
+    "quizAnswers": [
+      "거절했다"
+    ],
+    "level": "중급",
+    "frequency": 592054,
+    "frequencyRank": 59
+  },
+  {
+    "word": "relax",
+    "meaning": "긴장을 풀다",
+    "exampleSentence": "Take a deep breath and relax.",
+    "exampleTranslation": "숨을 깊게 쉬고 긴장을 풀어.",
+    "quizKoreanBlank": "긴장을 풀어",
+    "quizAnswers": [
+      "긴장을 풀어",
+      "편하게 있어"
+    ],
+    "level": "중급",
+    "frequency": 591917,
+    "frequencyRank": 60
+  },
+  {
+    "word": "remind",
+    "meaning": "상기시키다",
+    "exampleSentence": "Please remind me about the meeting.",
+    "exampleTranslation": "회의 시간 되면 나에게 다시 알려 줘.",
+    "quizKoreanBlank": "다시 알려 줘",
+    "quizAnswers": [
+      "다시 알려 줘",
+      "상기시켜 줘"
+    ],
+    "level": "중급",
+    "frequency": 591780,
+    "frequencyRank": 61
+  },
+  {
+    "word": "reply",
+    "meaning": "답장하다, 응답하다",
+    "exampleSentence": "I replied to the email right away.",
+    "exampleTranslation": "나는 그 이메일에 바로 답장했다.",
+    "quizKoreanBlank": "답장했다",
+    "quizAnswers": [
+      "답장했다",
+      "응답했다"
+    ],
+    "level": "중급",
+    "frequency": 591643,
+    "frequencyRank": 62
+  },
+  {
+    "word": "report",
+    "meaning": "보고하다",
+    "exampleSentence": "The guard reported the problem immediately.",
+    "exampleTranslation": "경비원은 그 문제를 즉시 보고했다.",
+    "quizKoreanBlank": "보고했다",
+    "quizAnswers": [
+      "보고했다"
+    ],
+    "level": "중급",
+    "frequency": 591506,
+    "frequencyRank": 63
+  },
+  {
+    "word": "request",
+    "meaning": "요청하다",
+    "exampleSentence": "She requested a later appointment.",
+    "exampleTranslation": "그녀는 더 늦은 예약 시간을 요청했다.",
+    "quizKoreanBlank": "요청했다",
+    "quizAnswers": [
+      "요청했다"
+    ],
+    "level": "중급",
+    "frequency": 591369,
+    "frequencyRank": 64
+  },
+  {
+    "word": "reserve",
+    "meaning": "예약하다",
+    "exampleSentence": "We reserved a table by the window.",
+    "exampleTranslation": "우리는 창가 자리를 예약했다.",
+    "quizKoreanBlank": "예약했다",
+    "quizAnswers": [
+      "예약했다"
+    ],
+    "level": "중급",
+    "frequency": 591232,
+    "frequencyRank": 65
+  },
+  {
+    "word": "respond",
+    "meaning": "응답하다",
+    "exampleSentence": "Please respond by Friday afternoon.",
+    "exampleTranslation": "금요일 오후까지 답해 주세요.",
+    "quizKoreanBlank": "답해 주세요",
+    "quizAnswers": [
+      "답해 주세요",
+      "응답해 주세요"
+    ],
+    "level": "중급",
+    "frequency": 591095,
+    "frequencyRank": 66
+  },
+  {
+    "word": "run into",
+    "meaning": "우연히 만나다",
+    "exampleSentence": "I ran into my old teacher downtown.",
+    "exampleTranslation": "나는 시내에서 옛 선생님을 우연히 만났다.",
+    "quizKoreanBlank": "우연히 만났다",
+    "quizAnswers": [
+      "우연히 만났다",
+      "마주쳤다"
+    ],
+    "level": "중급",
+    "frequency": 590958,
+    "frequencyRank": 67
+  },
+  {
+    "word": "save up",
+    "meaning": "돈을 모으다",
+    "exampleSentence": "She is saving up for a bicycle.",
+    "exampleTranslation": "그녀는 자전거를 사려고 돈을 모으고 있다.",
+    "quizKoreanBlank": "돈을 모으고 있다",
+    "quizAnswers": [
+      "돈을 모으고 있다",
+      "저축하고 있다"
+    ],
+    "level": "중급",
+    "frequency": 590821,
+    "frequencyRank": 68
+  },
+  {
+    "word": "set up",
+    "meaning": "설치하다, 준비하다",
+    "exampleSentence": "We set up the tent near the lake.",
+    "exampleTranslation": "우리는 호수 근처에 텐트를 설치했다.",
+    "quizKoreanBlank": "설치했다",
+    "quizAnswers": [
+      "설치했다",
+      "세웠다"
+    ],
+    "level": "중급",
+    "frequency": 590684,
+    "frequencyRank": 69
+  },
+  {
+    "word": "show up",
+    "meaning": "나타나다",
+    "exampleSentence": "He showed up ten minutes late.",
+    "exampleTranslation": "그는 십 분 늦게 나타났다.",
+    "quizKoreanBlank": "나타났다",
+    "quizAnswers": [
+      "나타났다"
+    ],
+    "level": "중급",
+    "frequency": 590547,
+    "frequencyRank": 70
+  },
+  {
+    "word": "sort out",
+    "meaning": "정리하다, 해결하다",
+    "exampleSentence": "Let's sort out the problem calmly.",
+    "exampleTranslation": "그 문제를 차분히 정리해 보자.",
+    "quizKoreanBlank": "정리해 보자",
+    "quizAnswers": [
+      "정리해 보자",
+      "해결해 보자"
+    ],
+    "level": "중급",
+    "frequency": 590410,
+    "frequencyRank": 71
+  },
+  {
+    "word": "speak up",
+    "meaning": "더 크게 말하다",
+    "exampleSentence": "Please speak up a little.",
+    "exampleTranslation": "조금 더 크게 말해 주세요.",
+    "quizKoreanBlank": "더 크게 말해 주세요",
+    "quizAnswers": [
+      "더 크게 말해 주세요",
+      "크게 말해 주세요"
+    ],
+    "level": "중급",
+    "frequency": 590273,
+    "frequencyRank": 72
+  },
+  {
+    "word": "suggest",
+    "meaning": "제안하다",
+    "exampleSentence": "I suggest meeting earlier next time.",
+    "exampleTranslation": "다음에는 더 일찍 만나자고 제안한다.",
+    "quizKoreanBlank": "제안한다",
+    "quizAnswers": [
+      "제안한다"
+    ],
+    "level": "중급",
+    "frequency": 590136,
+    "frequencyRank": 73
+  },
+  {
+    "word": "support",
+    "meaning": "지원하다, 지지하다",
+    "exampleSentence": "My parents support my decision.",
+    "exampleTranslation": "부모님은 내 결정을 지지하신다.",
+    "quizKoreanBlank": "지지하신다",
+    "quizAnswers": [
+      "지지하신다",
+      "응원하신다"
+    ],
+    "level": "중급",
+    "frequency": 589999,
+    "frequencyRank": 74
+  },
+  {
+    "word": "survive",
+    "meaning": "살아남다",
+    "exampleSentence": "Some plants survive even in winter.",
+    "exampleTranslation": "어떤 식물은 겨울에도 살아남는다.",
+    "quizKoreanBlank": "살아남는다",
+    "quizAnswers": [
+      "살아남는다"
+    ],
+    "level": "중급",
+    "frequency": 589862,
+    "frequencyRank": 75
+  },
+  {
+    "word": "take care of",
+    "meaning": "돌보다",
+    "exampleSentence": "I took care of the dog for a week.",
+    "exampleTranslation": "나는 일주일 동안 그 개를 돌봤다.",
+    "quizKoreanBlank": "돌봤다",
+    "quizAnswers": [
+      "돌봤다",
+      "돌보았다"
+    ],
+    "level": "중급",
+    "frequency": 589725,
+    "frequencyRank": 76
+  },
+  {
+    "word": "take over",
+    "meaning": "인수하다, 넘겨받다",
+    "exampleSentence": "She will take over the project next month.",
+    "exampleTranslation": "그녀가 다음 달에 그 프로젝트를 맡게 된다.",
+    "quizKoreanBlank": "맡게 된다",
+    "quizAnswers": [
+      "맡게 된다",
+      "넘겨받게 된다"
+    ],
+    "level": "중급",
+    "frequency": 589588,
+    "frequencyRank": 77
+  },
+  {
+    "word": "talk over",
+    "meaning": "의논하다",
+    "exampleSentence": "We talked over the plan at lunch.",
+    "exampleTranslation": "우리는 점심시간에 그 계획을 의논했다.",
+    "quizKoreanBlank": "의논했다",
+    "quizAnswers": [
+      "의논했다",
+      "상의했다"
+    ],
+    "level": "중급",
+    "frequency": 589451,
+    "frequencyRank": 78
+  },
+  {
+    "word": "throw away",
+    "meaning": "버리다",
+    "exampleSentence": "Do not throw away this receipt.",
+    "exampleTranslation": "이 영수증을 버리지 마.",
+    "quizKoreanBlank": "버리지 마",
+    "quizAnswers": [
+      "버리지 마"
+    ],
+    "level": "중급",
+    "frequency": 589314,
+    "frequencyRank": 79
+  },
+  {
+    "word": "turn down",
+    "meaning": "거절하다, 낮추다",
+    "exampleSentence": "He turned down the music.",
+    "exampleTranslation": "그는 음악 소리를 줄였다.",
+    "quizKoreanBlank": "줄였다",
+    "quizAnswers": [
+      "줄였다",
+      "낮췄다"
+    ],
+    "level": "중급",
+    "frequency": 589177,
+    "frequencyRank": 80
+  },
+  {
+    "word": "turn into",
+    "meaning": "변하다",
+    "exampleSentence": "The sky turned into dark gray.",
+    "exampleTranslation": "하늘이 짙은 회색으로 변했다.",
+    "quizKoreanBlank": "변했다",
+    "quizAnswers": [
+      "변했다"
+    ],
+    "level": "중급",
+    "frequency": 589040,
+    "frequencyRank": 81
+  },
+  {
+    "word": "work on",
+    "meaning": "공들이다, 작업하다",
+    "exampleSentence": "I worked on the report all evening.",
+    "exampleTranslation": "나는 저녁 내내 보고서를 작업했다.",
+    "quizKoreanBlank": "작업했다",
+    "quizAnswers": [
+      "작업했다",
+      "다듬었다"
+    ],
+    "level": "중급",
+    "frequency": 588903,
+    "frequencyRank": 82
+  },
+  {
+    "word": "worry about",
+    "meaning": "걱정하다",
+    "exampleSentence": "Do not worry about the result too much.",
+    "exampleTranslation": "결과를 너무 걱정하지 마.",
+    "quizKoreanBlank": "걱정하지 마",
+    "quizAnswers": [
+      "걱정하지 마"
+    ],
+    "level": "중급",
+    "frequency": 588766,
+    "frequencyRank": 83
+  },
+  {
+    "word": "achievement",
+    "meaning": "성취",
+    "exampleSentence": "Winning the prize was a big achievement.",
+    "exampleTranslation": "상을 받은 것은 큰 성취였다.",
+    "quizKoreanBlank": "큰 성취였다",
+    "quizAnswers": [
+      "큰 성취였다"
+    ],
+    "level": "중급",
+    "frequency": 588629,
+    "frequencyRank": 84
+  },
+  {
+    "word": "advantage",
+    "meaning": "장점",
+    "exampleSentence": "This plan has one clear advantage.",
+    "exampleTranslation": "이 계획에는 분명한 장점이 하나 있다.",
+    "quizKoreanBlank": "장점이",
+    "quizAnswers": [
+      "장점이"
+    ],
+    "level": "중급",
+    "frequency": 588492,
+    "frequencyRank": 85
+  },
+  {
+    "word": "adventure",
+    "meaning": "모험",
+    "exampleSentence": "The trip felt like a real adventure.",
+    "exampleTranslation": "그 여행은 진짜 모험처럼 느껴졌다.",
+    "quizKoreanBlank": "모험처럼",
+    "quizAnswers": [
+      "모험처럼"
+    ],
+    "level": "중급",
+    "frequency": 588355,
+    "frequencyRank": 86
+  },
+  {
+    "word": "appointment",
+    "meaning": "약속, 예약",
+    "exampleSentence": "I have a doctor's appointment at two.",
+    "exampleTranslation": "나는 두 시에 병원 예약이 있다.",
+    "quizKoreanBlank": "예약이",
+    "quizAnswers": [
+      "예약이",
+      "약속이"
+    ],
+    "level": "중급",
+    "frequency": 588218,
+    "frequencyRank": 87
+  },
+  {
+    "word": "attitude",
+    "meaning": "태도",
+    "exampleSentence": "Her attitude changed after the talk.",
+    "exampleTranslation": "대화 후에 그녀의 태도가 바뀌었다.",
+    "quizKoreanBlank": "태도가",
+    "quizAnswers": [
+      "태도가"
+    ],
+    "level": "중급",
+    "frequency": 588081,
+    "frequencyRank": 88
+  },
+  {
+    "word": "audience",
+    "meaning": "관객",
+    "exampleSentence": "The audience clapped loudly.",
+    "exampleTranslation": "관객이 크게 박수쳤다.",
+    "quizKoreanBlank": "관객이",
+    "quizAnswers": [
+      "관객이"
+    ],
+    "level": "중급",
+    "frequency": 587944,
+    "frequencyRank": 89
+  },
+  {
+    "word": "benefit",
+    "meaning": "이점, 혜택",
+    "exampleSentence": "Exercise has many health benefits.",
+    "exampleTranslation": "운동에는 건강상 이점이 많다.",
+    "quizKoreanBlank": "이점이",
+    "quizAnswers": [
+      "이점이",
+      "혜택이"
+    ],
+    "level": "중급",
+    "frequency": 587807,
+    "frequencyRank": 90
+  },
+  {
+    "word": "climate",
+    "meaning": "기후",
+    "exampleSentence": "The climate here is dry in winter.",
+    "exampleTranslation": "이곳의 기후는 겨울에 건조하다.",
+    "quizKoreanBlank": "기후는",
+    "quizAnswers": [
+      "기후는",
+      "기후가"
+    ],
+    "level": "중급",
+    "frequency": 587670,
+    "frequencyRank": 91
+  },
+  {
+    "word": "culture",
+    "meaning": "문화",
+    "exampleSentence": "Food is part of local culture.",
+    "exampleTranslation": "음식은 지역 문화의 일부다.",
+    "quizKoreanBlank": "문화의",
+    "quizAnswers": [
+      "문화의"
+    ],
+    "level": "중급",
+    "frequency": 587533,
+    "frequencyRank": 92
+  },
+  {
+    "word": "deadline",
+    "meaning": "마감일",
+    "exampleSentence": "The deadline is next Thursday.",
+    "exampleTranslation": "마감일은 다음 주 목요일이다.",
+    "quizKoreanBlank": "마감일은",
+    "quizAnswers": [
+      "마감일은"
+    ],
+    "level": "중급",
+    "frequency": 587396,
+    "frequencyRank": 93
+  },
+  {
+    "word": "detail",
+    "meaning": "세부 사항",
+    "exampleSentence": "Please check every detail carefully.",
+    "exampleTranslation": "모든 세부 사항을 꼼꼼히 확인해.",
+    "quizKoreanBlank": "세부 사항을",
+    "quizAnswers": [
+      "세부 사항을"
+    ],
+    "level": "중급",
+    "frequency": 587259,
+    "frequencyRank": 94
+  },
+  {
+    "word": "device",
+    "meaning": "기기",
+    "exampleSentence": "This device measures temperature.",
+    "exampleTranslation": "이 기기는 온도를 측정한다.",
+    "quizKoreanBlank": "기기는",
+    "quizAnswers": [
+      "기기는",
+      "기기가"
+    ],
+    "level": "중급",
+    "frequency": 587122,
+    "frequencyRank": 95
+  },
+  {
+    "word": "effort",
+    "meaning": "노력",
+    "exampleSentence": "Your effort will pay off soon.",
+    "exampleTranslation": "네 노력은 곧 보상받을 것이다.",
+    "quizKoreanBlank": "노력은",
+    "quizAnswers": [
+      "노력은"
+    ],
+    "level": "중급",
+    "frequency": 586985,
+    "frequencyRank": 96
+  },
+  {
+    "word": "emotion",
+    "meaning": "감정",
+    "exampleSentence": "Music can change our emotions.",
+    "exampleTranslation": "음악은 우리의 감정을 바꿀 수 있다.",
+    "quizKoreanBlank": "감정을",
+    "quizAnswers": [
+      "감정을"
+    ],
+    "level": "중급",
+    "frequency": 586848,
+    "frequencyRank": 97
+  },
+  {
+    "word": "energy",
+    "meaning": "에너지",
+    "exampleSentence": "I do not have much energy today.",
+    "exampleTranslation": "나는 오늘 기운이 별로 없다.",
+    "quizKoreanBlank": "기운이",
+    "quizAnswers": [
+      "기운이",
+      "에너지가"
+    ],
+    "level": "중급",
+    "frequency": 586711,
+    "frequencyRank": 98
+  },
+  {
+    "word": "environment",
+    "meaning": "환경",
+    "exampleSentence": "We must protect the environment.",
+    "exampleTranslation": "우리는 환경을 보호해야 한다.",
+    "quizKoreanBlank": "환경을",
+    "quizAnswers": [
+      "환경을"
+    ],
+    "level": "중급",
+    "frequency": 586574,
+    "frequencyRank": 99
+  },
+  {
+    "word": "habit",
+    "meaning": "습관",
+    "exampleSentence": "Reading at night is my habit.",
+    "exampleTranslation": "밤에 책 읽는 것은 내 습관이다.",
+    "quizKoreanBlank": "습관이다",
+    "quizAnswers": [
+      "습관이다"
+    ],
+    "level": "중급",
+    "frequency": 586437,
+    "frequencyRank": 100
+  },
+  {
+    "word": "accomplish",
+    "meaning": "성취하다",
+    "exampleSentence": "She accomplished every goal on her list.",
+    "exampleTranslation": "그녀는 목록에 있던 목표를 모두 성취했다.",
+    "quizKoreanBlank": "성취했다",
+    "quizAnswers": [
+      "성취했다",
+      "이뤘다"
+    ],
+    "level": "고급",
+    "frequency": 300000,
+    "frequencyRank": 1
+  },
+  {
+    "word": "adapt",
+    "meaning": "적응하다",
+    "exampleSentence": "It took time to adapt to the new system.",
+    "exampleTranslation": "새 시스템에 적응하는 데 시간이 걸렸다.",
+    "quizKoreanBlank": "적응하는 데",
+    "quizAnswers": [
+      "적응하는 데",
+      "익숙해지는 데"
+    ],
+    "level": "고급",
+    "frequency": 299863,
+    "frequencyRank": 2
+  },
+  {
+    "word": "admire",
+    "meaning": "존경하다",
+    "exampleSentence": "I admire her calm leadership.",
+    "exampleTranslation": "나는 그녀의 침착한 리더십을 존경한다.",
+    "quizKoreanBlank": "존경한다",
+    "quizAnswers": [
+      "존경한다"
+    ],
+    "level": "고급",
+    "frequency": 299726,
+    "frequencyRank": 3
+  },
+  {
+    "word": "anticipate",
+    "meaning": "예상하다, 기대하다",
+    "exampleSentence": "We anticipate strong demand this year.",
+    "exampleTranslation": "우리는 올해 수요가 클 것으로 예상한다.",
+    "quizKoreanBlank": "예상한다",
+    "quizAnswers": [
+      "예상한다",
+      "기대한다"
+    ],
+    "level": "고급",
+    "frequency": 299589,
+    "frequencyRank": 4
+  },
+  {
+    "word": "appreciate",
+    "meaning": "진가를 알다, 감사하다",
+    "exampleSentence": "I appreciate your honest feedback.",
+    "exampleTranslation": "솔직한 피드백에 감사한다.",
+    "quizKoreanBlank": "감사한다",
+    "quizAnswers": [
+      "감사한다",
+      "고맙게 생각한다"
+    ],
+    "level": "고급",
+    "frequency": 299452,
+    "frequencyRank": 5
+  },
+  {
+    "word": "approve",
+    "meaning": "승인하다",
+    "exampleSentence": "The manager approved the budget.",
+    "exampleTranslation": "관리자는 예산을 승인했다.",
+    "quizKoreanBlank": "승인했다",
+    "quizAnswers": [
+      "승인했다"
+    ],
+    "level": "고급",
+    "frequency": 299315,
+    "frequencyRank": 6
+  },
+  {
+    "word": "argue",
+    "meaning": "주장하다, 논쟁하다",
+    "exampleSentence": "He argued that the change was necessary.",
+    "exampleTranslation": "그는 그 변화가 필요하다고 주장했다.",
+    "quizKoreanBlank": "주장했다",
+    "quizAnswers": [
+      "주장했다"
+    ],
+    "level": "고급",
+    "frequency": 299178,
+    "frequencyRank": 7
+  },
+  {
+    "word": "assess",
+    "meaning": "평가하다",
+    "exampleSentence": "We need to assess the risk first.",
+    "exampleTranslation": "우리는 먼저 위험을 평가해야 한다.",
+    "quizKoreanBlank": "평가해야 한다",
+    "quizAnswers": [
+      "평가해야 한다"
+    ],
+    "level": "고급",
+    "frequency": 299041,
+    "frequencyRank": 8
+  },
+  {
+    "word": "assume",
+    "meaning": "추정하다",
+    "exampleSentence": "Do not assume the answer is obvious.",
+    "exampleTranslation": "답이 뻔하다고 추정하지 마.",
+    "quizKoreanBlank": "추정하지 마",
+    "quizAnswers": [
+      "추정하지 마",
+      "단정하지 마"
+    ],
+    "level": "고급",
+    "frequency": 298904,
+    "frequencyRank": 9
+  },
+  {
+    "word": "attempt",
+    "meaning": "시도하다",
+    "exampleSentence": "She attempted to solve the puzzle alone.",
+    "exampleTranslation": "그녀는 혼자서 그 퍼즐을 풀려고 시도했다.",
+    "quizKoreanBlank": "시도했다",
+    "quizAnswers": [
+      "시도했다"
+    ],
+    "level": "고급",
+    "frequency": 298767,
+    "frequencyRank": 10
+  },
+  {
+    "word": "capture",
+    "meaning": "포착하다",
+    "exampleSentence": "The report captures the current mood well.",
+    "exampleTranslation": "그 보고서는 현재 분위기를 잘 포착한다.",
+    "quizKoreanBlank": "포착한다",
+    "quizAnswers": [
+      "포착한다"
+    ],
+    "level": "고급",
+    "frequency": 298630,
+    "frequencyRank": 11
+  },
+  {
+    "word": "challenge",
+    "meaning": "도전하다, 문제를 제기하다",
+    "exampleSentence": "The study challenges old assumptions.",
+    "exampleTranslation": "그 연구는 오래된 가정에 문제를 제기한다.",
+    "quizKoreanBlank": "문제를 제기한다",
+    "quizAnswers": [
+      "문제를 제기한다",
+      "도전한다"
+    ],
+    "level": "고급",
+    "frequency": 298493,
+    "frequencyRank": 12
+  },
+  {
+    "word": "clarify",
+    "meaning": "명확히 하다",
+    "exampleSentence": "Please clarify the final requirement.",
+    "exampleTranslation": "최종 요구 사항을 분명히 해 주세요.",
+    "quizKoreanBlank": "분명히 해 주세요",
+    "quizAnswers": [
+      "분명히 해 주세요",
+      "명확히 해 주세요"
+    ],
+    "level": "고급",
+    "frequency": 298356,
+    "frequencyRank": 13
+  },
+  {
+    "word": "collaborate",
+    "meaning": "협력하다",
+    "exampleSentence": "The two teams collaborated on the design.",
+    "exampleTranslation": "두 팀은 그 설계에 협력했다.",
+    "quizKoreanBlank": "협력했다",
+    "quizAnswers": [
+      "협력했다"
+    ],
+    "level": "고급",
+    "frequency": 298219,
+    "frequencyRank": 14
+  },
+  {
+    "word": "commit",
+    "meaning": "전념하다",
+    "exampleSentence": "He committed himself to the project.",
+    "exampleTranslation": "그는 그 프로젝트에 전념했다.",
+    "quizKoreanBlank": "전념했다",
+    "quizAnswers": [
+      "전념했다"
+    ],
+    "level": "고급",
+    "frequency": 298082,
+    "frequencyRank": 15
+  },
+  {
+    "word": "conclude",
+    "meaning": "결론짓다",
+    "exampleSentence": "We concluded that the plan was realistic.",
+    "exampleTranslation": "우리는 그 계획이 현실적이라고 결론지었다.",
+    "quizKoreanBlank": "결론지었다",
+    "quizAnswers": [
+      "결론지었다"
+    ],
+    "level": "고급",
+    "frequency": 297945,
+    "frequencyRank": 16
+  },
+  {
+    "word": "conduct",
+    "meaning": "수행하다",
+    "exampleSentence": "The lab conducted another experiment.",
+    "exampleTranslation": "그 연구실은 또 다른 실험을 수행했다.",
+    "quizKoreanBlank": "수행했다",
+    "quizAnswers": [
+      "수행했다",
+      "진행했다"
+    ],
+    "level": "고급",
+    "frequency": 297808,
+    "frequencyRank": 17
+  },
+  {
+    "word": "confront",
+    "meaning": "맞서다",
+    "exampleSentence": "She confronted the issue directly.",
+    "exampleTranslation": "그녀는 그 문제에 정면으로 맞섰다.",
+    "quizKoreanBlank": "맞섰다",
+    "quizAnswers": [
+      "맞섰다"
+    ],
+    "level": "고급",
+    "frequency": 297671,
+    "frequencyRank": 18
+  },
+  {
+    "word": "conserve",
+    "meaning": "보존하다",
+    "exampleSentence": "We should conserve water during summer.",
+    "exampleTranslation": "여름에는 물을 아껴 써야 한다.",
+    "quizKoreanBlank": "아껴 써야 한다",
+    "quizAnswers": [
+      "아껴 써야 한다",
+      "보존해야 한다"
+    ],
+    "level": "고급",
+    "frequency": 297534,
+    "frequencyRank": 19
+  },
+  {
+    "word": "construct",
+    "meaning": "건설하다, 구성하다",
+    "exampleSentence": "They constructed a strong argument.",
+    "exampleTranslation": "그들은 탄탄한 논리를 구성했다.",
+    "quizKoreanBlank": "구성했다",
+    "quizAnswers": [
+      "구성했다"
+    ],
+    "level": "고급",
+    "frequency": 297397,
+    "frequencyRank": 20
+  },
+  {
+    "word": "consult",
+    "meaning": "상의하다, 참고하다",
+    "exampleSentence": "Consult a doctor if the pain continues.",
+    "exampleTranslation": "통증이 계속되면 의사와 상의해.",
+    "quizKoreanBlank": "상의해",
+    "quizAnswers": [
+      "상의해",
+      "상담해"
+    ],
+    "level": "고급",
+    "frequency": 297260,
+    "frequencyRank": 21
+  },
+  {
+    "word": "detect",
+    "meaning": "감지하다",
+    "exampleSentence": "The sensor can detect smoke quickly.",
+    "exampleTranslation": "그 센서는 연기를 빠르게 감지할 수 있다.",
+    "quizKoreanBlank": "감지할 수 있다",
+    "quizAnswers": [
+      "감지할 수 있다"
+    ],
+    "level": "고급",
+    "frequency": 297123,
+    "frequencyRank": 22
+  },
+  {
+    "word": "distinguish",
+    "meaning": "구별하다",
+    "exampleSentence": "It is hard to distinguish the twins.",
+    "exampleTranslation": "그 쌍둥이를 구별하기는 어렵다.",
+    "quizKoreanBlank": "구별하기는",
+    "quizAnswers": [
+      "구별하기는",
+      "구분하기는"
+    ],
+    "level": "고급",
+    "frequency": 296986,
+    "frequencyRank": 23
+  },
+  {
+    "word": "eliminate",
+    "meaning": "없애다",
+    "exampleSentence": "We need to eliminate unnecessary steps.",
+    "exampleTranslation": "우리는 불필요한 단계를 없애야 한다.",
+    "quizKoreanBlank": "없애야 한다",
+    "quizAnswers": [
+      "없애야 한다",
+      "제거해야 한다"
+    ],
+    "level": "고급",
+    "frequency": 296849,
+    "frequencyRank": 24
+  },
+  {
+    "word": "emphasize",
+    "meaning": "강조하다",
+    "exampleSentence": "The teacher emphasized clear writing.",
+    "exampleTranslation": "선생님은 분명한 글쓰기를 강조했다.",
+    "quizKoreanBlank": "강조했다",
+    "quizAnswers": [
+      "강조했다"
+    ],
+    "level": "고급",
+    "frequency": 296712,
+    "frequencyRank": 25
+  },
+  {
+    "word": "ensure",
+    "meaning": "보장하다",
+    "exampleSentence": "Please ensure the door is locked.",
+    "exampleTranslation": "문이 잠겼는지 꼭 확인해.",
+    "quizKoreanBlank": "꼭 확인해",
+    "quizAnswers": [
+      "꼭 확인해",
+      "보장해"
+    ],
+    "level": "고급",
+    "frequency": 296575,
+    "frequencyRank": 26
+  },
+  {
+    "word": "evaluate",
+    "meaning": "평가하다",
+    "exampleSentence": "We will evaluate the results tomorrow.",
+    "exampleTranslation": "우리는 내일 결과를 평가할 것이다.",
+    "quizKoreanBlank": "평가할 것이다",
+    "quizAnswers": [
+      "평가할 것이다"
+    ],
+    "level": "고급",
+    "frequency": 296438,
+    "frequencyRank": 27
+  },
+  {
+    "word": "exceed",
+    "meaning": "넘어서다",
+    "exampleSentence": "Sales exceeded our expectations.",
+    "exampleTranslation": "매출은 우리의 기대를 넘어섰다.",
+    "quizKoreanBlank": "넘어섰다",
+    "quizAnswers": [
+      "넘어섰다"
+    ],
+    "level": "고급",
+    "frequency": 296301,
+    "frequencyRank": 28
+  },
+  {
+    "word": "expand",
+    "meaning": "확장하다",
+    "exampleSentence": "The company plans to expand overseas.",
+    "exampleTranslation": "그 회사는 해외로 사업을 확장할 계획이다.",
+    "quizKoreanBlank": "확장할",
+    "quizAnswers": [
+      "확장할",
+      "넓힐"
+    ],
+    "level": "고급",
+    "frequency": 296164,
+    "frequencyRank": 29
+  },
+  {
+    "word": "explore",
+    "meaning": "탐구하다, 탐험하다",
+    "exampleSentence": "The article explores a difficult question.",
+    "exampleTranslation": "그 글은 어려운 질문을 탐구한다.",
+    "quizKoreanBlank": "탐구한다",
+    "quizAnswers": [
+      "탐구한다"
+    ],
+    "level": "고급",
+    "frequency": 296027,
+    "frequencyRank": 30
+  },
+  {
+    "word": "expose",
+    "meaning": "드러내다",
+    "exampleSentence": "The interview exposed several problems.",
+    "exampleTranslation": "그 인터뷰는 여러 문제를 드러냈다.",
+    "quizKoreanBlank": "드러냈다",
+    "quizAnswers": [
+      "드러냈다"
+    ],
+    "level": "고급",
+    "frequency": 295890,
+    "frequencyRank": 31
+  },
+  {
+    "word": "foster",
+    "meaning": "촉진하다, 키우다",
+    "exampleSentence": "Good feedback fosters improvement.",
+    "exampleTranslation": "좋은 피드백은 발전을 촉진한다.",
+    "quizKoreanBlank": "촉진한다",
+    "quizAnswers": [
+      "촉진한다"
+    ],
+    "level": "고급",
+    "frequency": 295753,
+    "frequencyRank": 32
+  },
+  {
+    "word": "illustrate",
+    "meaning": "설명하다, 보여 주다",
+    "exampleSentence": "The graph illustrates the trend clearly.",
+    "exampleTranslation": "그 그래프는 추세를 분명히 보여 준다.",
+    "quizKoreanBlank": "보여 준다",
+    "quizAnswers": [
+      "보여 준다",
+      "설명한다"
+    ],
+    "level": "고급",
+    "frequency": 295616,
+    "frequencyRank": 33
+  },
+  {
+    "word": "implement",
+    "meaning": "실행하다",
+    "exampleSentence": "They implemented the new policy quickly.",
+    "exampleTranslation": "그들은 새 정책을 빠르게 실행했다.",
+    "quizKoreanBlank": "실행했다",
+    "quizAnswers": [
+      "실행했다"
+    ],
+    "level": "고급",
+    "frequency": 295479,
+    "frequencyRank": 34
+  },
+  {
+    "word": "imply",
+    "meaning": "암시하다",
+    "exampleSentence": "His answer implied a different plan.",
+    "exampleTranslation": "그의 대답은 다른 계획을 암시했다.",
+    "quizKoreanBlank": "암시했다",
+    "quizAnswers": [
+      "암시했다"
+    ],
+    "level": "고급",
+    "frequency": 295342,
+    "frequencyRank": 35
+  },
+  {
+    "word": "incorporate",
+    "meaning": "포함하다, 통합하다",
+    "exampleSentence": "We incorporated your ideas into the draft.",
+    "exampleTranslation": "우리는 초안에 네 아이디어를 반영했다.",
+    "quizKoreanBlank": "반영했다",
+    "quizAnswers": [
+      "반영했다",
+      "포함했다"
+    ],
+    "level": "고급",
+    "frequency": 295205,
+    "frequencyRank": 36
+  },
+  {
+    "word": "indicate",
+    "meaning": "나타내다",
+    "exampleSentence": "The data indicates a gradual recovery.",
+    "exampleTranslation": "그 자료는 점진적인 회복을 나타낸다.",
+    "quizKoreanBlank": "나타낸다",
+    "quizAnswers": [
+      "나타낸다"
+    ],
+    "level": "고급",
+    "frequency": 295068,
+    "frequencyRank": 37
+  },
+  {
+    "word": "influence",
+    "meaning": "영향을 주다",
+    "exampleSentence": "Weather can influence our mood.",
+    "exampleTranslation": "날씨는 우리의 기분에 영향을 줄 수 있다.",
+    "quizKoreanBlank": "영향을 줄 수 있다",
+    "quizAnswers": [
+      "영향을 줄 수 있다"
+    ],
+    "level": "고급",
+    "frequency": 294931,
+    "frequencyRank": 38
+  },
+  {
+    "word": "interpret",
+    "meaning": "해석하다",
+    "exampleSentence": "People interpret the poem differently.",
+    "exampleTranslation": "사람들은 그 시를 다르게 해석한다.",
+    "quizKoreanBlank": "해석한다",
+    "quizAnswers": [
+      "해석한다"
+    ],
+    "level": "고급",
+    "frequency": 294794,
+    "frequencyRank": 39
+  },
+  {
+    "word": "maintain",
+    "meaning": "유지하다",
+    "exampleSentence": "It is hard to maintain a routine.",
+    "exampleTranslation": "규칙적인 생활을 유지하기는 어렵다.",
+    "quizKoreanBlank": "유지하기는",
+    "quizAnswers": [
+      "유지하기는",
+      "지키기는"
+    ],
+    "level": "고급",
+    "frequency": 294657,
+    "frequencyRank": 40
+  },
+  {
+    "word": "negotiate",
+    "meaning": "협상하다",
+    "exampleSentence": "The two sides negotiated for hours.",
+    "exampleTranslation": "양측은 몇 시간 동안 협상했다.",
+    "quizKoreanBlank": "협상했다",
+    "quizAnswers": [
+      "협상했다"
+    ],
+    "level": "고급",
+    "frequency": 294520,
+    "frequencyRank": 41
+  },
+  {
+    "word": "observe",
+    "meaning": "관찰하다",
+    "exampleSentence": "Scientists observed the changes closely.",
+    "exampleTranslation": "과학자들은 변화를 면밀히 관찰했다.",
+    "quizKoreanBlank": "관찰했다",
+    "quizAnswers": [
+      "관찰했다"
+    ],
+    "level": "고급",
+    "frequency": 294383,
+    "frequencyRank": 42
+  },
+  {
+    "word": "overcome",
+    "meaning": "극복하다",
+    "exampleSentence": "She overcame her fear of speaking.",
+    "exampleTranslation": "그녀는 말하기에 대한 두려움을 극복했다.",
+    "quizKoreanBlank": "극복했다",
+    "quizAnswers": [
+      "극복했다"
+    ],
+    "level": "고급",
+    "frequency": 294246,
+    "frequencyRank": 43
+  },
+  {
+    "word": "perceive",
+    "meaning": "인식하다",
+    "exampleSentence": "Children perceive time differently.",
+    "exampleTranslation": "아이들은 시간을 다르게 인식한다.",
+    "quizKoreanBlank": "인식한다",
+    "quizAnswers": [
+      "인식한다"
+    ],
+    "level": "고급",
+    "frequency": 294109,
+    "frequencyRank": 44
+  },
+  {
+    "word": "pursue",
+    "meaning": "추구하다",
+    "exampleSentence": "He decided to pursue graduate study.",
+    "exampleTranslation": "그는 대학원 진학을 추구하기로 했다.",
+    "quizKoreanBlank": "추구하기로",
+    "quizAnswers": [
+      "추구하기로",
+      "도전하기로"
+    ],
+    "level": "고급",
+    "frequency": 293972,
+    "frequencyRank": 45
+  },
+  {
+    "word": "react",
+    "meaning": "반응하다",
+    "exampleSentence": "How did the audience react?",
+    "exampleTranslation": "관객은 어떻게 반응했니?",
+    "quizKoreanBlank": "반응했니",
+    "quizAnswers": [
+      "반응했니"
+    ],
+    "level": "고급",
+    "frequency": 293835,
+    "frequencyRank": 46
+  },
+  {
+    "word": "recover",
+    "meaning": "회복하다",
+    "exampleSentence": "The city recovered after the storm.",
+    "exampleTranslation": "그 도시는 폭풍 후에 회복되었다.",
+    "quizKoreanBlank": "회복되었다",
+    "quizAnswers": [
+      "회복되었다"
+    ],
+    "level": "고급",
+    "frequency": 293698,
+    "frequencyRank": 47
+  },
+  {
+    "word": "reflect on",
+    "meaning": "되돌아보다",
+    "exampleSentence": "I need time to reflect on the decision.",
+    "exampleTranslation": "나는 그 결정을 되돌아볼 시간이 필요하다.",
+    "quizKoreanBlank": "되돌아볼",
+    "quizAnswers": [
+      "되돌아볼",
+      "생각해 볼"
+    ],
+    "level": "고급",
+    "frequency": 293561,
+    "frequencyRank": 48
+  },
+  {
+    "word": "release",
+    "meaning": "발표하다, 공개하다",
+    "exampleSentence": "The studio released a new trailer.",
+    "exampleTranslation": "그 스튜디오는 새 예고편을 공개했다.",
+    "quizKoreanBlank": "공개했다",
+    "quizAnswers": [
+      "공개했다",
+      "발표했다"
+    ],
+    "level": "고급",
+    "frequency": 293424,
+    "frequencyRank": 49
+  },
+  {
+    "word": "represent",
+    "meaning": "대표하다, 나타내다",
+    "exampleSentence": "This symbol represents hope.",
+    "exampleTranslation": "이 상징은 희망을 나타낸다.",
+    "quizKoreanBlank": "나타낸다",
+    "quizAnswers": [
+      "나타낸다",
+      "대표한다"
+    ],
+    "level": "고급",
+    "frequency": 293287,
+    "frequencyRank": 50
+  },
+  {
+    "word": "resolve",
+    "meaning": "해결하다, 결심하다",
+    "exampleSentence": "They resolved the conflict peacefully.",
+    "exampleTranslation": "그들은 갈등을 평화롭게 해결했다.",
+    "quizKoreanBlank": "해결했다",
+    "quizAnswers": [
+      "해결했다"
+    ],
+    "level": "고급",
+    "frequency": 293150,
+    "frequencyRank": 51
+  },
+  {
+    "word": "respond to",
+    "meaning": "응답하다",
+    "exampleSentence": "The team responded to the crisis fast.",
+    "exampleTranslation": "그 팀은 위기에 빠르게 대응했다.",
+    "quizKoreanBlank": "대응했다",
+    "quizAnswers": [
+      "대응했다",
+      "응답했다"
+    ],
+    "level": "고급",
+    "frequency": 293013,
+    "frequencyRank": 52
+  },
+  {
+    "word": "restrict",
+    "meaning": "제한하다",
+    "exampleSentence": "The rule restricts late entry.",
+    "exampleTranslation": "그 규정은 늦은 입장을 제한한다.",
+    "quizKoreanBlank": "제한한다",
+    "quizAnswers": [
+      "제한한다"
+    ],
+    "level": "고급",
+    "frequency": 292876,
+    "frequencyRank": 53
+  },
+  {
+    "word": "reveal",
+    "meaning": "드러내다",
+    "exampleSentence": "The report revealed hidden costs.",
+    "exampleTranslation": "그 보고서는 숨겨진 비용을 드러냈다.",
+    "quizKoreanBlank": "드러냈다",
+    "quizAnswers": [
+      "드러냈다"
+    ],
+    "level": "고급",
+    "frequency": 292739,
+    "frequencyRank": 54
+  },
+  {
+    "word": "revise",
+    "meaning": "수정하다",
+    "exampleSentence": "Please revise the second paragraph.",
+    "exampleTranslation": "둘째 문단을 수정해 주세요.",
+    "quizKoreanBlank": "수정해 주세요",
+    "quizAnswers": [
+      "수정해 주세요",
+      "고쳐 주세요"
+    ],
+    "level": "고급",
+    "frequency": 292602,
+    "frequencyRank": 55
+  },
+  {
+    "word": "satisfy",
+    "meaning": "충족시키다",
+    "exampleSentence": "The result did not satisfy the client.",
+    "exampleTranslation": "그 결과는 고객을 만족시키지 못했다.",
+    "quizKoreanBlank": "만족시키지 못했다",
+    "quizAnswers": [
+      "만족시키지 못했다"
+    ],
+    "level": "고급",
+    "frequency": 292465,
+    "frequencyRank": 56
+  },
+  {
+    "word": "shift",
+    "meaning": "바꾸다, 이동하다",
+    "exampleSentence": "Public opinion began to shift.",
+    "exampleTranslation": "여론이 바뀌기 시작했다.",
+    "quizKoreanBlank": "바뀌기 시작했다",
+    "quizAnswers": [
+      "바뀌기 시작했다"
+    ],
+    "level": "고급",
+    "frequency": 292328,
+    "frequencyRank": 57
+  },
+  {
+    "word": "strengthen",
+    "meaning": "강화하다",
+    "exampleSentence": "We need to strengthen security.",
+    "exampleTranslation": "우리는 보안을 강화해야 한다.",
+    "quizKoreanBlank": "강화해야 한다",
+    "quizAnswers": [
+      "강화해야 한다"
+    ],
+    "level": "고급",
+    "frequency": 292191,
+    "frequencyRank": 58
+  },
+  {
+    "word": "undergo",
+    "meaning": "겪다",
+    "exampleSentence": "The building underwent major repairs.",
+    "exampleTranslation": "그 건물은 대규모 수리를 거쳤다.",
+    "quizKoreanBlank": "거쳤다",
+    "quizAnswers": [
+      "거쳤다"
+    ],
+    "level": "고급",
+    "frequency": 292054,
+    "frequencyRank": 59
+  },
+  {
+    "word": "urge",
+    "meaning": "촉구하다",
+    "exampleSentence": "Doctors urge people to rest more.",
+    "exampleTranslation": "의사들은 사람들이 더 쉬어야 한다고 촉구한다.",
+    "quizKoreanBlank": "촉구한다",
+    "quizAnswers": [
+      "촉구한다"
+    ],
+    "level": "고급",
+    "frequency": 291917,
+    "frequencyRank": 60
+  },
+  {
+    "word": "withdraw",
+    "meaning": "철회하다, 물러나다",
+    "exampleSentence": "He withdrew his application yesterday.",
+    "exampleTranslation": "그는 어제 지원서를 철회했다.",
+    "quizKoreanBlank": "철회했다",
+    "quizAnswers": [
+      "철회했다"
+    ],
+    "level": "고급",
+    "frequency": 291780,
+    "frequencyRank": 61
+  },
+  {
+    "word": "bring about",
+    "meaning": "야기하다",
+    "exampleSentence": "The policy brought about real change.",
+    "exampleTranslation": "그 정책은 실제 변화를 가져왔다.",
+    "quizKoreanBlank": "가져왔다",
+    "quizAnswers": [
+      "가져왔다",
+      "야기했다"
+    ],
+    "level": "고급",
+    "frequency": 291643,
+    "frequencyRank": 62
+  },
+  {
+    "word": "break down",
+    "meaning": "분해하다, 고장 나다",
+    "exampleSentence": "The old machine broke down again.",
+    "exampleTranslation": "그 오래된 기계가 또 고장 났다.",
+    "quizKoreanBlank": "고장 났다",
+    "quizAnswers": [
+      "고장 났다"
+    ],
+    "level": "고급",
+    "frequency": 291506,
+    "frequencyRank": 63
+  },
+  {
+    "word": "carry on",
+    "meaning": "계속하다",
+    "exampleSentence": "Please carry on with your work.",
+    "exampleTranslation": "하던 일을 계속하세요.",
+    "quizKoreanBlank": "계속하세요",
+    "quizAnswers": [
+      "계속하세요",
+      "이어 가세요"
+    ],
+    "level": "고급",
+    "frequency": 291369,
+    "frequencyRank": 64
+  },
+  {
+    "word": "come across",
+    "meaning": "우연히 발견하다",
+    "exampleSentence": "I came across an old photo album.",
+    "exampleTranslation": "나는 오래된 사진첩을 우연히 발견했다.",
+    "quizKoreanBlank": "우연히 발견했다",
+    "quizAnswers": [
+      "우연히 발견했다",
+      "찾아냈다"
+    ],
+    "level": "고급",
+    "frequency": 291232,
+    "frequencyRank": 65
+  },
+  {
+    "word": "cut back",
+    "meaning": "줄이다",
+    "exampleSentence": "We must cut back on expenses.",
+    "exampleTranslation": "우리는 지출을 줄여야 한다.",
+    "quizKoreanBlank": "줄여야 한다",
+    "quizAnswers": [
+      "줄여야 한다"
+    ],
+    "level": "고급",
+    "frequency": 291095,
+    "frequencyRank": 66
+  },
+  {
+    "word": "follow through",
+    "meaning": "끝까지 해내다",
+    "exampleSentence": "She always follows through on promises.",
+    "exampleTranslation": "그녀는 약속한 일을 늘 끝까지 해낸다.",
+    "quizKoreanBlank": "끝까지 해낸다",
+    "quizAnswers": [
+      "끝까지 해낸다"
+    ],
+    "level": "고급",
+    "frequency": 290958,
+    "frequencyRank": 67
+  },
+  {
+    "word": "hold back",
+    "meaning": "참다, 막다",
+    "exampleSentence": "He held back his anger in the meeting.",
+    "exampleTranslation": "그는 회의에서 화를 참았다.",
+    "quizKoreanBlank": "참았다",
+    "quizAnswers": [
+      "참았다"
+    ],
+    "level": "고급",
+    "frequency": 290821,
+    "frequencyRank": 68
+  },
+  {
+    "word": "lay out",
+    "meaning": "정리해 제시하다",
+    "exampleSentence": "The guide lays out each step clearly.",
+    "exampleTranslation": "그 안내서는 각 단계를 분명히 제시한다.",
+    "quizKoreanBlank": "제시한다",
+    "quizAnswers": [
+      "제시한다"
+    ],
+    "level": "고급",
+    "frequency": 290684,
+    "frequencyRank": 69
+  },
+  {
+    "word": "live up to",
+    "meaning": "부응하다",
+    "exampleSentence": "The film lived up to expectations.",
+    "exampleTranslation": "그 영화는 기대에 부응했다.",
+    "quizKoreanBlank": "부응했다",
+    "quizAnswers": [
+      "부응했다"
+    ],
+    "level": "고급",
+    "frequency": 290547,
+    "frequencyRank": 70
+  },
+  {
+    "word": "look into",
+    "meaning": "조사하다",
+    "exampleSentence": "We will look into the complaint.",
+    "exampleTranslation": "우리는 그 불만 사항을 조사할 것이다.",
+    "quizKoreanBlank": "조사할 것이다",
+    "quizAnswers": [
+      "조사할 것이다"
+    ],
+    "level": "고급",
+    "frequency": 290410,
+    "frequencyRank": 71
+  },
+  {
+    "word": "make out",
+    "meaning": "알아보다",
+    "exampleSentence": "I could barely make out the sign.",
+    "exampleTranslation": "나는 그 표지판을 겨우 알아볼 수 있었다.",
+    "quizKoreanBlank": "알아볼 수 있었다",
+    "quizAnswers": [
+      "알아볼 수 있었다"
+    ],
+    "level": "고급",
+    "frequency": 290273,
+    "frequencyRank": 72
+  },
+  {
+    "word": "map out",
+    "meaning": "구체화하다",
+    "exampleSentence": "Let's map out the next six months.",
+    "exampleTranslation": "앞으로 여섯 달 계획을 구체화하자.",
+    "quizKoreanBlank": "구체화하자",
+    "quizAnswers": [
+      "구체화하자",
+      "정리하자"
+    ],
+    "level": "고급",
+    "frequency": 290136,
+    "frequencyRank": 73
+  },
+  {
+    "word": "narrow down",
+    "meaning": "범위를 좁히다",
+    "exampleSentence": "We narrowed down the choices to three.",
+    "exampleTranslation": "우리는 선택지를 세 개로 좁혔다.",
+    "quizKoreanBlank": "좁혔다",
+    "quizAnswers": [
+      "좁혔다"
+    ],
+    "level": "고급",
+    "frequency": 289999,
+    "frequencyRank": 74
+  },
+  {
+    "word": "phase out",
+    "meaning": "점차 없애다",
+    "exampleSentence": "The company phased out old models.",
+    "exampleTranslation": "그 회사는 구형 모델을 단계적으로 없앴다.",
+    "quizKoreanBlank": "단계적으로 없앴다",
+    "quizAnswers": [
+      "단계적으로 없앴다",
+      "없앴다"
+    ],
+    "level": "고급",
+    "frequency": 289862,
+    "frequencyRank": 75
+  },
+  {
+    "word": "put forward",
+    "meaning": "제안하다",
+    "exampleSentence": "She put forward a practical idea.",
+    "exampleTranslation": "그녀는 실용적인 아이디어를 제안했다.",
+    "quizKoreanBlank": "제안했다",
+    "quizAnswers": [
+      "제안했다"
+    ],
+    "level": "고급",
+    "frequency": 289725,
+    "frequencyRank": 76
+  },
+  {
+    "word": "rule out",
+    "meaning": "배제하다",
+    "exampleSentence": "We cannot rule out that possibility.",
+    "exampleTranslation": "우리는 그 가능성을 배제할 수 없다.",
+    "quizKoreanBlank": "배제할 수 없다",
+    "quizAnswers": [
+      "배제할 수 없다"
+    ],
+    "level": "고급",
+    "frequency": 289588,
+    "frequencyRank": 77
+  },
+  {
+    "word": "step down",
+    "meaning": "사임하다",
+    "exampleSentence": "The director stepped down last month.",
+    "exampleTranslation": "그 책임자는 지난달 사임했다.",
+    "quizKoreanBlank": "사임했다",
+    "quizAnswers": [
+      "사임했다"
+    ],
+    "level": "고급",
+    "frequency": 289451,
+    "frequencyRank": 78
+  },
+  {
+    "word": "sum up",
+    "meaning": "요약하다",
+    "exampleSentence": "Could you sum up the main point?",
+    "exampleTranslation": "핵심 요점을 요약해 줄래?",
+    "quizKoreanBlank": "요약해 줄래",
+    "quizAnswers": [
+      "요약해 줄래",
+      "정리해 줄래"
+    ],
+    "level": "고급",
+    "frequency": 289314,
+    "frequencyRank": 79
+  },
+  {
+    "word": "take in",
+    "meaning": "이해하다, 받아들이다",
+    "exampleSentence": "It took me time to take in the news.",
+    "exampleTranslation": "그 소식을 받아들이는 데 시간이 걸렸다.",
+    "quizKoreanBlank": "받아들이는 데",
+    "quizAnswers": [
+      "받아들이는 데",
+      "이해하는 데"
+    ],
+    "level": "고급",
+    "frequency": 289177,
+    "frequencyRank": 80
+  },
+  {
+    "word": "turn out",
+    "meaning": "드러나다, 판명되다",
+    "exampleSentence": "The event turned out better than expected.",
+    "exampleTranslation": "그 행사는 예상보다 더 잘 되었다.",
+    "quizKoreanBlank": "더 잘 되었다",
+    "quizAnswers": [
+      "더 잘 되었다",
+      "잘 풀렸다"
+    ],
+    "level": "고급",
+    "frequency": 289040,
+    "frequencyRank": 81
+  },
+  {
+    "word": "wrap up",
+    "meaning": "마무리하다",
+    "exampleSentence": "Let's wrap up the discussion now.",
+    "exampleTranslation": "이제 논의를 마무리하자.",
+    "quizKoreanBlank": "마무리하자",
+    "quizAnswers": [
+      "마무리하자"
+    ],
+    "level": "고급",
+    "frequency": 288903,
+    "frequencyRank": 82
+  },
+  {
+    "word": "zero in on",
+    "meaning": "집중 공략하다",
+    "exampleSentence": "We need to zero in on the cause.",
+    "exampleTranslation": "우리는 원인에 집중해야 한다.",
+    "quizKoreanBlank": "집중해야 한다",
+    "quizAnswers": [
+      "집중해야 한다"
+    ],
+    "level": "고급",
+    "frequency": 288766,
+    "frequencyRank": 83
+  },
+  {
+    "word": "analysis",
+    "meaning": "분석",
+    "exampleSentence": "The analysis showed a clear pattern.",
+    "exampleTranslation": "그 분석은 뚜렷한 패턴을 보여 주었다.",
+    "quizKoreanBlank": "분석은",
+    "quizAnswers": [
+      "분석은"
+    ],
+    "level": "고급",
+    "frequency": 288629,
+    "frequencyRank": 84
+  },
+  {
+    "word": "approach",
+    "meaning": "접근 방식",
+    "exampleSentence": "Their approach was simple but effective.",
+    "exampleTranslation": "그들의 접근 방식은 단순하지만 효과적이었다.",
+    "quizKoreanBlank": "접근 방식은",
+    "quizAnswers": [
+      "접근 방식은"
+    ],
+    "level": "고급",
+    "frequency": 288492,
+    "frequencyRank": 85
+  },
+  {
+    "word": "consequence",
+    "meaning": "결과, 여파",
+    "exampleSentence": "Every choice has a consequence.",
+    "exampleTranslation": "모든 선택에는 결과가 따른다.",
+    "quizKoreanBlank": "결과가",
+    "quizAnswers": [
+      "결과가",
+      "여파가"
+    ],
+    "level": "고급",
+    "frequency": 288355,
+    "frequencyRank": 86
+  },
+  {
+    "word": "constraint",
+    "meaning": "제약",
+    "exampleSentence": "Budget is our biggest constraint.",
+    "exampleTranslation": "예산이 우리의 가장 큰 제약이다.",
+    "quizKoreanBlank": "제약이다",
+    "quizAnswers": [
+      "제약이다"
+    ],
+    "level": "고급",
+    "frequency": 288218,
+    "frequencyRank": 87
+  },
+  {
+    "word": "context",
+    "meaning": "맥락",
+    "exampleSentence": "Meaning changes with context.",
+    "exampleTranslation": "의미는 맥락에 따라 달라진다.",
+    "quizKoreanBlank": "맥락에",
+    "quizAnswers": [
+      "맥락에"
+    ],
+    "level": "고급",
+    "frequency": 288081,
+    "frequencyRank": 88
+  },
+  {
+    "word": "controversy",
+    "meaning": "논란",
+    "exampleSentence": "The decision caused public controversy.",
+    "exampleTranslation": "그 결정은 대중적 논란을 일으켰다.",
+    "quizKoreanBlank": "논란을",
+    "quizAnswers": [
+      "논란을"
+    ],
+    "level": "고급",
+    "frequency": 287944,
+    "frequencyRank": 89
+  },
+  {
+    "word": "criterion",
+    "meaning": "기준",
+    "exampleSentence": "Accuracy is the main criterion here.",
+    "exampleTranslation": "여기서는 정확성이 핵심 기준이다.",
+    "quizKoreanBlank": "기준이다",
+    "quizAnswers": [
+      "기준이다"
+    ],
+    "level": "고급",
+    "frequency": 287807,
+    "frequencyRank": 90
+  },
+  {
+    "word": "dimension",
+    "meaning": "차원, 측면",
+    "exampleSentence": "We need to examine every dimension.",
+    "exampleTranslation": "우리는 모든 측면을 살펴봐야 한다.",
+    "quizKoreanBlank": "측면을",
+    "quizAnswers": [
+      "측면을"
+    ],
+    "level": "고급",
+    "frequency": 287670,
+    "frequencyRank": 91
+  },
+  {
+    "word": "framework",
+    "meaning": "틀, 체계",
+    "exampleSentence": "The report suggests a new framework.",
+    "exampleTranslation": "그 보고서는 새로운 틀을 제안한다.",
+    "quizKoreanBlank": "틀을",
+    "quizAnswers": [
+      "틀을",
+      "체계를"
+    ],
+    "level": "고급",
+    "frequency": 287533,
+    "frequencyRank": 92
+  },
+  {
+    "word": "hypothesis",
+    "meaning": "가설",
+    "exampleSentence": "The data did not support the hypothesis.",
+    "exampleTranslation": "그 자료는 그 가설을 뒷받침하지 않았다.",
+    "quizKoreanBlank": "가설을",
+    "quizAnswers": [
+      "가설을"
+    ],
+    "level": "고급",
+    "frequency": 287396,
+    "frequencyRank": 93
+  },
+  {
+    "word": "implication",
+    "meaning": "함의",
+    "exampleSentence": "The result has serious implications.",
+    "exampleTranslation": "그 결과는 심각한 함의를 가진다.",
+    "quizKoreanBlank": "함의를",
+    "quizAnswers": [
+      "함의를"
+    ],
+    "level": "고급",
+    "frequency": 287259,
+    "frequencyRank": 94
+  },
+  {
+    "word": "insight",
+    "meaning": "통찰",
+    "exampleSentence": "Her talk offered useful insight.",
+    "exampleTranslation": "그녀의 발표는 유용한 통찰을 제공했다.",
+    "quizKoreanBlank": "통찰을",
+    "quizAnswers": [
+      "통찰을"
+    ],
+    "level": "고급",
+    "frequency": 287122,
+    "frequencyRank": 95
+  },
+  {
+    "word": "integrity",
+    "meaning": "진정성, 성실성",
+    "exampleSentence": "People trusted his integrity.",
+    "exampleTranslation": "사람들은 그의 성실성을 믿었다.",
+    "quizKoreanBlank": "성실성을",
+    "quizAnswers": [
+      "성실성을",
+      "진정성을"
+    ],
+    "level": "고급",
+    "frequency": 286985,
+    "frequencyRank": 96
+  },
+  {
+    "word": "perspective",
+    "meaning": "관점",
+    "exampleSentence": "Try to see it from another perspective.",
+    "exampleTranslation": "다른 관점에서 그것을 보려고 해 봐.",
+    "quizKoreanBlank": "관점에서",
+    "quizAnswers": [
+      "관점에서"
+    ],
+    "level": "고급",
+    "frequency": 286848,
+    "frequencyRank": 97
+  },
+  {
+    "word": "priority",
+    "meaning": "우선순위",
+    "exampleSentence": "Safety must remain our top priority.",
+    "exampleTranslation": "안전은 여전히 우리의 최우선 순위여야 한다.",
+    "quizKoreanBlank": "최우선 순위여야",
+    "quizAnswers": [
+      "최우선 순위여야",
+      "우선순위여야"
+    ],
+    "level": "고급",
+    "frequency": 286711,
+    "frequencyRank": 98
+  },
+  {
+    "word": "scenario",
+    "meaning": "시나리오, 상황",
+    "exampleSentence": "We prepared for the worst scenario.",
+    "exampleTranslation": "우리는 최악의 상황에 대비했다.",
+    "quizKoreanBlank": "상황에",
+    "quizAnswers": [
+      "상황에",
+      "시나리오에"
+    ],
+    "level": "고급",
+    "frequency": 286574,
+    "frequencyRank": 99
+  },
+  {
+    "word": "strategy",
+    "meaning": "전략",
+    "exampleSentence": "Their strategy worked surprisingly well.",
+    "exampleTranslation": "그들의 전략은 놀랄 만큼 잘 통했다.",
+    "quizKoreanBlank": "전략은",
+    "quizAnswers": [
+      "전략은"
+    ],
+    "level": "고급",
+    "frequency": 286437,
+    "frequencyRank": 100
+  }
 ]

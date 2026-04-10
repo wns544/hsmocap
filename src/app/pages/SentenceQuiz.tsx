@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
+import { getIdToken } from "firebase/auth";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { ChevronLeft, Settings, Volume2, Play, BookOpen, CheckCircle, AlertCircle, Trophy, RefreshCw, Home, Delete, ImageIcon, X as XIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
-import { db } from "../lib/firebase";
+import { toast } from "sonner";
+import { useAuth } from "../contexts/AuthContext";
+import { auth, db } from "../lib/firebase";
 
 interface QuizQuestion {
   id: number;
@@ -13,14 +16,19 @@ interface QuizQuestion {
   targetWord: string;
   wordMeaning: string;
   pronunciation?: string;
-  koreanTargetWord: string; // 한국어 문장에서 가릴 단어
-  acceptableAnswers: string[]; // 정답으로 인정되는 모든 답변들
+  koreanTargetWord: string;
+  acceptableAnswers: string[];
 }
 
 interface FeedbackData {
   isCorrect: boolean;
   message: string;
   hint?: string;
+}
+
+interface GradeWordAnswerResponse extends FeedbackData {
+  verdict: "correct" | "correct_but_unnatural" | "close" | "incorrect" | "empty";
+  matchedAnswer?: string;
 }
 
 interface CommonsImageResult {
@@ -148,11 +156,13 @@ export default function SentenceQuiz() {
   const [hintImageSourceUrl, setHintImageSourceUrl] = useState<string>("");
   const [hintImageTitle, setHintImageTitle] = useState<string>("");
   const [isHintLoading, setIsHintLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
   const totalQuestions = quizQuestions.length;
-  const progress = totalQuestions > 0 ? ((completedCount) / totalQuestions) * 100 : 0;
+  const progress = totalQuestions > 0 ? (completedCount / totalQuestions) * 100 : 0;
 
   useEffect(() => {
     const loadQuizQuestions = async () => {
@@ -163,16 +173,25 @@ export default function SentenceQuiz() {
         const firestoreQuestions = snapshot.docs
           .map((item, index) => {
             const data = item.data();
+            const quizEnabled = data.quizEnabled !== false;
             const english = typeof data.exampleSentence === "string" ? data.exampleSentence.trim() : "";
             const korean = typeof data.exampleTranslation === "string" ? data.exampleTranslation.trim() : "";
-            const koreanTargetWord = typeof data.quizKoreanBlank === "string" ? data.quizKoreanBlank.trim() : "";
+            const koreanTargetWord =
+              typeof data.quizKoreanBlank === "string" ? data.quizKoreanBlank.trim() : "";
             const answers = Array.isArray(data.quizAnswers)
               ? data.quizAnswers.filter((answer): answer is string => typeof answer === "string")
               : [];
             const targetWord = typeof data.word === "string" ? data.word.trim() : "";
             const wordMeaning = typeof data.meaning === "string" ? data.meaning.trim() : "";
 
-            if (!english || !korean || !koreanTargetWord || answers.length === 0 || !targetWord) {
+            if (
+              !quizEnabled ||
+              !english ||
+              !korean ||
+              !koreanTargetWord ||
+              answers.length === 0 ||
+              !targetWord
+            ) {
               return null;
             }
 
@@ -201,13 +220,11 @@ export default function SentenceQuiz() {
     void loadQuizQuestions();
   }, []);
 
-  // 입력 필드에 자동으로 포커스
   useEffect(() => {
     if (!currentQuestion) {
       return undefined;
     }
 
-    // 약간의 지연을 주어 모바일 키보드가 확실히 나타나도록 함
     const timer = setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
@@ -215,9 +232,8 @@ export default function SentenceQuiz() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [currentIndex]); // currentIndex가 바뀔 때마다 포커스
+  }, [currentIndex, currentQuestion]);
 
-  // 한국어 문장에서 타겟 단어를 ???로 대체
   const renderKoreanSentence = () => {
     if (!currentQuestion) return null;
 
@@ -230,11 +246,11 @@ export default function SentenceQuiz() {
         <input
           type="text"
           value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSubmit();
+          onChange={(event) => setUserInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void handleSubmit();
             }
           }}
           enterKeyHint="done"
@@ -247,7 +263,6 @@ export default function SentenceQuiz() {
     );
   };
 
-  // 문장에서 타겟 단어 하이라이트
   const renderHighlightedSentence = () => {
     if (!currentQuestion) return null;
 
@@ -270,21 +285,18 @@ export default function SentenceQuiz() {
     );
   };
 
-  // 다음 문제
   const handleNext = () => {
     if (currentIndex < totalQuestions - 1) {
       setCurrentIndex(currentIndex + 1);
-      setUserInput(""); // 입력 필드 초기화
-      setShowFeedback(null); // 피드백 초기화
+      setUserInput("");
+      setShowFeedback(null);
       setCompletedCount(completedCount + 1);
     } else {
-      // 마지막 문제
       setCompletedCount(totalQuestions);
       setIsCompleted(true);
     }
   };
 
-  // 다시 학습하기
   const handleRestart = () => {
     setCurrentIndex(0);
     setCompletedCount(0);
@@ -295,12 +307,14 @@ export default function SentenceQuiz() {
     setShowFeedback(null);
   };
 
-  // AI 스타일 피드백 생성 함수
-  const generateFeedback = (userAnswer: string, correctAnswer: string, question: QuizQuestion): FeedbackData => {
+  const generateFeedback = (
+    userAnswer: string,
+    correctAnswer: string,
+    question: QuizQuestion,
+  ): FeedbackData => {
     const trimmedUser = userAnswer.trim();
     const trimmedCorrect = correctAnswer.trim();
 
-    // 정답인 경우
     if (question.acceptableAnswers.includes(trimmedUser)) {
       const correctMessages = [
         `완벽합니다! '${question.targetWord}'는 '${question.wordMeaning}'라는 의미로, 이 문맥에서 "${trimmedCorrect}"가 정확한 번역입니다.`,
@@ -314,113 +328,95 @@ export default function SentenceQuiz() {
       };
     }
 
-    // 오답인 경우 - 유사도 체크
     const similarity = calculateSimilarity(trimmedUser, trimmedCorrect);
-    
+
     if (similarity > 0.7) {
-      // 비슷한 답변
+      const closeMessages = [
+        `거의 맞았습니다! "${trimmedUser}"도 비슷한 의미지만, 이 문맥에서는 "${trimmedCorrect}"가 더 정확합니다.`,
+        `가까워요! 당신의 답변도 의미는 통하지만, 이 문장에서는 "${trimmedCorrect}"가 더 자연스럽습니다.`,
+        `비슷합니다! 하지만 '${question.targetWord}'의 의미를 이 문맥에서 표현할 때는 "${trimmedCorrect}"가 더 적절해요.`,
+      ];
       setWrongCount(wrongCount + 1);
       return {
         isCorrect: false,
-        message: `아쉽네요! 거의 다 맞았어요.`,
-        hint: `'${question.targetWord}'는 '${question.wordMeaning}'라는 뜻입니다. 정답은 '${trimmedCorrect}'입니다. 문법이나 형태를 다시 확인해보세요!`,
-      };
-    } else if (trimmedUser.length === 0) {
-      // 빈 답변
-      setWrongCount(wrongCount + 1);
-      return {
-        isCorrect: false,
-        message: `답을 입력해주세요!`,
-        hint: `'${question.targetWord}'의 의미는 '${question.wordMeaning}'입니다. 이 단어가 문장에서 어떻게 쓰이는지 생각해보세요.`,
-      };
-    } else {
-      // 완전히 다른 답변
-      setWrongCount(wrongCount + 1);
-      return {
-        isCorrect: false,
-        message: `틀렸습니다. 다시 생각해보세요!`,
-        hint: `'${question.targetWord}'는 '${question.wordMeaning}'를 의미합니다. 한국어 문장의 맥락을 고려해서 적절한 형태로 변환해보세요.`,
+        message: closeMessages[Math.floor(Math.random() * closeMessages.length)],
+        hint: `'${question.targetWord}'는 '${question.wordMeaning}'라는 뜻으로, 정답은 "${trimmedCorrect}"입니다.`,
       };
     }
+
+    const wrongMessages = [
+      `아쉽지만 틀렸습니다. '${question.targetWord}'는 '${question.wordMeaning}'라는 의미이므로, 이 문맥에서는 "${trimmedCorrect}"가 맞습니다.`,
+      `정답이 아닙니다. 영어 '${question.targetWord}'의 의미를 생각해보면 "${trimmedCorrect}"가 올바른 답입니다.`,
+      `틀렸어요! '${question.targetWord}'는 이 문장에서 '${trimmedCorrect}'로 번역되어야 합니다.`,
+    ];
+    setWrongCount(wrongCount + 1);
+    return {
+      isCorrect: false,
+      message: wrongMessages[Math.floor(Math.random() * wrongMessages.length)],
+      hint: `'${question.targetWord}' = '${question.wordMeaning}'를 기억해보세요.`,
+    };
   };
 
-  // 문자열 유사도 계산 (Levenshtein distance)
   const calculateSimilarity = (str1: string, str2: string): number => {
-    const track = Array(str2.length + 1).fill(null).map(() =>
-      Array(str1.length + 1).fill(null));
-    for (let i = 0; i <= str1.length; i += 1) {
-      track[0][i] = i;
-    }
-    for (let j = 0; j <= str2.length; j += 1) {
-      track[j][0] = j;
-    }
-    for (let j = 1; j <= str2.length; j += 1) {
-      for (let i = 1; i <= str1.length; i += 1) {
-        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-        track[j][i] = Math.min(
-          track[j][i - 1] + 1,
-          track[j - 1][i] + 1,
-          track[j - 1][i - 1] + indicator,
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const matrix = Array.from({ length: len2 + 1 }, () => Array(len1 + 1).fill(0));
+
+    for (let index = 0; index <= len1; index += 1) matrix[0][index] = index;
+    for (let index = 0; index <= len2; index += 1) matrix[index][0] = index;
+
+    for (let row = 1; row <= len2; row += 1) {
+      for (let column = 1; column <= len1; column += 1) {
+        const cost = str1[column - 1] === str2[row - 1] ? 0 : 1;
+        matrix[row][column] = Math.min(
+          matrix[row - 1][column] + 1,
+          matrix[row][column - 1] + 1,
+          matrix[row - 1][column - 1] + cost,
         );
       }
     }
-    const distance = track[str2.length][str1.length];
-    return 1 - distance / Math.max(str1.length, str2.length);
+
+    const distance = matrix[len2][len1];
+    return 1 - distance / Math.max(len1, len2);
   };
 
-  // 모르겠음 - 정답 보여주기
-  const handleDontKnow = () => {
-    if (!currentQuestion) {
-      return;
+  const handleSpeak = (text: string) => {
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.rate = 0.7;
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
     }
-
-    setUserInput(currentQuestion.koreanTargetWord);
-    setShowFeedback({ 
-      isCorrect: false, 
-      message: "정답을 확인하세요!", 
-      hint: `'${currentQuestion.targetWord}'는 '${currentQuestion.wordMeaning}'라는 의미입니다. 다음에는 꼭 기억해보세요!`,
-    });
   };
 
-  // 발음 듣기 (문장 전체)
-  const handlePronunciation = () => {
-    if (!currentQuestion) {
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(currentQuestion.english);
-    utterance.lang = "en-US";
-    utterance.rate = 0.9;
-    window.speechSynthesis.speak(utterance);
-  };
-
-  // 이미지 힌트 보기
   const handleImageHint = async () => {
-    if (!currentQuestion) {
-      return;
-    }
+    if (!currentQuestion) return;
 
-    const searchCommonsImage = async (queryWord: string): Promise<CommonsImageResult | null> => {
+    const searchCommonsImage = async (keyword: string): Promise<CommonsImageResult | null> => {
+      const searchParams = new URLSearchParams({
+        action: "query",
+        generator: "search",
+        gsrsearch: keyword,
+        gsrlimit: "10",
+        prop: "imageinfo|info",
+        iiprop: "url",
+        iiurlwidth: "800",
+        inprop: "url",
+        format: "json",
+        origin: "*",
+      });
+
       const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
-      endpoint.searchParams.set("action", "query");
-      endpoint.searchParams.set("generator", "search");
-      endpoint.searchParams.set("gsrsearch", queryWord);
-      endpoint.searchParams.set("gsrnamespace", "6");
-      endpoint.searchParams.set("gsrlimit", "1");
-      endpoint.searchParams.set("prop", "imageinfo|info");
-      endpoint.searchParams.set("iiprop", "url");
-      endpoint.searchParams.set("iiurlwidth", "640");
-      endpoint.searchParams.set("inprop", "url");
-      endpoint.searchParams.set("format", "json");
-      endpoint.searchParams.set("formatversion", "2");
-      endpoint.searchParams.set("origin", "*");
+      endpoint.search = searchParams.toString();
 
       const response = await fetch(endpoint.toString());
       if (!response.ok) {
         throw new Error(`Wikimedia Commons request failed: ${response.status}`);
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         query?: {
           pages?: Array<{
             title?: string;
@@ -476,41 +472,88 @@ export default function SentenceQuiz() {
     }
   };
 
-  // 정답 제출
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!currentQuestion) {
       return;
     }
 
     const trimmedInput = userInput.trim();
     const correctAnswer = currentQuestion.koreanTargetWord.trim();
-    
-    const feedback = generateFeedback(trimmedInput, correctAnswer, currentQuestion);
-    setShowFeedback(feedback);
 
-    if (feedback.isCorrect) {
-      setTimeout(() => {
-        handleNext();
-      }, 1000);
+    setIsSubmitting(true);
+    try {
+      const idToken = auth.currentUser
+        ? await getIdToken(auth.currentUser, false)
+        : user
+          ? await user.getIdToken()
+          : "";
+      const functionUrl =
+        import.meta.env.VITE_GRADE_WORD_ANSWER_URL ??
+        "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/gradeWordAnswerHttp";
+      const response = await fetch(functionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          english: currentQuestion.english,
+          korean: currentQuestion.korean,
+          targetWord: currentQuestion.targetWord,
+          wordMeaning: currentQuestion.wordMeaning,
+          acceptableAnswers: currentQuestion.acceptableAnswers,
+          correctAnswer,
+          userAnswer: trimmedInput,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(typeof errorBody.error === "string" ? errorBody.error : `HTTP ${response.status}`);
+      }
+
+      const feedback = (await response.json()) as GradeWordAnswerResponse;
+      setShowFeedback(feedback);
+
+      if (feedback.verdict === "correct" || feedback.verdict === "correct_but_unnatural") {
+        setCorrectCount((count) => count + 1);
+        setTimeout(() => {
+          handleNext();
+        }, feedback.verdict === "correct" ? 1000 : 1600);
+      } else if (feedback.verdict === "incorrect" || feedback.verdict === "close") {
+        setWrongCount((count) => count + 1);
+      }
+    } catch (error) {
+      console.error("서버 채점 실패:", error);
+      toast.error("서버 채점에 실패해 기본 채점으로 전환합니다.");
+
+      const feedback = generateFeedback(trimmedInput, correctAnswer, currentQuestion);
+      setShowFeedback(feedback);
+
+      if (feedback.isCorrect) {
+        setTimeout(() => {
+          handleNext();
+        }, 1000);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // 키보드 키 입력
   const handleKeyPress = (key: string) => {
-    if (key === 'backspace') {
+    if (key === "backspace") {
       setUserInput(userInput.slice(0, -1));
-    } else if (key === 'space') {
-      setUserInput(userInput + ' ');
+    } else if (key === "space") {
+      setUserInput(userInput + " ");
     } else {
       setUserInput(userInput + key);
     }
   };
 
-  // 한글 자판 레이아웃
   const koreanKeyboard = [
-    ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'],
-    ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'],
-    ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ'],
+    ["ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"],
+    ["ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"],
+    ["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"],
   ];
 
   if (isLoading) {
@@ -529,7 +572,10 @@ export default function SentenceQuiz() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
         <div className="text-center max-w-sm">
           <p className="text-lg text-gray-700 mb-2">문장 퀴즈에 사용할 데이터가 없습니다.</p>
-          <p className="text-sm text-gray-500 mb-6">`words` 문서에 `exampleSentence`, `exampleTranslation`, `quizKoreanBlank`, `quizAnswers` 필드를 넣어주세요.</p>
+          <p className="text-sm text-gray-500 mb-6">
+            `words` 문서에 `exampleSentence`, `exampleTranslation`, `quizKoreanBlank`, `quizAnswers`
+            필드를 넣어주세요.
+          </p>
           <Button onClick={() => navigate("/app/words")} className="rounded-xl">
             단어 목록으로
           </Button>
@@ -542,7 +588,6 @@ export default function SentenceQuiz() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {!isCompleted ? (
         <>
-          {/* Header */}
           <div className="bg-white/80 backdrop-blur-sm px-6 py-4 flex items-center justify-between">
             <Button
               variant="ghost"
@@ -553,7 +598,6 @@ export default function SentenceQuiz() {
               <ChevronLeft className="w-5 h-5" />
             </Button>
 
-            {/* Progress */}
             <div className="flex items-center gap-3 flex-1 mx-4">
               <div className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-full p-2">
                 <span className="text-white text-xs font-bold">
@@ -570,124 +614,133 @@ export default function SentenceQuiz() {
               </div>
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-full"
-            >
+            <Button variant="ghost" size="sm" className="rounded-full">
               <Settings className="w-5 h-5" />
             </Button>
           </div>
 
-          {/* Main Content */}
           <div className="flex-1 flex flex-col items-center justify-start px-6 pt-16 pb-4">
             <AnimatePresence mode="wait">
               <motion.div
-                key={currentQuestion?.id}
+                key={currentQuestion.id}
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.4 }}
                 className="w-full max-w-lg"
               >
-                {/* Question Card */}
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full mb-4">
+                    <BookOpen className="w-4 h-4" />
+                    <span className="text-sm font-semibold">문장 퀴즈</span>
+                  </div>
+                  <p className="text-lg text-gray-600 mb-2">
+                    빈칸에 들어갈 한국어 표현을 입력하세요.
+                  </p>
+                </div>
+
                 <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
-                  {/* English Sentence */}
-                  <div className="mb-8">
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <button
+                      onClick={() => handleSpeak(currentQuestion.english)}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-600 p-3 rounded-full transition-colors"
+                    >
+                      <Volume2 className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleSpeak(currentQuestion.targetWord)}
+                      className="bg-cyan-50 hover:bg-cyan-100 text-cyan-600 p-3 rounded-full transition-colors"
+                    >
+                      <Play className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="text-center mb-8">
+                    <div className="text-sm text-gray-500 mb-2">영어 문장</div>
                     {renderHighlightedSentence()}
                   </div>
 
-                  {/* Korean Sentence */}
-                  <div className="mb-6">
+                  <div className="text-center mb-6">
+                    <div className="text-sm text-gray-500 mb-2">한국어 문장</div>
                     {renderKoreanSentence()}
                   </div>
-                </div>
 
-                {/* Action Buttons - 3개 버튼 */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <button 
-                    onClick={handleDontKnow}
-                    className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-gray-400 to-gray-500 text-white shadow-lg hover:shadow-xl transition-shadow"
-                  >
-                    <BookOpen className="w-6 h-6" />
-                    <span className="text-sm font-semibold">모르겠음</span>
-                  </button>
-
-                  <button 
-                    onClick={handlePronunciation}
-                    className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-shadow"
-                  >
-                    <Volume2 className="w-6 h-6" />
-                    <span className="text-sm font-semibold">발음듣기</span>
-                  </button>
-
-                  <button 
-                    onClick={handleSubmit}
-                    className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-shadow"
-                  >
-                    <Play className="w-6 h-6" />
-                    <span className="text-sm font-semibold">정답제출</span>
-                  </button>
-                </div>
-
-                {/* Image Hint Button */}
-                <button
-                  onClick={handleImageHint}
-                  className="text-xs text-gray-400 hover:text-purple-500 transition-colors mb-4 flex items-center gap-1 mx-auto"
-                >
-                  <ImageIcon className="w-3 h-3" />
-                  <span>이미지 힌트</span>
-                </button>
-
-                {/* Feedback */}
-                {showFeedback && (
-                  <div
-                    className={`mb-4 p-4 rounded-3xl ${
-                      showFeedback.isCorrect ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {showFeedback.isCorrect ? (
-                        <CheckCircle className="w-5 h-5" />
-                      ) : (
-                        <AlertCircle className="w-5 h-5" />
-                      )}
-                      <span className="text-sm font-semibold">{showFeedback.message}</span>
+                  <div className="text-center mb-8">
+                    <div className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-xl">
+                      <span className="text-sm text-gray-500">의미</span>
+                      <span className="text-base font-semibold text-gray-700">
+                        {currentQuestion.wordMeaning}
+                      </span>
                     </div>
-                    {showFeedback.hint && (
-                      <p className="mt-2 text-sm text-gray-600">힌트: {showFeedback.hint}</p>
-                    )}
                   </div>
-                )}
 
-                {/* Virtual Keyboard */}
-                <div className="bg-gray-200 rounded-3xl p-4 mb-4">
-                  {koreanKeyboard.map((row, rowIndex) => (
-                    <div key={rowIndex} className="flex justify-center gap-1 mb-2">
-                      {row.map((key) => (
-                        <button
-                          key={key}
-                          onClick={() => handleKeyPress(key)}
-                          className="bg-white text-gray-800 font-medium px-3 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors min-w-[32px] text-base"
-                        >
-                          {key}
-                        </button>
-                      ))}
+                  <div className="mb-4">
+                    <button
+                      onClick={() => void handleSubmit()}
+                      disabled={isSubmitting}
+                      className="w-full py-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <CheckCircle className="w-6 h-6" />
+                      <span className="text-sm font-semibold">{isSubmitting ? "채점중" : "정답제출"}</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => void handleImageHint()}
+                    className="text-xs text-gray-400 hover:text-purple-500 transition-colors mb-4 flex items-center gap-1 mx-auto"
+                  >
+                    <ImageIcon className="w-3 h-3" />
+                    <span>이미지 힌트</span>
+                  </button>
+
+                  {showFeedback && (
+                    <div
+                      className={`mb-4 p-4 rounded-3xl ${
+                        showFeedback.isCorrect ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {showFeedback.isCorrect ? (
+                          <CheckCircle className="w-5 h-5" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5" />
+                        )}
+                        <span className="text-sm font-semibold">{showFeedback.message}</span>
+                      </div>
+                      {showFeedback.hint && (
+                        <p className="mt-2 text-sm text-gray-600">힌트: {showFeedback.hint}</p>
+                      )}
                     </div>
-                  ))}
-                  {/* Bottom row with space and backspace */}
-                  <div className="flex justify-center gap-1">
-                    <button
-                      onClick={() => handleKeyPress('backspace')}
-                      className="bg-white text-gray-800 font-medium px-4 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex items-center justify-center"
-                    >
-                      <Delete className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleKeyPress('space')}
-                      className="bg-white text-gray-800 font-medium px-12 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex-1 max-w-[200px]"
-                    >
-                      스페이스
-                    </button>
+                  )}
+
+                  <div className="bg-gray-200 rounded-3xl p-4 mb-4">
+                    {koreanKeyboard.map((row, rowIndex) => (
+                      <div key={rowIndex} className="flex justify-center gap-1 mb-2">
+                        {row.map((key) => (
+                          <button
+                            key={key}
+                            onClick={() => handleKeyPress(key)}
+                            className="bg-white text-gray-800 font-medium px-3 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors min-w-[32px] text-base"
+                          >
+                            {key}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                    <div className="flex justify-center gap-1">
+                      <button
+                        onClick={() => handleKeyPress("backspace")}
+                        className="bg-white text-gray-800 font-medium px-4 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex items-center justify-center"
+                      >
+                        <Delete className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleKeyPress("space")}
+                        className="bg-white text-gray-800 font-medium px-12 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex-1 max-w-[200px]"
+                      >
+                        스페이스
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -695,7 +748,6 @@ export default function SentenceQuiz() {
           </div>
         </>
       ) : (
-        /* Results Screen */
         <div className="flex-1 flex flex-col items-center justify-center px-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -703,42 +755,33 @@ export default function SentenceQuiz() {
             transition={{ duration: 0.5 }}
             className="w-full max-w-lg"
           >
-            {/* Trophy Icon */}
             <div className="flex justify-center mb-8">
               <div className="bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full p-8 shadow-2xl">
                 <Trophy className="w-20 h-20 text-white" />
               </div>
             </div>
 
-            {/* Title */}
-            <h1 className="text-4xl font-bold text-center mb-4 text-gray-800">
-              학습 완료!
-            </h1>
+            <h1 className="text-4xl font-bold text-center mb-4 text-gray-800">학습 완료!</h1>
             <p className="text-center text-gray-600 mb-8">수고하셨습니다! 🎉</p>
 
-            {/* Stats Card */}
             <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
               <div className="grid grid-cols-3 gap-4 mb-6">
-                {/* 총 문제 */}
                 <div className="text-center">
                   <div className="text-3xl font-bold text-gray-800 mb-1">{totalQuestions}</div>
                   <div className="text-sm text-gray-500">총 문제</div>
                 </div>
 
-                {/* 정답 */}
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-500 mb-1">{correctCount}</div>
                   <div className="text-sm text-gray-500">정답</div>
                 </div>
 
-                {/* 오답 */}
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-500 mb-1">{wrongCount}</div>
                   <div className="text-sm text-gray-500">오답</div>
                 </div>
               </div>
 
-              {/* 정답률 */}
               <div className="border-t border-gray-200 pt-6">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-gray-700 font-semibold">정답률</span>
@@ -750,16 +793,13 @@ export default function SentenceQuiz() {
                   <motion.div
                     className="h-full bg-gradient-to-r from-green-400 to-emerald-500"
                     initial={{ width: 0 }}
-                    animate={{ 
-                      width: `${totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0}%` 
-                    }}
+                    animate={{ width: `${totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0}%` }}
                     transition={{ duration: 1, delay: 0.5 }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={handleRestart}
@@ -781,7 +821,6 @@ export default function SentenceQuiz() {
         </div>
       )}
 
-      {/* Image Hint Modal */}
       <AnimatePresence>
         {showImageHint && (
           <motion.div
@@ -795,10 +834,9 @@ export default function SentenceQuiz() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
               className="relative bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl"
             >
-              {/* Close Button */}
               <button
                 onClick={() => setShowImageHint(false)}
                 className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -806,29 +844,22 @@ export default function SentenceQuiz() {
                 <XIcon className="w-5 h-5 text-gray-600" />
               </button>
 
-              {/* Title */}
-              <h3 className="text-2xl font-bold mb-6 text-gray-800">
-                {currentQuestion?.targetWord}
-              </h3>
+              <h3 className="text-2xl font-bold mb-6 text-gray-800">{currentQuestion.targetWord}</h3>
 
-              {/* Image */}
               <div className="rounded-2xl overflow-hidden bg-gray-100 mb-4 min-h-64 flex items-center justify-center">
                 {isHintLoading ? (
                   <p className="text-sm text-gray-500">Wikimedia Commons에서 이미지를 찾는 중입니다.</p>
                 ) : (
                   <img
                     src={hintImageUrl}
-                    alt={currentQuestion?.targetWord}
+                    alt={currentQuestion.targetWord}
                     className="w-full h-64 object-cover"
                     key={hintImageUrl}
                   />
                 )}
               </div>
 
-              {/* Hint Text */}
-              <p className="text-sm text-gray-500 text-center">
-                💡 이미지를 보고 단어의 의미를 떠올려보세요!
-              </p>
+              <p className="text-sm text-gray-500 text-center">💡 이미지를 보고 단어의 의미를 떠올려보세요!</p>
               {!isHintLoading && hintImageSourceUrl && (
                 <a
                   href={hintImageSourceUrl}
