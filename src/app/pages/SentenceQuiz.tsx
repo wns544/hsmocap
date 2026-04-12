@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { getIdToken } from "firebase/auth";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { ChevronLeft, Settings, Volume2, Play, BookOpen, CheckCircle, AlertCircle, Trophy, RefreshCw, Home, Delete, ImageIcon, X as XIcon } from "lucide-react";
+import { ChevronLeft, Settings, Volume2, Play, BookOpen, CheckCircle, AlertCircle, Trophy, RefreshCw, Home, ImageIcon, X as XIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -147,7 +147,7 @@ export default function SentenceQuiz() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [userInput, setUserInput] = useState("");
-  const [showFeedback, setShowFeedback] = useState<FeedbackData | null>(null);
+  const [showFeedback, setShowFeedback] = useState<(FeedbackData | GradeWordAnswerResponse) | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -158,11 +158,21 @@ export default function SentenceQuiz() {
   const [isHintLoading, setIsHintLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const imageHintCacheRef = useRef<Map<string, CommonsImageResult>>(new Map());
   const { user } = useAuth();
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
   const totalQuestions = quizQuestions.length;
   const progress = totalQuestions > 0 ? (completedCount / totalQuestions) * 100 : 0;
+  const isSoftCorrectFeedback =
+    showFeedback !== null &&
+    "verdict" in showFeedback &&
+    showFeedback.verdict === "correct_but_unnatural";
+  const focusAnswerInput = () => {
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+  };
 
   useEffect(() => {
     const loadQuizQuestions = async () => {
@@ -226,9 +236,7 @@ export default function SentenceQuiz() {
     }
 
     const timer = setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
+      focusAnswerInput();
     }, 100);
 
     return () => clearTimeout(timer);
@@ -257,6 +265,7 @@ export default function SentenceQuiz() {
           className="inline-flex items-center justify-center min-w-[60px] h-10 px-3 border-2 border-gray-300 rounded-lg bg-white text-gray-800 font-normal text-xl outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200"
           placeholder=""
           ref={inputRef}
+          autoFocus
         />
         {parts[1]}
       </h2>
@@ -305,6 +314,7 @@ export default function SentenceQuiz() {
     setIsCompleted(false);
     setUserInput("");
     setShowFeedback(null);
+    focusAnswerInput();
   };
 
   const generateFeedback = (
@@ -394,42 +404,100 @@ export default function SentenceQuiz() {
   const handleImageHint = async () => {
     if (!currentQuestion) return;
 
-    const searchCommonsImage = async (keyword: string): Promise<CommonsImageResult | null> => {
+    const fetchWithTimeout = async (url: string, timeoutMs = 5000) => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(url, { signal: controller.signal });
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    };
+
+    const buildQueryVariants = (question: QuizQuestion) => {
+      const target = question.targetWord.trim();
+      const englishContext = question.english
+        .replace(/[.,!?]/g, " ")
+        .split(/\s+/g)
+        .slice(0, 5)
+        .join(" ");
+      const phrase = target.includes(" ") ? `"${target}"` : target;
+
+      return [
+        phrase,
+        `${phrase} ${englishContext}`.trim(),
+        `${phrase} action photo`,
+      ]
+        .map((query) => query.trim().replace(/\s+/g, " "))
+        .filter((query) => query.length > 0);
+    };
+
+    const searchFirstCommonsImage = async (queryText: string): Promise<CommonsImageResult | null> => {
       const searchParams = new URLSearchParams({
         action: "query",
-        generator: "search",
-        gsrsearch: keyword,
-        gsrlimit: "10",
-        prop: "imageinfo|info",
-        iiprop: "url",
-        iiurlwidth: "800",
-        inprop: "url",
+        list: "search",
+        srsearch: queryText,
+        srnamespace: "6",
+        srlimit: "1",
         format: "json",
         origin: "*",
       });
 
-      const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
-      endpoint.search = searchParams.toString();
+      const searchEndpoint = new URL("https://commons.wikimedia.org/w/api.php");
+      searchEndpoint.search = searchParams.toString();
 
-      const response = await fetch(endpoint.toString());
-      if (!response.ok) {
-        throw new Error(`Wikimedia Commons request failed: ${response.status}`);
+      const searchResponse = await fetchWithTimeout(searchEndpoint.toString());
+      if (!searchResponse.ok) {
+        throw new Error(`Wikimedia Commons search failed: ${searchResponse.status}`);
       }
 
-      const data = (await response.json()) as {
+      const searchData = (await searchResponse.json()) as {
         query?: {
-          pages?: Array<{
-            title?: string;
-            fullurl?: string;
-            imageinfo?: Array<{
-              thumburl?: string;
-              url?: string;
-            }>;
-          }>;
+          search?: Array<{ title?: string }>;
         };
       };
 
-      const page = data.query?.pages?.[0];
+      const topTitle = searchData.query?.search?.[0]?.title?.trim();
+      if (!topTitle) {
+        return null;
+      }
+
+      const detailParams = new URLSearchParams({
+        action: "query",
+        prop: "imageinfo|info",
+        iiprop: "url",
+        iiurlwidth: "900",
+        inprop: "url",
+        titles: topTitle,
+        format: "json",
+        origin: "*",
+      });
+
+      const detailEndpoint = new URL("https://commons.wikimedia.org/w/api.php");
+      detailEndpoint.search = detailParams.toString();
+
+      const detailResponse = await fetchWithTimeout(detailEndpoint.toString());
+      if (!detailResponse.ok) {
+        throw new Error(`Wikimedia Commons detail request failed: ${detailResponse.status}`);
+      }
+
+      const detailData = (await detailResponse.json()) as {
+        query?: {
+          pages?: Record<
+            string,
+            {
+              title?: string;
+              fullurl?: string;
+              imageinfo?: Array<{
+                thumburl?: string;
+                url?: string;
+              }>;
+            }
+          >;
+        };
+      };
+
+      const page = Object.values(detailData.query?.pages ?? {})[0];
       const imageInfo = page?.imageinfo?.[0];
       const imageUrl = imageInfo?.thumburl || imageInfo?.url;
       const descriptionUrl = page?.fullurl;
@@ -452,17 +520,72 @@ export default function SentenceQuiz() {
     setShowImageHint(true);
 
     try {
-      const result = await searchCommonsImage(currentQuestion.targetWord);
+      const cacheKey = `${currentQuestion.targetWord}__${currentQuestion.english}`.toLowerCase();
+      const cached = imageHintCacheRef.current.get(cacheKey);
 
-      if (!result) {
-        toast.error(`'${currentQuestion.targetWord}'에 맞는 이미지 힌트를 찾지 못했습니다.`);
+      if (cached) {
+        setHintImageUrl(cached.imageUrl);
+        setHintImageSourceUrl(cached.descriptionUrl);
+        setHintImageTitle(cached.title);
+        return;
+      }
+
+      const queryVariants = buildQueryVariants(currentQuestion);
+      let bestCandidate: CommonsImageResult | null = null;
+
+      bestCandidate = await (async () => {
+        const functionUrl =
+          import.meta.env.VITE_IMAGE_HINT_URL ??
+          "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/imageHintSearchHttp";
+
+        const response = await fetch(functionUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            targetWord: currentQuestion.targetWord,
+            english: currentQuestion.english,
+            wordMeaning: currentQuestion.wordMeaning,
+          }),
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const data = (await response.json()) as Partial<CommonsImageResult>;
+        if (!data.imageUrl || !data.descriptionUrl || !data.title) {
+          return null;
+        }
+
+        return {
+          imageUrl: data.imageUrl,
+          descriptionUrl: data.descriptionUrl,
+          title: data.title,
+        } satisfies CommonsImageResult;
+      })();
+
+      if (!bestCandidate) {
+        for (const queryText of queryVariants) {
+          const candidate = await searchFirstCommonsImage(queryText);
+          if (candidate) {
+            bestCandidate = candidate;
+            break;
+          }
+        }
+      }
+
+      if (!bestCandidate) {
+        toast.error("단어에 맞는 이미지 힌트를 찾지 못했습니다.");
         setShowImageHint(false);
         return;
       }
 
-      setHintImageUrl(result.imageUrl);
-      setHintImageSourceUrl(result.descriptionUrl);
-      setHintImageTitle(result.title);
+      imageHintCacheRef.current.set(cacheKey, bestCandidate);
+      setHintImageUrl(bestCandidate.imageUrl);
+      setHintImageSourceUrl(bestCandidate.descriptionUrl);
+      setHintImageTitle(bestCandidate.title);
     } catch (error) {
       console.error("Wikimedia Commons 이미지 힌트 로드 실패:", error);
       toast.error("이미지 힌트를 불러오지 못했습니다.");
@@ -539,22 +662,6 @@ export default function SentenceQuiz() {
       setIsSubmitting(false);
     }
   };
-
-  const handleKeyPress = (key: string) => {
-    if (key === "backspace") {
-      setUserInput(userInput.slice(0, -1));
-    } else if (key === "space") {
-      setUserInput(userInput + " ");
-    } else {
-      setUserInput(userInput + key);
-    }
-  };
-
-  const koreanKeyboard = [
-    ["ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"],
-    ["ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"],
-    ["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"],
-  ];
 
   if (isLoading) {
     return (
@@ -696,7 +803,11 @@ export default function SentenceQuiz() {
                   {showFeedback && (
                     <div
                       className={`mb-4 p-4 rounded-3xl ${
-                        showFeedback.isCorrect ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        isSoftCorrectFeedback
+                          ? "bg-violet-50 text-violet-800 border border-violet-200"
+                          : showFeedback.isCorrect
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -708,40 +819,13 @@ export default function SentenceQuiz() {
                         <span className="text-sm font-semibold">{showFeedback.message}</span>
                       </div>
                       {showFeedback.hint && (
-                        <p className="mt-2 text-sm text-gray-600">힌트: {showFeedback.hint}</p>
+                        <p className={`mt-2 text-sm ${isSoftCorrectFeedback ? "text-violet-700/90" : "text-gray-600"}`}>
+                          힌트: {showFeedback.hint}
+                        </p>
                       )}
                     </div>
                   )}
 
-                  <div className="bg-gray-200 rounded-3xl p-4 mb-4">
-                    {koreanKeyboard.map((row, rowIndex) => (
-                      <div key={rowIndex} className="flex justify-center gap-1 mb-2">
-                        {row.map((key) => (
-                          <button
-                            key={key}
-                            onClick={() => handleKeyPress(key)}
-                            className="bg-white text-gray-800 font-medium px-3 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors min-w-[32px] text-base"
-                          >
-                            {key}
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                    <div className="flex justify-center gap-1">
-                      <button
-                        onClick={() => handleKeyPress("backspace")}
-                        className="bg-white text-gray-800 font-medium px-4 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex items-center justify-center"
-                      >
-                        <Delete className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleKeyPress("space")}
-                        className="bg-white text-gray-800 font-medium px-12 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex-1 max-w-[200px]"
-                      >
-                        스페이스
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </motion.div>
             </AnimatePresence>

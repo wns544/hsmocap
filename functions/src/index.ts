@@ -5,6 +5,7 @@ import { getAuth } from "firebase-admin/auth";
 import Groq from "groq-sdk";
 
 const groqApiKey = defineSecret("GROQ_API_KEY");
+const pexelsApiKey = defineSecret("PEXELS_API_KEY");
 const allowedOrigins = new Set([
   "http://localhost:5173",
   "https://hsmocap-d907e.web.app",
@@ -31,6 +32,18 @@ type GradeWordAnswerResponse = {
   matchedAnswer?: string;
 };
 
+type ImageHintRequest = {
+  targetWord: string;
+  english?: string;
+  wordMeaning?: string;
+};
+
+type ImageHintResponse = {
+  imageUrl: string;
+  descriptionUrl: string;
+  title: string;
+};
+
 const SYSTEM_PROMPT = [
   "You are a Korean vocabulary grading assistant.",
   "Judge the user's Korean answer for the highlighted English target word using the full English sentence, full Korean sentence, target word, and meaning.",
@@ -39,6 +52,10 @@ const SYSTEM_PROMPT = [
   "Consider Korean cultural and linguistic context. If the user's interpretation would normally be understood as close enough in Korean usage, accept it.",
   "Prefer semantic understanding over literal surface matching.",
   "Treat synonyms, near-synonyms, polite/casual ending differences, particles, archaic wording, and small wording differences as correct when the sentence meaning is preserved.",
+  "Treat natural Korean paraphrases as correct when they preserve the sentence-level meaning, even if they are not dictionary-like translations.",
+  "Accept sentence-form rewrites, softer or stronger endings, and natural Korean rephrasings when the highlighted word plays the same role in context.",
+  "If the expected answer is phrase-like but the user gives a natural sentence expression with the same intent, prefer correct over close.",
+  "If the user's answer is slightly broader or slightly less literal but still clearly points to the same intended action or meaning in context, accept it.",
   "Use verdict='correct_but_unnatural' when the meaning is correct but the wording is noticeably less natural than the common answer.",
   "Use verdict='close' only when the answer is related but still misses part of the intended meaning.",
   "Use verdict='incorrect' when the meaning is different in the sentence.",
@@ -133,6 +150,8 @@ const buildUserPrompt = (request: GradeWordAnswerRequest) =>
     "If the user's answer means almost the same thing in this sentence, prefer correct over close.",
     "If the user's answer means the same thing in this sentence, accept it as correct even if it is not listed in reference acceptable answers.",
     "Minor Korean typos, spacing errors, awkward particles, and understandable malformed expressions should usually still be accepted.",
+    "Natural Korean sentence rewrites should also be accepted when the sentence meaning is preserved.",
+    "For example, sentence-level variants such as obligation, focus, targeting, or phrasing changes can still be correct if they express the same idea in context.",
   ].join("\n");
 
 const calculateSimilarity = (source: string, target: string): number => {
@@ -186,7 +205,7 @@ const buildFallbackFeedback = (
     };
   }
 
-  if (similarity >= 0.72) {
+  if (similarity >= 0.6) {
     return {
       isCorrect: true,
       verdict: "correct_but_unnatural",
@@ -274,6 +293,210 @@ const createCorsHeaders = (origin?: string | null) => ({
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   Vary: "Origin",
 });
+
+type PexelsPhoto = {
+  id?: number;
+  width?: number;
+  height?: number;
+  url?: string;
+  alt?: string;
+  photographer?: string;
+  src?: {
+    large2x?: string;
+    large?: string;
+    medium?: string;
+    original?: string;
+  };
+};
+
+const ENGLISH_STOPWORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "by",
+  "for",
+  "from",
+  "he",
+  "her",
+  "his",
+  "i",
+  "in",
+  "is",
+  "it",
+  "its",
+  "me",
+  "my",
+  "of",
+  "on",
+  "or",
+  "our",
+  "she",
+  "that",
+  "the",
+  "their",
+  "them",
+  "they",
+  "this",
+  "to",
+  "us",
+  "we",
+  "you",
+  "your",
+]);
+
+const TEXT_HEAVY_HINTS = [
+  "alphabet",
+  "caption",
+  "font",
+  "headline",
+  "letter",
+  "letters",
+  "logo",
+  "scrabble",
+  "sign",
+  "subtitle",
+  "text",
+  "typography",
+  "word",
+  "words",
+  "writing",
+];
+
+const tokenizeEnglish = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/g)
+    .filter((token) => token.length > 1 && !ENGLISH_STOPWORDS.has(token));
+
+const buildImageQueries = (targetWord: string, english?: string, wordMeaning?: string) => {
+  const normalizedTarget = targetWord.trim().replace(/\s+/g, " ");
+  const normalizedEnglish = (english ?? "").trim().replace(/\s+/g, " ");
+  const compactMeaning = (wordMeaning ?? "")
+    .replace(/[()]/g, " ")
+    .split(/[,\s/]+/g)
+    .filter((part) => part.length >= 2)
+    .slice(0, 2)
+    .join(" ");
+  const quoted = normalizedTarget.includes(" ") ? `"${normalizedTarget}"` : normalizedTarget;
+  const contextTail = tokenizeEnglish(normalizedEnglish).slice(0, 4).join(" ");
+
+  return Array.from(
+    new Set(
+      [
+        `${quoted} realistic photo`,
+        `${quoted} ${contextTail}`.trim(),
+        `${quoted} ${compactMeaning}`.trim(),
+        `${quoted} people action`,
+      ]
+        .map((query) => query.trim().replace(/\s+/g, " "))
+        .filter(Boolean),
+    ),
+  );
+};
+
+const fetchPexelsCandidates = async (
+  queryText: string,
+  apiKey: string,
+  perPage = 20,
+): Promise<PexelsPhoto[]> => {
+  const endpoint = new URL("https://api.pexels.com/v1/search");
+  endpoint.search = new URLSearchParams({
+    query: queryText,
+    per_page: String(perPage),
+    orientation: "landscape",
+  }).toString();
+
+  const response = await fetch(endpoint.toString(), {
+    method: "GET",
+    headers: {
+      Authorization: apiKey,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Pexels request failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    photos?: PexelsPhoto[];
+  };
+
+  return data.photos ?? [];
+};
+
+const includesAnyTerm = (value: string, terms: string[]) =>
+  terms.some((term) => value.includes(term));
+
+const scorePexelsPhoto = (
+  photo: PexelsPhoto,
+  targetWord: string,
+  english: string,
+  wordMeaning: string,
+) => {
+  const alt = (photo.alt ?? "").toLowerCase().trim();
+  const normalizedTarget = targetWord.toLowerCase().trim();
+  const targetTokens = tokenizeEnglish(targetWord);
+  const contextTokens = tokenizeEnglish(english).filter((token) => !targetTokens.includes(token)).slice(0, 5);
+  const meaningTokens = wordMeaning
+    .toLowerCase()
+    .split(/[,\s/]+/g)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2)
+    .slice(0, 2);
+
+  let score = 0;
+  const reasons: string[] = [];
+
+  if (!alt) {
+    score -= 5;
+    reasons.push("missing-alt");
+  } else {
+    if (alt.includes(normalizedTarget)) {
+      score += 30;
+      reasons.push("exact-target");
+    }
+
+    const matchedTargetTokens = targetTokens.filter((token) => alt.includes(token)).length;
+    score += matchedTargetTokens * 10;
+    if (matchedTargetTokens > 0) {
+      reasons.push("target-token");
+    }
+
+    const matchedContextTokens = contextTokens.filter((token) => alt.includes(token)).length;
+    score += matchedContextTokens * 4;
+    if (matchedContextTokens > 0) {
+      reasons.push("context-token");
+    }
+
+    const matchedMeaningTokens = meaningTokens.filter((token) => alt.includes(token)).length;
+    score += matchedMeaningTokens * 6;
+    if (matchedMeaningTokens > 0) {
+      reasons.push("meaning-token");
+    }
+
+    if (includesAnyTerm(alt, TEXT_HEAVY_HINTS)) {
+      score -= 35;
+      reasons.push("text-heavy");
+    }
+  }
+
+  const width = photo.width ?? 0;
+  const height = photo.height ?? 0;
+  if (width >= 1000 && height >= 700) {
+    score += 3;
+    reasons.push("high-res");
+  }
+
+  return {
+    score,
+    reasons,
+  };
+};
 
 export const gradeWordAnswerHttp = onRequest(
   {
@@ -412,6 +635,98 @@ export const gradeWordAnswerHttp = onRequest(
           fallbackWordMeaning,
         ),
       );
+    }
+  },
+);
+
+export const imageHintSearchHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 15,
+    memory: "256MiB",
+    secrets: [pexelsApiKey],
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    try {
+      const origin = request.headers.origin;
+      const corsHeaders = createCorsHeaders(origin);
+
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!origin || !allowedOrigins.has(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const data = request.body as Partial<ImageHintRequest>;
+      const targetWord = typeof data.targetWord === "string" ? normalize(data.targetWord) : "";
+      const english = typeof data.english === "string" ? normalize(data.english) : "";
+      const wordMeaning = typeof data.wordMeaning === "string" ? normalize(data.wordMeaning) : "";
+      const key = pexelsApiKey.value();
+
+      if (!targetWord) {
+        response.status(400).set(corsHeaders).json({ error: "targetWord is required." });
+        return;
+      }
+
+      if (!key) {
+        response.status(500).set(corsHeaders).json({ error: "PEXELS_API_KEY is not configured." });
+        return;
+      }
+
+      const queries = buildImageQueries(targetWord, english, wordMeaning);
+      const deduplicated = new Map<number | string, PexelsPhoto>();
+
+      for (const queryText of queries) {
+        const photos = await fetchPexelsCandidates(queryText, key);
+        for (const photo of photos) {
+          const dedupeKey = photo.id ?? `${photo.url ?? ""}:${photo.src?.medium ?? ""}`;
+          if (!dedupeKey) {
+            continue;
+          }
+          if (!deduplicated.has(dedupeKey)) {
+            deduplicated.set(dedupeKey, photo);
+          }
+        }
+      }
+
+      const ranked = Array.from(deduplicated.values())
+        .map((photo) => {
+          const scored = scorePexelsPhoto(photo, targetWord, english, wordMeaning);
+          return { photo, ...scored };
+        })
+        .sort((left, right) => right.score - left.score);
+
+      const best = ranked[0];
+      const bestImageUrl =
+        best?.photo.src?.large2x ??
+        best?.photo.src?.large ??
+        best?.photo.src?.medium ??
+        best?.photo.src?.original;
+      const bestDescriptionUrl = best?.photo.url;
+
+      if (best && best.score >= 20 && bestImageUrl && bestDescriptionUrl) {
+        response.status(200).set(corsHeaders).json({
+          imageUrl: bestImageUrl,
+          descriptionUrl: bestDescriptionUrl,
+          title: best.photo.alt?.trim() || targetWord,
+        } satisfies ImageHintResponse);
+        return;
+      }
+
+      response.status(404).set(corsHeaders).json({ error: "No image found." });
+    } catch (error) {
+      console.error("imageHintSearchHttp failed:", error);
+      response.status(500).json({ error: "Image hint search failed." });
     }
   },
 );
