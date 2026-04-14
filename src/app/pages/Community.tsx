@@ -1,133 +1,201 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Search, Edit, ThumbsUp, MessageCircle, Flame, ChevronRight, Image as ImageIcon } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
+import { ChevronRight, Edit, Flame, MessageCircle, Search, ThumbsUp } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { db } from "../lib/firebase";
+
+interface CategoryItem {
+  id: string;
+  name: string;
+}
+
+interface CommunityListPost {
+  id: string;
+  author: {
+    name: string;
+    avatar: string;
+    level: string;
+  };
+  title: string;
+  content: string;
+  categoryId: string;
+  categoryName: string;
+  likes: number;
+  comments: number;
+  views: number;
+  isHot: boolean;
+  timestamp: string;
+  hasImage?: boolean;
+  imageUrl?: string;
+}
+
+const text = {
+  title: "\ucee4\ubba4\ub2c8\ud2f0",
+  write: "\uae00\uc4f0\uae30",
+  searchPlaceholder: "\uac8c\uc2dc\uae00\uc744 \uac80\uc0c9\ud574\ubcf4\uc138\uc694",
+  all: "\uc804\uccb4",
+  unknown: "Unknown",
+  unknownLevel: "\ub808\ubca8 \uc815\ubcf4 \uc5c6\uc74c",
+  levelPrefix: "\ub808\ubca8",
+  untitled: "\uc81c\ubaa9 \uc5c6\uc74c",
+  uncategorized: "\ubbf8\ubd84\ub958",
+  justNow: "\ubc29\uae08 \uc804",
+  empty: "\uc870\uac74\uc5d0 \ub9de\ub294 \uac8c\uc2dc\uae00\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.",
+  loadMore: "\ub354\ubcf4\uae30",
+};
 
 export default function Community() {
-  const posts = [
-    {
-      id: 1,
-      author: {
-        name: "영어고수",
-        avatar: "👨‍🎓",
-        level: "레벨 15",
-      },
-      title: "영어 단어 암기 효과적인 방법 공유합니다",
-      content: "저는 이 방법으로 하루에 50개씩 외우고 있어요. 첫 번째로는...",
-      category: "학습팁",
-      likes: 247,
-      comments: 32,
-      views: 1240,
-      isHot: true,
-      timestamp: "2시간 전",
-    },
-    {
-      id: 2,
-      author: {
-        name: "단어마스터",
-        avatar: "👩‍💼",
-        level: "레벨 12",
-      },
-      title: "토익 고득점을 위한 필수 단어 리스트",
-      content: "토익 시험에서 자주 나오는 단어들을 정리해봤습니다. 많은 도움 되시길...",
-      category: "시험대비",
-      likes: 189,
-      comments: 24,
-      views: 892,
-      isHot: true,
-      timestamp: "5시간 전",
-    },
-    {
-      id: 3,
-      author: {
-        name: "영어러버",
-        avatar: "🎯",
-        level: "레벨 8",
-      },
-      title: "어원으로 단어 외우기 - 접두사 편",
-      content: "접두사만 알아도 단어의 의미를 쉽게 유추할 수 있습니다...",
-      category: "학습팁",
-      likes: 156,
-      comments: 18,
-      views: 654,
-      isHot: false,
-      timestamp: "1일 전",
-    },
-    {
-      id: 4,
-      author: {
-        name: "초보학습자",
-        avatar: "🌱",
-        level: "레벨 3",
-      },
-      title: "영어 공부 시작한지 한 달! 후기 남겨요",
-      content: "이 앱으로 공부하면서 정말 많이 늘었어요. 감사합니다!",
-      category: "후기",
-      likes: 92,
-      comments: 15,
-      views: 421,
-      isHot: false,
-      timestamp: "1일 전",
-      hasImage: true,
-      imageUrl: "https://images.unsplash.com/photo-1652173410636-4be431f4a2de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbmdsaXNoJTIwdm9jYWJ1bGFyeSUyMHN0dWR5JTIwbm90ZWJvb2t8ZW58MXx8fHwxNzc0ODA2OTU3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      id: 5,
-      author: {
-        name: "유학생",
-        avatar: "✈️",
-        level: "레벨 18",
-      },
-      title: "실생활에서 자주 쓰는 영어 표현 모음",
-      content: "미국에서 생활하면서 가장 많이 듣는 표현들을 정리했어요...",
-      category: "표현",
-      likes: 312,
-      comments: 41,
-      views: 1567,
-      isHot: true,
-      timestamp: "12시간 전",
-    },
-  ];
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [posts, setPosts] = useState<CommunityListPost[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesQuery = query(collection(db, "communityCategories"), orderBy("sortOrder", "asc"));
+        const snapshot = await getDocs(categoriesQuery);
+        setCategories(
+          snapshot.docs.map((item) => {
+            const data = item.data();
+            return {
+              id: item.id,
+              name: typeof data.name === "string" ? data.name : item.id,
+            };
+          }),
+        );
+      } catch (error) {
+        console.error("Failed to load community categories:", error);
+      }
+    };
+
+    const loadPosts = async () => {
+      try {
+        const postsQuery = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(postsQuery);
+        setPosts(
+          snapshot.docs.map((item) => {
+            const data = item.data();
+            const authorSnapshot =
+              typeof data.authorSnapshot === "object" && data.authorSnapshot ? data.authorSnapshot : {};
+            const imageUrls = Array.isArray(data.imageUrls) ? data.imageUrls : [];
+
+            return {
+              id: item.id,
+              author: {
+                name: typeof authorSnapshot.nickname === "string" ? authorSnapshot.nickname : text.unknown,
+                avatar: "",
+                level:
+                  typeof authorSnapshot.level === "number"
+                    ? `${text.levelPrefix} ${authorSnapshot.level}`
+                    : text.unknownLevel,
+              },
+              title: typeof data.title === "string" ? data.title : text.untitled,
+              content: typeof data.content === "string" ? data.content : "",
+              categoryId: typeof data.categoryId === "string" ? data.categoryId : "unknown",
+              categoryName: typeof data.categoryName === "string" ? data.categoryName : text.uncategorized,
+              likes: typeof data.likeCount === "number" ? data.likeCount : 0,
+              comments: typeof data.commentCount === "number" ? data.commentCount : 0,
+              views: typeof data.viewCount === "number" ? data.viewCount : 0,
+              isHot: Boolean(data.isHot),
+              timestamp:
+                data.createdAt && typeof data.createdAt.toDate === "function"
+                  ? formatDistanceToNow(data.createdAt.toDate(), { addSuffix: true, locale: ko })
+                  : text.justNow,
+              hasImage: imageUrls.length > 0,
+              imageUrl: typeof imageUrls[0] === "string" ? imageUrls[0] : undefined,
+            };
+          }),
+        );
+      } catch (error) {
+        console.error("Failed to load community posts:", error);
+      }
+    };
+
+    void loadCategories();
+    void loadPosts();
+  }, []);
+
+  const filteredPosts = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    return posts.filter((post) => {
+      const matchesCategory = activeCategory === "all" || post.categoryId === activeCategory;
+      const matchesQuery =
+        normalizedQuery.length === 0 ||
+        post.title.toLowerCase().includes(normalizedQuery) ||
+        post.content.toLowerCase().includes(normalizedQuery) ||
+        post.categoryName.toLowerCase().includes(normalizedQuery);
+
+      return matchesCategory && matchesQuery;
+    });
+  }, [activeCategory, posts, searchQuery]);
 
   return (
     <div className="min-h-screen bg-background pb-6">
-      {/* Header */}
       <div className="bg-white border-b border-border sticky top-0 z-40">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl">커뮤니티</h1>
+            <h1 className="text-2xl">{text.title}</h1>
             <Link to="/app/community/create">
               <Button className="bg-primary text-white hover:bg-primary/90 rounded-full">
                 <Edit className="w-4 h-4 mr-2" />
-                글쓰기
+                {text.write}
               </Button>
             </Link>
           </div>
 
-          {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="궁금한 내용을 검색해보세요"
+              placeholder={text.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 rounded-2xl bg-muted border-0 text-sm"
             />
+          </div>
+
+          <div className="mt-4 flex gap-2 overflow-x-auto">
+            <Button
+              type="button"
+              size="sm"
+              variant={activeCategory === "all" ? "default" : "outline"}
+              className="rounded-full"
+              onClick={() => setActiveCategory("all")}
+            >
+              {text.all}
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                type="button"
+                size="sm"
+                variant={activeCategory === category.id ? "default" : "outline"}
+                className="rounded-full"
+                onClick={() => setActiveCategory(category.id)}
+              >
+                {category.name}
+              </Button>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="px-6 py-6 space-y-6">
-        {/* Posts List */}
         <div className="space-y-4">
-          {posts.map((post) => (
+          {filteredPosts.map((post) => (
             <Link key={post.id} to={`/app/community/${post.id}`}>
               <div className="bg-white rounded-2xl p-4 border border-border active:scale-[0.98] transition-transform">
-                {/* Author Info */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center text-xl">
-                      {post.author.avatar}
+                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center text-sm">
+                      {post.author.avatar || post.author.name.slice(0, 1).toUpperCase()}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -147,16 +215,14 @@ export default function Community() {
                   )}
                 </div>
 
-                {/* Post Content */}
                 <div className="mb-3">
                   <h3 className="mb-2 line-clamp-1">{post.title}</h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">{post.content}</p>
                 </div>
 
-                {/* Category & Stats */}
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-primary border-primary/30">
-                    {post.category}
+                    {post.categoryName}
                   </Badge>
                   <div className="flex items-center gap-4 text-muted-foreground text-sm">
                     <div className="flex items-center gap-1">
@@ -170,8 +236,7 @@ export default function Community() {
                   </div>
                 </div>
 
-                {/* Image */}
-                {post.hasImage && (
+                {post.hasImage && post.imageUrl && (
                   <div className="mt-4">
                     <ImageWithFallback
                       src={post.imageUrl}
@@ -185,9 +250,14 @@ export default function Community() {
           ))}
         </div>
 
-        {/* Load More */}
+        {filteredPosts.length === 0 && (
+          <div className="bg-white rounded-2xl p-6 border border-border text-center text-sm text-muted-foreground">
+            {text.empty}
+          </div>
+        )}
+
         <Button variant="outline" className="w-full rounded-full">
-          더 보기
+          {text.loadMore}
           <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>

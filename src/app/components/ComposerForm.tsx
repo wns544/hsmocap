@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { ChevronDown, Hash, Image, Smile, X } from "lucide-react";
+import { toast } from "sonner";
+import { db } from "../lib/firebase";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
 interface ComposerFormProps {
   headerTitle: string;
   submitLabel?: string;
+  submittingLabel?: string;
   successPath: string;
   categories?: string[];
+  onSubmit?: (payload: {
+    title: string;
+    content: string;
+    category: string;
+    imageUrls: string[];
+  }) => Promise<void> | void;
 }
 
 const defaultCategories = [
@@ -20,52 +30,141 @@ const defaultCategories = [
   "\uc790\uc720",
 ];
 
-const titlePlaceholder = "\uc81c\ubaa9\uc744 \uc785\ub825\ud558\uc138\uc694";
-const contentPlaceholder = "\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694";
-const addPhotoLabel = "\uc0ac\uc9c4 \ucd94\uac00";
-const submitValidationMessage = "\uc81c\ubaa9\uacfc \ub0b4\uc6a9\uc744 \ubaa8\ub450 \uc785\ub825\ud574\uc8fc\uc138\uc694.";
+const text = {
+  titlePlaceholder: "\uc81c\ubaa9\uc744 \uc785\ub825\ud558\uc138\uc694",
+  contentPlaceholder: "\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694",
+  addPhotoLabel: "\uc0ac\uc9c4 \ucd94\uac00",
+  submitValidationMessage: "\uc81c\ubaa9\uacfc \ub0b4\uc6a9\uc744 \ubaa8\ub450 \uc785\ub825\ud574\uc8fc\uc138\uc694.",
+  submitLabel: "\uc644\ub8cc",
+  submittingLabel: "\uc5c5\ub85c\ub4dc \uc911...",
+  imageTypeError: "\uc774\ubbf8\uc9c0 \ud30c\uc77c\ub9cc \uc120\ud0dd\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+  imageSizeError: "\uc774\ubbf8\uc9c0\ub294 5MB \uc774\ud558\ub85c \uc120\ud0dd\ud574\uc8fc\uc138\uc694.",
+  imageLimitError: "\uc774\ubbf8\uc9c0\ub294 \ucd5c\ub300 5\uc7a5\uae4c\uc9c0 \uc62c\ub9b4 \uc218 \uc788\uc2b5\ub2c8\ub2e4.",
+  submitError: "\uc800\uc7a5 \uc911 \ubb38\uc81c\uac00 \ubc1c\uc0dd\ud588\uc2b5\ub2c8\ub2e4. \ub2e4\uc2dc \uc2dc\ub3c4\ud574\uc8fc\uc138\uc694.",
+  loadingCategories: "\uce74\ud14c\uace0\ub9ac \ubd88\ub7ec\uc624\ub294 \uc911...",
+};
+
+const MAX_IMAGE_COUNT = 5;
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
 export default function ComposerForm({
   headerTitle,
-  submitLabel = "\uc644\ub8cc",
+  submitLabel = text.submitLabel,
+  submittingLabel = text.submittingLabel,
   successPath,
-  categories = defaultCategories,
+  categories,
+  onSubmit,
 }: ComposerFormProps) {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(categories[0] ?? "");
+  const [availableCategories, setAvailableCategories] = useState<string[]>(categories ?? defaultCategories);
+  const [selectedCategory, setSelectedCategory] = useState((categories ?? defaultCategories)[0] ?? "");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
-  const handleSubmit = () => {
-    if (!title.trim() || !content.trim()) {
-      alert(submitValidationMessage);
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      setAvailableCategories(categories);
+      setSelectedCategory((current) => current || categories[0] || "");
       return;
     }
 
-    navigate(successPath);
+    const loadCategories = async () => {
+      setIsLoadingCategories(true);
+      try {
+        const categoriesQuery = query(collection(db, "communityCategories"), orderBy("sortOrder", "asc"));
+        const snapshot = await getDocs(categoriesQuery);
+        const fetchedCategories = snapshot.docs
+          .map((item) => item.data().name)
+          .filter((name): name is string => typeof name === "string" && name.length > 0);
+
+        if (fetchedCategories.length > 0) {
+          setAvailableCategories(fetchedCategories);
+          setSelectedCategory((current) => current || fetchedCategories[0] || "");
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to load categories for composer:", error);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+
+      setAvailableCategories(defaultCategories);
+      setSelectedCategory((current) => current || defaultCategories[0] || "");
+    };
+
+    void loadCategories();
+  }, [categories]);
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !content.trim()) {
+      toast.error(text.submitValidationMessage);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      if (onSubmit) {
+        await onSubmit({
+          title: title.trim(),
+          content: content.trim(),
+          category: selectedCategory,
+          imageUrls: selectedImages,
+        });
+      }
+      navigate(successPath);
+    } catch (error) {
+      console.error("Failed to submit composer form:", error);
+      toast.error(text.submitError);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const nextImages: string[] = [];
-    const allowedCount = Math.min(files.length, 5 - selectedImages.length);
+    if (selectedImages.length >= MAX_IMAGE_COUNT) {
+      toast.error(text.imageLimitError);
+      e.target.value = "";
+      return;
+    }
 
-    for (let i = 0; i < allowedCount; i++) {
+    const validFiles = Array.from(files)
+      .slice(0, MAX_IMAGE_COUNT - selectedImages.length)
+      .filter((file) => {
+        if (!file.type.startsWith("image/")) {
+          toast.error(text.imageTypeError);
+          return false;
+        }
+
+        if (file.size > MAX_IMAGE_SIZE_BYTES) {
+          toast.error(text.imageSizeError);
+          return false;
+        }
+
+        return true;
+      });
+
+    if (files.length > MAX_IMAGE_COUNT - selectedImages.length) {
+      toast.error(text.imageLimitError);
+    }
+
+    validFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          nextImages.push(event.target.result as string);
-          if (nextImages.length === allowedCount) {
-            setSelectedImages((current) => [...current, ...nextImages]);
-          }
+          setSelectedImages((current) => [...current, event.target?.result as string]);
         }
       };
-      reader.readAsDataURL(files[i]);
-    }
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = "";
   };
 
   const removeImage = (index: number) => {
@@ -75,16 +174,16 @@ export default function ComposerForm({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="bg-white border-b border-border flex items-center justify-between px-6 py-4">
-        <button onClick={() => navigate(-1)}>
+        <button onClick={() => !isSubmitting && navigate(-1)} disabled={isSubmitting}>
           <X className="w-6 h-6" />
         </button>
         <h1 className="text-lg">{headerTitle}</h1>
         <Button
           onClick={handleSubmit}
           className="bg-primary text-white hover:bg-primary/90 rounded-full px-6"
-          disabled={!title.trim() || !content.trim()}
+          disabled={!title.trim() || !content.trim() || isSubmitting || isLoadingCategories || !selectedCategory}
         >
-          {submitLabel}
+          {isSubmitting ? submittingLabel : submitLabel}
         </Button>
       </div>
 
@@ -92,15 +191,16 @@ export default function ComposerForm({
         <button
           onClick={() => setShowCategoryPicker(!showCategoryPicker)}
           className="flex items-center gap-2 text-primary"
+          disabled={isSubmitting || isLoadingCategories}
         >
           <Hash className="w-5 h-5" />
-          <span>{selectedCategory}</span>
+          <span>{isLoadingCategories ? text.loadingCategories : selectedCategory}</span>
           <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryPicker ? "rotate-180" : ""}`} />
         </button>
 
         {showCategoryPicker && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {categories.map((category) => (
+            {availableCategories.map((category) => (
               <Badge
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
@@ -124,25 +224,27 @@ export default function ComposerForm({
       <div className="flex-1 p-6 space-y-4">
         <input
           type="text"
-          placeholder={titlePlaceholder}
+          placeholder={text.titlePlaceholder}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="w-full text-xl bg-transparent border-0 outline-none placeholder:text-muted-foreground"
           maxLength={100}
+          disabled={isSubmitting}
         />
 
         <textarea
-          placeholder={contentPlaceholder}
+          placeholder={text.contentPlaceholder}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className="w-full h-64 bg-transparent border-0 outline-none resize-none placeholder:text-muted-foreground"
           maxLength={5000}
+          disabled={isSubmitting}
         />
 
         <label className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer">
           <Image className="w-5 h-5 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            {addPhotoLabel} {selectedImages.length > 0 && `(${selectedImages.length}/5)`}
+            {text.addPhotoLabel} {selectedImages.length > 0 && `(${selectedImages.length}/${MAX_IMAGE_COUNT})`}
           </span>
           <input
             type="file"
@@ -150,7 +252,7 @@ export default function ComposerForm({
             multiple
             onChange={handleImageSelect}
             className="hidden"
-            disabled={selectedImages.length >= 5}
+            disabled={selectedImages.length >= MAX_IMAGE_COUNT || isSubmitting}
           />
         </label>
 
@@ -162,6 +264,7 @@ export default function ComposerForm({
                 <button
                   onClick={() => removeImage(index)}
                   className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center text-white"
+                  disabled={isSubmitting}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -183,7 +286,7 @@ export default function ComposerForm({
               multiple
               onChange={handleImageSelect}
               className="hidden"
-              disabled={selectedImages.length >= 5}
+              disabled={selectedImages.length >= MAX_IMAGE_COUNT || isSubmitting}
             />
           </label>
           <button className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-muted transition-colors">
@@ -193,7 +296,7 @@ export default function ComposerForm({
             <Hash className="w-5 h-5 text-muted-foreground" />
           </button>
           {selectedImages.length > 0 && (
-            <span className="ml-auto text-xs text-muted-foreground">{selectedImages.length} / 5</span>
+            <span className="ml-auto text-xs text-muted-foreground">{selectedImages.length} / {MAX_IMAGE_COUNT}</span>
           )}
         </div>
       </div>
