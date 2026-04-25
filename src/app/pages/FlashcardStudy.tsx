@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router";
 import { X, RotateCcw, CheckCircle, XCircle, Trophy, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence, PanInfo } from "motion/react";
+import { shuffleArray } from "../lib/random";
+import { recordCorrectAnswer, recordStudySessionCompletion, recordWrongAnswer } from "../lib/studyProgress";
 
 interface Card {
   id: number;
@@ -24,8 +26,6 @@ const initialCards: Card[] = [
   { id: 9, word: "Harmonious", meaning: "조화로운", level: "비즈니스", example: "They have a harmonious relationship." },
 ];
 
-const shuffleCards = (cards: Card[]) => [...cards].sort(() => Math.random() - 0.5);
-
 export default function FlashcardStudy() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -37,6 +37,7 @@ export default function FlashcardStudy() {
   const [isComplete, setIsComplete] = useState(false);
   const [exitDirection, setExitDirection] = useState<"up" | "down" | null>(null);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const [completionRecorded, setCompletionRecorded] = useState(false);
 
   const selectedLevel = searchParams.get("level");
   const filteredCards =
@@ -48,7 +49,7 @@ export default function FlashcardStudy() {
   const progress = totalCards > 0 ? (correctCount / totalCards) * 100 : 0;
 
   useEffect(() => {
-    const shuffled = shuffleCards(filteredCards);
+    const shuffled = shuffleArray(filteredCards);
     setRemainingCards(shuffled);
     setCurrentCard(shuffled[0] ?? null);
     setIsFlipped(false);
@@ -56,6 +57,7 @@ export default function FlashcardStudy() {
     setWrongCount(0);
     setIsComplete(shuffled.length === 0);
     setExitDirection(null);
+    setCompletionRecorded(false);
   }, [selectedLevel]);
 
   const nextCard = (nextRemainingCards: Card[]) => {
@@ -68,7 +70,7 @@ export default function FlashcardStudy() {
       return;
     }
 
-    const shuffled = shuffleCards(nextRemainingCards);
+    const shuffled = shuffleArray(nextRemainingCards);
     setRemainingCards(shuffled);
     setCurrentCard(shuffled[0] ?? null);
   };
@@ -78,6 +80,11 @@ export default function FlashcardStudy() {
 
     setExitDirection("up");
     setCorrectCount((prev) => prev + 1);
+    recordCorrectAnswer({
+      wordId: currentCard.id,
+      word: currentCard.word,
+      level: currentCard.level,
+    });
 
     const nextRemainingCards = remainingCards.filter((card) => card.id !== currentCard.id);
 
@@ -91,6 +98,11 @@ export default function FlashcardStudy() {
 
     setExitDirection("down");
     setWrongCount((prev) => prev + 1);
+    recordWrongAnswer({
+      wordId: currentCard.id,
+      word: currentCard.word,
+      level: currentCard.level,
+    });
 
     const retryCards = remainingCards.filter((card) => card.id !== currentCard.id);
     const nextRemainingCards = [...retryCards, currentCard];
@@ -117,7 +129,7 @@ export default function FlashcardStudy() {
   };
 
   const handleRestart = () => {
-    const shuffled = shuffleCards(filteredCards);
+    const shuffled = shuffleArray(filteredCards);
     setRemainingCards(shuffled);
     setCurrentCard(shuffled[0] ?? null);
     setIsFlipped(false);
@@ -125,7 +137,20 @@ export default function FlashcardStudy() {
     setWrongCount(0);
     setIsComplete(shuffled.length === 0);
     setExitDirection(null);
+    setCompletionRecorded(false);
   };
+
+  useEffect(() => {
+    if (!isComplete || completionRecorded) {
+      return;
+    }
+
+    recordStudySessionCompletion({
+      correctCount,
+      wrongCount,
+    });
+    setCompletionRecorded(true);
+  }, [completionRecorded, correctCount, isComplete, wrongCount]);
 
   const toggleFavorite = (e: MouseEvent) => {
     e.stopPropagation();

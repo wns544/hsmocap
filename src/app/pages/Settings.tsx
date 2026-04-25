@@ -1,14 +1,26 @@
 import { Link, useNavigate } from "react-router";
-import {
-  ChevronRight,
-  HelpCircle,
-  LogOut,
-  MessageSquare,
-  Shield,
-  User,
-} from "lucide-react";
+import { ChevronRight, HelpCircle, LogOut, MessageSquare, Shield, User } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
+
+const settingsGroups = [
+  {
+    title: "계정",
+    items: [{ label: "프로필", icon: User, path: "/app/profile", value: undefined }],
+  },
+  {
+    title: "학습 설정",
+    items: [{ label: "일일 학습 목표", path: "/settings/goal", value: "20개" }],
+  },
+  {
+    title: "지원",
+    items: [
+      { label: "도움말", icon: HelpCircle, path: "/app/settings/help", value: undefined },
+      { label: "피드백 보내기", icon: MessageSquare, path: "/app/settings/feedback", value: undefined },
+      { label: "개인정보 보호", icon: Shield, path: "/app/settings/privacy", value: undefined },
+    ],
+  },
+] as const;
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -23,25 +35,6 @@ export default function Settings() {
       toast.error("로그아웃에 실패했습니다.");
     }
   };
-
-  const settingsGroups = [
-    {
-      title: "계정",
-      items: [{ label: "프로필", icon: User, path: "/app/profile", hasToggle: false }],
-    },
-    {
-      title: "학습 설정",
-      items: [{ label: "일일 학습 목표", path: "/settings/goal", hasToggle: false, value: "20개" }],
-    },
-    {
-      title: "지원",
-      items: [
-        { label: "도움말", icon: HelpCircle, path: "/settings/help", hasToggle: false },
-        { label: "피드백 보내기", icon: MessageSquare, path: "/settings/feedback", hasToggle: false },
-        { label: "개인정보 보호", icon: Shield, path: "/settings/privacy", hasToggle: false },
-      ],
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background pb-6">

@@ -38,7 +38,7 @@ export default function Home() {
           </div>
           <Link to="/app/profile">
             <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-              <span className="text-2xl">S</span>
+              <span className="text-sm font-medium">프로필</span>
             </div>
           </Link>
         </div>

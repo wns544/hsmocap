@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { db } from "../lib/firebase";
 import { getStoredStudyLevel } from "../lib/studyPreferences";
+import { shuffleArray } from "../lib/random";
+import { recordCorrectAnswer, recordStudySessionCompletion, recordWrongAnswer } from "../lib/studyProgress";
 
 interface QuizQuestion {
   id: number;
@@ -152,6 +154,8 @@ export default function SentenceQuiz() {
   const [hintImageSourceUrl, setHintImageSourceUrl] = useState<string>("");
   const [hintImageTitle, setHintImageTitle] = useState<string>("");
   const [isHintLoading, setIsHintLoading] = useState(false);
+  const [sourceQuestions, setSourceQuestions] = useState<QuizQuestion[]>([]);
+  const [completionRecorded, setCompletionRecorded] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedStudyLevel = searchParams.get("level") || getStoredStudyLevel();
 
@@ -201,9 +205,22 @@ export default function SentenceQuiz() {
             return question.level === selectedStudyLevel;
           });
 
-        if (firestoreQuestions.length > 0) {
-          setQuizQuestions(firestoreQuestions);
-        }
+        const fallbackQuestions =
+          selectedStudyLevel === "전체"
+            ? fallbackQuizQuestions
+            : fallbackQuizQuestions.filter((question) => question.level === selectedStudyLevel);
+        const nextQuestions = firestoreQuestions.length > 0 ? firestoreQuestions : fallbackQuestions;
+
+        setSourceQuestions(nextQuestions);
+        setQuizQuestions(shuffleArray(nextQuestions));
+        setCurrentIndex(0);
+        setCompletedCount(0);
+        setCorrectCount(0);
+        setWrongCount(0);
+        setIsCompleted(false);
+        setUserInput("");
+        setShowFeedback(null);
+        setCompletionRecorded(false);
       } catch (error) {
         console.error("문장 퀴즈 데이터 불러오기 실패:", error);
       } finally {
@@ -299,6 +316,7 @@ export default function SentenceQuiz() {
 
   // 다시 학습하기
   const handleRestart = () => {
+    setQuizQuestions(shuffleArray(sourceQuestions.length > 0 ? sourceQuestions : quizQuestions));
     setCurrentIndex(0);
     setCompletedCount(0);
     setCorrectCount(0);
@@ -306,6 +324,7 @@ export default function SentenceQuiz() {
     setIsCompleted(false);
     setUserInput("");
     setShowFeedback(null);
+    setCompletionRecorded(false);
   };
 
   // AI 스타일 피드백 생성 함수
@@ -502,13 +521,39 @@ export default function SentenceQuiz() {
     setShowFeedback(feedback);
 
     if (feedback.isCorrect) {
+      const reward = recordCorrectAnswer({
+        wordId: currentQuestion.targetWord,
+        word: currentQuestion.targetWord,
+        level: currentQuestion.level,
+      });
+      toast.success(`+${reward.rewardXp} XP`, {
+        description: `${currentQuestion.targetWord} 정답 보상`,
+      });
       setTimeout(() => {
         handleNext();
       }, 1000);
+    } else {
+      recordWrongAnswer({
+        wordId: currentQuestion.targetWord,
+        word: currentQuestion.targetWord,
+        level: currentQuestion.level,
+      });
     }
   };
 
   // 키보드 키 입력
+  useEffect(() => {
+    if (!isCompleted || completionRecorded) {
+      return;
+    }
+
+    recordStudySessionCompletion({
+      correctCount,
+      wrongCount,
+    });
+    setCompletionRecorded(true);
+  }, [completionRecorded, correctCount, isCompleted, wrongCount]);
+
   const handleKeyPress = (key: string) => {
     if (key === 'backspace') {
       setUserInput(userInput.slice(0, -1));

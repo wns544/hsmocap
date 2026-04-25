@@ -2,6 +2,7 @@ import { Link, useSearchParams } from "react-router";
 import { RotateCcw, Calendar, ChevronRight, PlayCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { shuffleArray } from "../lib/random";
 
 interface ReviewItem {
   id: number;
@@ -27,10 +28,11 @@ export default function ReviewList() {
   const [searchParams] = useSearchParams();
   const selectedLevel = searchParams.get("level");
 
-  const filteredReviewItems =
+  const filteredReviewItems = shuffleArray(
     !selectedLevel || selectedLevel === "전체"
       ? reviewItems
-      : reviewItems.filter((item) => item.level === selectedLevel);
+      : reviewItems.filter((item) => item.level === selectedLevel),
+  );
 
   const urgentCount = filteredReviewItems.filter((item) => item.isUrgent).length;
   const totalCount = filteredReviewItems.length;

@@ -15,6 +15,9 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import Community from "./pages/Community";
 import CreatePost from "./pages/CreatePost";
+import Feedback from "./pages/Feedback";
+import HelpCenter from "./pages/HelpCenter";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PostDetail from "./pages/PostDetail";
 import ScreensOverview from "./pages/ScreensOverview";
 import FlashcardStudy from "./pages/FlashcardStudy";
@@ -97,6 +100,18 @@ export const router = createBrowserRouter([
           {
             path: "settings",
             element: <Settings />,
+          },
+          {
+            path: "settings/feedback",
+            element: <Feedback />,
+          },
+          {
+            path: "settings/help",
+            element: <HelpCenter />,
+          },
+          {
+            path: "settings/privacy",
+            element: <PrivacyPolicy />,
           },
           {
             path: "profile",

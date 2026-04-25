@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -5,51 +6,107 @@ import {
   Award,
   Trophy,
   Target,
-  Calendar,
   TrendingUp,
   LogOut,
+  Sprout,
+  BookOpen,
+  Flame,
+  Shield,
+  Crown,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
-import { Badge } from "../components/ui/badge";
 import { useAuth } from "../contexts/AuthContext";
 import { StudyLevel, getStoredStudyLevel, setStoredStudyLevel, studyLevels } from "../lib/studyPreferences";
-import { useState } from "react";
+import { getStudyProgressSummary, subscribeStudyProgress } from "../lib/studyProgress";
+
+function getProfileLevelTheme(level: number): {
+  icon: LucideIcon;
+  containerClassName: string;
+  iconClassName: string;
+  tierLabel: string;
+} {
+  if (level >= 20) {
+    return {
+      icon: Crown,
+      containerClassName: "bg-gradient-to-br from-amber-300 via-yellow-400 to-orange-500 shadow-lg shadow-amber-500/30",
+      iconClassName: "text-white",
+      tierLabel: "마스터",
+    };
+  }
+
+  if (level >= 15) {
+    return {
+      icon: Shield,
+      containerClassName: "bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 shadow-lg shadow-sky-500/30",
+      iconClassName: "text-white",
+      tierLabel: "전문가",
+    };
+  }
+
+  if (level >= 10) {
+    return {
+      icon: Flame,
+      containerClassName: "bg-gradient-to-br from-orange-400 via-rose-500 to-pink-600 shadow-lg shadow-rose-500/30",
+      iconClassName: "text-white",
+      tierLabel: "도전자",
+    };
+  }
+
+  if (level >= 5) {
+    return {
+      icon: BookOpen,
+      containerClassName: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 shadow-lg shadow-emerald-500/30",
+      iconClassName: "text-white",
+      tierLabel: "학습자",
+    };
+  }
+
+  return {
+    icon: Sprout,
+    containerClassName: "bg-gradient-to-br from-lime-300 via-emerald-400 to-green-500 shadow-lg shadow-green-500/30",
+    iconClassName: "text-white",
+    tierLabel: "새싹",
+  };
+}
 
 export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [selectedStudyLevel, setSelectedStudyLevel] = useState<StudyLevel>(getStoredStudyLevel());
+  const [progressSummary, setProgressSummary] = useState(() => getStudyProgressSummary());
   const fallbackName = user?.email?.split("@")[0] || "사용자";
 
   const userInfo = {
     name: user?.displayName || fallbackName,
     email: user?.email || "user@wordy.com",
     joinDate: user?.metadata.creationTime || "2026-01-15",
-    photoURL: user?.photoURL,
-    level: 12,
-    currentExp: 2450,
-    nextLevelExp: 3000,
+    level: progressSummary.level,
+    currentExp: progressSummary.currentLevelXp,
+    nextLevelExp: progressSummary.nextLevelXp,
   };
 
   const stats = [
-    { label: "연속 학습", value: "12일", icon: Calendar, color: "bg-orange-500" },
-    { label: "학습한 단어", value: "247개", icon: Target, color: "bg-primary" },
-    { label: "퀴즈 완료", value: "42회", icon: Trophy, color: "bg-yellow-500" },
-    { label: "평균 정답률", value: "87%", icon: TrendingUp, color: "bg-blue-500" },
+    { label: "누적 경험치", value: `${progressSummary.totalXp} XP`, icon: Award, color: "bg-orange-500" },
+    { label: "학습한 단어", value: `${progressSummary.uniqueStudiedWords}개`, icon: Target, color: "bg-primary" },
+    { label: "학습 완료", value: `${progressSummary.completedSessions}회`, icon: Trophy, color: "bg-yellow-500" },
+    { label: "평균 정답률", value: `${progressSummary.accuracyRate}%`, icon: TrendingUp, color: "bg-blue-500" },
   ];
 
-  const achievements = [
-    { name: "첫걸음", description: "첫 단어 학습 완료", icon: "🌱", earned: true },
-    { name: "연습왕", description: "10개 단어 학습", icon: "📘", earned: true },
-    { name: "성실함", description: "7일 연속 학습", icon: "🔥", earned: true },
-    { name: "퀴즈 마스터", description: "10회 퀴즈 완료", icon: "🏆", earned: true },
-    { name: "집중력", description: "퀴즈 만점 5회", icon: "🎯", earned: false },
-    { name: "전문가", description: "100개 단어 학습", icon: "🧠", earned: true },
-  ];
-
+  const achievements = progressSummary.achievements;
   const levelProgress = (userInfo.currentExp / userInfo.nextLevelExp) * 100;
+  const levelTheme = getProfileLevelTheme(userInfo.level);
+  const LevelIcon = levelTheme.icon;
+
+  useEffect(() => {
+    setProgressSummary(getStudyProgressSummary());
+    return subscribeStudyProgress(() => {
+      setProgressSummary(getStudyProgressSummary());
+    });
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -70,35 +127,20 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-background pb-6">
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-6"
-        >
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-6">
           <ArrowLeft className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center overflow-hidden text-4xl">
-            {userInfo.photoURL ? (
-              <img
-                src={userInfo.photoURL}
-                alt={`${userInfo.name} 프로필 이미지`}
-                className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              "🙂"
-            )}
+          <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${levelTheme.containerClassName}`}>
+            <LevelIcon className={`w-10 h-10 ${levelTheme.iconClassName}`} strokeWidth={2.2} />
           </div>
           <div className="flex-1">
             <h1 className="text-2xl mb-1">{userInfo.name}</h1>
             <p className="text-white/80 text-sm">{userInfo.email}</p>
+            <p className="text-white/70 text-xs mt-1">{`${levelTheme.tierLabel} 등급`}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="bg-white/20 hover:bg-white/30 text-white border-0"
-          >
+          <Button variant="ghost" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-0">
             <Edit className="w-4 h-4" />
             <span>프로필 수정</span>
           </Button>
@@ -108,7 +150,7 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Award className="w-5 h-5" />
-              <span>레벨 {userInfo.level}</span>
+              <span>{`레벨 ${userInfo.level}`}</span>
             </div>
             <span className="text-sm">
               {userInfo.currentExp} / {userInfo.nextLevelExp} XP
@@ -116,7 +158,7 @@ export default function Profile() {
           </div>
           <Progress value={levelProgress} className="h-2 bg-white/20" />
           <p className="text-xs text-white/60 mt-2">
-            레벨 {userInfo.level + 1}까지 {userInfo.nextLevelExp - userInfo.currentExp}XP 남음
+            {`레벨 ${userInfo.level + 1}까지 ${userInfo.nextLevelExp - userInfo.currentExp}XP 남음`}
           </p>
         </div>
       </div>
@@ -138,9 +180,7 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-base">학습 레벨 설정</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                홈의 학습하기에서 표시할 단어 레벨을 고를 수 있어요.
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">홈의 학습하기에서 표시할 단어 레벨을 고를 수 있어요.</p>
             </div>
             <Badge variant="secondary" className="bg-primary/10 text-primary">
               {selectedStudyLevel}
@@ -170,23 +210,23 @@ export default function Profile() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">초급 단어</span>
-                <span className="text-sm">85개</span>
+                <span className="text-sm">{`${progressSummary.levelBreakdown.초급.studied}개`}</span>
               </div>
-              <Progress value={85} className="h-1.5" />
+              <Progress value={progressSummary.levelBreakdown.초급.progress} className="h-1.5" />
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">중급 단어</span>
-                <span className="text-sm">120개</span>
+                <span className="text-sm">{`${progressSummary.levelBreakdown.중급.studied}개`}</span>
               </div>
-              <Progress value={65} className="h-1.5" />
+              <Progress value={progressSummary.levelBreakdown.중급.progress} className="h-1.5" />
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">고급 단어</span>
-                <span className="text-sm">42개</span>
+                <span className="text-sm">{`${progressSummary.levelBreakdown.고급.studied}개`}</span>
               </div>
-              <Progress value={30} className="h-1.5" />
+              <Progress value={progressSummary.levelBreakdown.고급.progress} className="h-1.5" />
             </div>
           </div>
         </div>
@@ -194,7 +234,7 @@ export default function Profile() {
         <div>
           <h3 className="mb-4 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />
-            <span>달성한 업적</span>
+            <span>성취 및 업적</span>
           </h3>
           <div className="grid grid-cols-3 gap-3">
             {achievements.map((achievement, index) => (
