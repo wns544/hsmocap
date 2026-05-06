@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { ChevronLeft, Settings, Volume2, Play, BookOpen, CheckCircle, AlertCircle, Trophy, RefreshCw, Home, Delete, ImageIcon, X as XIcon } from "lucide-react";
@@ -24,6 +24,7 @@ interface QuizQuestion {
 
 interface FeedbackData {
   isCorrect: boolean;
+  tone?: "success" | "close" | "error";
   message: string;
   hint?: string;
 }
@@ -145,6 +146,7 @@ export default function SentenceQuiz() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [userInput, setUserInput] = useState("");
+  const [isComposing, setIsComposing] = useState(false);
   const [showFeedback, setShowFeedback] = useState<FeedbackData | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
@@ -156,7 +158,6 @@ export default function SentenceQuiz() {
   const [isHintLoading, setIsHintLoading] = useState(false);
   const [sourceQuestions, setSourceQuestions] = useState<QuizQuestion[]>([]);
   const [completionRecorded, setCompletionRecorded] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const selectedStudyLevel = searchParams.get("level") || getStoredStudyLevel();
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
@@ -209,7 +210,11 @@ export default function SentenceQuiz() {
           selectedStudyLevel === "전체"
             ? fallbackQuizQuestions
             : fallbackQuizQuestions.filter((question) => question.level === selectedStudyLevel);
-        const nextQuestions = firestoreQuestions.length > 0 ? firestoreQuestions : fallbackQuestions;
+        const nextQuestions = firestoreQuestions.length > 0
+          ? firestoreQuestions
+          : fallbackQuestions.length > 0
+            ? fallbackQuestions
+            : fallbackQuizQuestions;
 
         setSourceQuestions(nextQuestions);
         setQuizQuestions(shuffleArray(nextQuestions));
@@ -239,15 +244,24 @@ export default function SentenceQuiz() {
 
     // 약간의 지연을 주어 모바일 키보드가 확실히 나타나도록 함
     const timer = setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
+      return;
     }, 100);
 
     return () => clearTimeout(timer);
   }, [currentIndex]); // currentIndex가 바뀔 때마다 포커스
 
   // 한국어 문장에서 타겟 단어를 ???로 대체
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement) {
+        activeElement.blur();
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [currentIndex]);
+
   const renderKoreanSentence = () => {
     if (!currentQuestion) return null;
 
@@ -261,16 +275,25 @@ export default function SentenceQuiz() {
           type="text"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
+          onCompositionStart={() => setIsComposing(true)}
+          onCompositionEnd={() => setIsComposing(false)}
           onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing || isComposing) {
+              return;
+            }
             if (e.key === "Enter") {
               e.preventDefault();
               handleSubmit();
             }
           }}
           enterKeyHint="done"
+          inputMode="text"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           className="inline-flex items-center justify-center min-w-[60px] h-10 px-3 border-2 border-gray-300 rounded-lg bg-white text-gray-800 font-normal text-xl outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200"
           placeholder=""
-          ref={inputRef}
         />
         {parts[1]}
       </h2>
@@ -354,6 +377,7 @@ export default function SentenceQuiz() {
       setWrongCount(wrongCount + 1);
       return {
         isCorrect: false,
+        tone: "close",
         message: `아쉽네요! 거의 다 맞았어요.`,
         hint: `'${question.targetWord}'는 '${question.wordMeaning}'라는 뜻입니다. 정답은 '${trimmedCorrect}'입니다. 문법이나 형태를 다시 확인해보세요!`,
       };
@@ -700,7 +724,11 @@ export default function SentenceQuiz() {
                 {showFeedback && (
                   <div
                     className={`mb-4 p-4 rounded-3xl ${
-                      showFeedback.isCorrect ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      showFeedback.isCorrect
+                        ? "bg-green-100 text-green-800"
+                        : showFeedback.tone === "close"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-red-100 text-red-800"
                     }`}
                   >
                     <div className="flex items-center gap-3">

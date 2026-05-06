@@ -17,6 +17,7 @@ interface QuizQuestion {
 
 interface FeedbackData {
   isCorrect: boolean;
+  tone?: "success" | "close" | "error";
   message: string;
   hint?: string;
 }
@@ -199,6 +200,7 @@ export default function SentenceFavorites() {
       setWrongCount(wrongCount + 1);
       return {
         isCorrect: false,
+        tone: "close",
         message: `아쉽네요! 거의 다 맞았어요.`,
         hint: `'${question.targetWord}'는 '${question.wordMeaning}'라는 뜻입니다. 정답은 '${trimmedCorrect}'입니다. 문법이나 형태를 다시 확인해보세요!`,
       };
@@ -405,7 +407,11 @@ export default function SentenceFavorites() {
                 {showFeedback && (
                   <div
                     className={`mb-4 p-4 rounded-3xl ${
-                      showFeedback.isCorrect ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      showFeedback.isCorrect
+                        ? "bg-green-100 text-green-800"
+                        : showFeedback.tone === "close"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-red-100 text-red-800"
                     }`}
                   >
                     <div className="flex items-center gap-3">

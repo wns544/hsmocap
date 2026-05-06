@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -18,8 +18,19 @@ import {
 import { toast } from "sonner";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { Progress } from "../components/ui/progress";
 import { useAuth } from "../contexts/AuthContext";
+import { resolveProfileName, setStoredProfileName, subscribeProfileName } from "../lib/profileName";
 import { StudyLevel, getStoredStudyLevel, setStoredStudyLevel, studyLevels } from "../lib/studyPreferences";
 import { getStudyProgressSummary, subscribeStudyProgress } from "../lib/studyProgress";
 
@@ -78,16 +89,26 @@ export default function Profile() {
   const { user, signOut } = useAuth();
   const [selectedStudyLevel, setSelectedStudyLevel] = useState<StudyLevel>(getStoredStudyLevel());
   const [progressSummary, setProgressSummary] = useState(() => getStudyProgressSummary());
-  const fallbackName = user?.email?.split("@")[0] || "사용자";
+  const [displayName, setDisplayName] = useState(() => resolveProfileName(user?.displayName, user?.email));
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [nameInput, setNameInput] = useState(() => resolveProfileName(user?.displayName, user?.email));
 
-  const userInfo = {
-    name: user?.displayName || fallbackName,
-    email: user?.email || "user@wordy.com",
-    joinDate: user?.metadata.creationTime || "2026-01-15",
-    level: progressSummary.level,
-    currentExp: progressSummary.currentLevelXp,
-    nextLevelExp: progressSummary.nextLevelXp,
-  };
+  const levelTheme = getProfileLevelTheme(progressSummary.level);
+  const LevelIcon = levelTheme.icon;
+  const levelProgress = progressSummary.nextLevelXp > 0
+    ? (progressSummary.currentLevelXp / progressSummary.nextLevelXp) * 100
+    : 0;
+
+  const levelBreakdownList = useMemo(() => {
+    const items = Object.values(progressSummary.levelBreakdown);
+    const empty = { studied: 0, total: 0, progress: 0 };
+
+    return [
+      { label: "초급 단어", ...(items[0] ?? empty) },
+      { label: "중급 단어", ...(items[1] ?? empty) },
+      { label: "고급 단어", ...(items[2] ?? empty) },
+    ];
+  }, [progressSummary.levelBreakdown]);
 
   const stats = [
     { label: "누적 경험치", value: `${progressSummary.totalXp} XP`, icon: Award, color: "bg-orange-500" },
@@ -96,17 +117,26 @@ export default function Profile() {
     { label: "평균 정답률", value: `${progressSummary.accuracyRate}%`, icon: TrendingUp, color: "bg-blue-500" },
   ];
 
-  const achievements = progressSummary.achievements;
-  const levelProgress = (userInfo.currentExp / userInfo.nextLevelExp) * 100;
-  const levelTheme = getProfileLevelTheme(userInfo.level);
-  const LevelIcon = levelTheme.icon;
-
   useEffect(() => {
     setProgressSummary(getStudyProgressSummary());
+
     return subscribeStudyProgress(() => {
       setProgressSummary(getStudyProgressSummary());
     });
   }, []);
+
+  useEffect(() => {
+    const resolvedName = resolveProfileName(user?.displayName, user?.email);
+    setDisplayName(resolvedName);
+    setNameInput(resolvedName);
+
+    return subscribeProfileName((nextName) => {
+      const fallbackName = resolveProfileName(user?.displayName, user?.email);
+      const resolvedNextName = nextName || fallbackName;
+      setDisplayName(resolvedNextName);
+      setNameInput(resolvedNextName);
+    });
+  }, [user?.displayName, user?.email]);
 
   const handleLogout = async () => {
     try {
@@ -124,10 +154,32 @@ export default function Profile() {
     toast.success(`학습 레벨이 ${level}(으)로 설정되었습니다.`);
   };
 
+  const handleOpenEditDialog = () => {
+    setNameInput(displayName);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveProfileName = () => {
+    const trimmedName = nameInput.trim();
+
+    if (!trimmedName) {
+      toast.error("사용자 이름을 입력해주세요.");
+      return;
+    }
+
+    setStoredProfileName(trimmedName);
+    setDisplayName(trimmedName);
+    setIsEditDialogOpen(false);
+    toast.success("사용자 이름이 수정되었습니다.");
+  };
+
   return (
     <div className="min-h-screen bg-background pb-6">
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-6"
+        >
           <ArrowLeft className="w-5 h-5" />
         </button>
 
@@ -136,11 +188,17 @@ export default function Profile() {
             <LevelIcon className={`w-10 h-10 ${levelTheme.iconClassName}`} strokeWidth={2.2} />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl mb-1">{userInfo.name}</h1>
-            <p className="text-white/80 text-sm">{userInfo.email}</p>
+            <h1 className="text-2xl mb-1">{displayName}</h1>
+            <p className="text-white/80 text-sm">{user?.email || "user.wordy.com"}</p>
             <p className="text-white/70 text-xs mt-1">{`${levelTheme.tierLabel} 등급`}</p>
           </div>
-          <Button variant="ghost" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenEditDialog}
+            className="bg-white/20 hover:bg-white/30 text-white border-0"
+          >
             <Edit className="w-4 h-4" />
             <span>프로필 수정</span>
           </Button>
@@ -150,15 +208,15 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Award className="w-5 h-5" />
-              <span>{`레벨 ${userInfo.level}`}</span>
+              <span>{`레벨 ${progressSummary.level}`}</span>
             </div>
             <span className="text-sm">
-              {userInfo.currentExp} / {userInfo.nextLevelExp} XP
+              {progressSummary.currentLevelXp} / {progressSummary.nextLevelXp} XP
             </span>
           </div>
           <Progress value={levelProgress} className="h-2 bg-white/20" />
           <p className="text-xs text-white/60 mt-2">
-            {`레벨 ${userInfo.level + 1}까지 ${userInfo.nextLevelExp - userInfo.currentExp}XP 남음`}
+            {`레벨 ${progressSummary.level + 1}까지 ${progressSummary.xpToNextLevel}XP 남음`}
           </p>
         </div>
       </div>
@@ -177,10 +235,12 @@ export default function Profile() {
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-border mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-4">
             <div>
               <h3 className="text-base">학습 레벨 설정</h3>
-              <p className="text-sm text-muted-foreground mt-1">홈의 학습하기에서 표시할 단어 레벨을 고를 수 있어요.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                홈과 학습 화면에서 우선적으로 사용할 단어 레벨을 정할 수 있어요.
+              </p>
             </div>
             <Badge variant="secondary" className="bg-primary/10 text-primary">
               {selectedStudyLevel}
@@ -207,37 +267,25 @@ export default function Profile() {
             <span>학습 통계</span>
           </h3>
           <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">초급 단어</span>
-                <span className="text-sm">{`${progressSummary.levelBreakdown.초급.studied}개`}</span>
+            {levelBreakdownList.map((item) => (
+              <div key={item.label}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">{item.label}</span>
+                  <span className="text-sm">{`${item.studied}개`}</span>
+                </div>
+                <Progress value={item.progress} className="h-1.5" />
               </div>
-              <Progress value={progressSummary.levelBreakdown.초급.progress} className="h-1.5" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">중급 단어</span>
-                <span className="text-sm">{`${progressSummary.levelBreakdown.중급.studied}개`}</span>
-              </div>
-              <Progress value={progressSummary.levelBreakdown.중급.progress} className="h-1.5" />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">고급 단어</span>
-                <span className="text-sm">{`${progressSummary.levelBreakdown.고급.studied}개`}</span>
-              </div>
-              <Progress value={progressSummary.levelBreakdown.고급.progress} className="h-1.5" />
-            </div>
+            ))}
           </div>
         </div>
 
         <div>
           <h3 className="mb-4 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />
-            <span>성취 및 업적</span>
+            <span>획득한 업적</span>
           </h3>
           <div className="grid grid-cols-3 gap-3">
-            {achievements.map((achievement, index) => (
+            {progressSummary.achievements.map((achievement, index) => (
               <div
                 key={index}
                 className={`rounded-2xl p-4 border-2 text-center ${
@@ -259,7 +307,7 @@ export default function Profile() {
 
         <div className="mt-6 bg-accent rounded-2xl p-5 border border-border text-center">
           <p className="text-sm text-muted-foreground">
-            {new Date(userInfo.joinDate).toLocaleDateString("ko-KR", {
+            {new Date(user?.metadata.creationTime || "2026-01-15").toLocaleDateString("ko-KR", {
               year: "numeric",
               month: "long",
               day: "numeric",
@@ -277,6 +325,35 @@ export default function Profile() {
           <span>로그아웃</span>
         </Button>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>프로필 수정</DialogTitle>
+            <DialogDescription>
+              홈 화면과 프로필 화면에 표시될 사용자 이름을 변경할 수 있어요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="profile-name">사용자 이름</Label>
+            <Input
+              id="profile-name"
+              value={nameInput}
+              maxLength={20}
+              onChange={(event) => setNameInput(event.target.value)}
+              placeholder="이름을 입력해주세요"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              취소
+            </Button>
+            <Button type="button" onClick={handleSaveProfileName}>
+              저장
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

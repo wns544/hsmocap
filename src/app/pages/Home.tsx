@@ -1,10 +1,16 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Award, BookOpen, ChevronRight, Clock, Layers, Target, TrendingUp } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
+import { useAuth } from "../contexts/AuthContext";
+import { resolveProfileName, subscribeProfileName } from "../lib/profileName";
 import { recentWordIds, words } from "../lib/words";
 
 export default function Home() {
+  const { user } = useAuth();
+  const [displayName, setDisplayName] = useState(() => resolveProfileName(user?.displayName, user?.email));
+
   const stats = [
     { label: "학습한 단어", value: "247", icon: BookOpen, color: "bg-blue-500" },
     { label: "퀴즈 정답률", value: "87%", icon: Target, color: "bg-primary" },
@@ -13,7 +19,7 @@ export default function Home() {
 
   const quickActions = [
     { title: "학습하기", subtitle: "문장 퀴즈로 단어를 학습해요", path: "/app/sentence-quiz", icon: BookOpen, color: "bg-green-500" },
-    { title: "Shorts 학습", subtitle: "카드 넘기며 빠르게 복습해요", path: "/app/flashcard-study", icon: Layers, color: "bg-purple-500" },
+    { title: "Shorts 학습", subtitle: "카드 넘기기로 빠르게 복습해요", path: "/app/flashcard-study", icon: Layers, color: "bg-purple-500" },
     { title: "복습하기", subtitle: "42개의 복습 대기 단어", path: "/app/review", icon: TrendingUp, color: "bg-orange-500" },
   ];
 
@@ -28,16 +34,24 @@ export default function Home() {
     { date: "2024년 3월 26일", wordsLearned: 12, correctRate: 79 },
   ];
 
+  useEffect(() => {
+    setDisplayName(resolveProfileName(user?.displayName, user?.email));
+
+    return subscribeProfileName((nextName) => {
+      setDisplayName(nextName || resolveProfileName(user?.displayName, user?.email));
+    });
+  }, [user?.displayName, user?.email]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl mb-1">안녕하세요, 소희님</h1>
-            <p className="text-white/80">오늘도 목표 단어를 함께 채워봐요.</p>
+            <h1 className="text-3xl mb-1">{`안녕하세요, ${displayName}님`}</h1>
+            <p className="text-white/80">오늘도 목표 단어를 차근차근 채워봐요.</p>
           </div>
           <Link to="/app/profile">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+            <div className="min-w-12 h-12 px-4 bg-white/20 rounded-full flex items-center justify-center">
               <span className="text-sm font-medium">프로필</span>
             </div>
           </Link>
@@ -48,7 +62,10 @@ export default function Home() {
             <span className="text-sm text-white/80">오늘의 학습 진행도</span>
             <span className="text-sm">8 / 20 단어</span>
           </div>
-          <Progress value={40} className="h-2 bg-white/20" />
+          <Progress
+            value={40}
+            className="h-2 bg-white/20 [&_[data-slot=progress-indicator]]:bg-[#D8C3A5]"
+          />
         </div>
       </div>
 

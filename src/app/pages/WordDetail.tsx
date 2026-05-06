@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, Check, Star, Volume2 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -68,6 +68,10 @@ export default function WordDetail() {
   }, [id, locationState, searchParams]);
 
   const [isFavorite, setIsFavorite] = useState(word?.isFavorite ?? false);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [id, searchParams]);
 
   if (!word) {
     return (
