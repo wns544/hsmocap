@@ -1,14 +1,30 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useEffect, useState } from "react";
+import { getIdToken } from "firebase/auth";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { ChevronLeft, Settings, Volume2, Play, BookOpen, CheckCircle, AlertCircle, Trophy, RefreshCw, Home, Delete, ImageIcon, X as XIcon } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { motion, AnimatePresence } from "motion/react";
+import { useNavigate, useSearchParams } from "react-router";
+import {
+  AlertCircle,
+  BookOpen,
+  CheckCircle,
+  ChevronLeft,
+  Delete,
+  Home,
+  ImageIcon,
+  Play,
+  RefreshCw,
+  Settings,
+  Trophy,
+  Volume2,
+  X as XIcon,
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { db } from "../lib/firebase";
-import { getStoredStudyLevel } from "../lib/studyPreferences";
+import { Button } from "../components/ui/button";
+import { auth, db } from "../lib/firebase";
 import { shuffleArray } from "../lib/random";
+import { getStoredStudyLevel } from "../lib/studyPreferences";
 import { recordCorrectAnswer, recordStudySessionCompletion, recordWrongAnswer } from "../lib/studyProgress";
+import { isQuizWordUsable, normalizeQuizWordDocs, resolveQuizCorrectAnswer } from "../lib/wordsAdapter";
 
 interface QuizQuestion {
   id: number;
@@ -18,8 +34,8 @@ interface QuizQuestion {
   wordMeaning: string;
   level?: string;
   pronunciation?: string;
-  koreanTargetWord: string; // 한국어 문장에서 가릴 단어
-  acceptableAnswers: string[]; // 정답으로 인정되는 모든 답변들
+  koreanTargetWord: string;
+  acceptableAnswers: string[];
 }
 
 interface FeedbackData {
@@ -29,114 +45,200 @@ interface FeedbackData {
   hint?: string;
 }
 
+interface GradeWordAnswerResponse {
+  isCorrect: boolean;
+  verdict: "correct" | "correct_but_unnatural" | "close" | "incorrect" | "empty";
+  message: string;
+  hint?: string;
+  matchedAnswer?: string;
+}
+
 interface CommonsImageResult {
   imageUrl: string;
   descriptionUrl: string;
   title: string;
 }
 
+const GRADE_WORD_ANSWER_URL =
+  import.meta.env.VITE_GRADE_WORD_ANSWER_URL ??
+  "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/gradeWordAnswerHttp";
+
+const IMAGE_HINT_URL =
+  import.meta.env.VITE_IMAGE_HINT_URL ??
+  "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/imageHintSearchHttp";
+
+const ALL_LEVEL = "전체";
+
 const fallbackQuizQuestions: QuizQuestion[] = [
   {
     id: 1,
-    korean: "너 날 믿니?",
-    english: "Do you believe me?",
-    targetWord: "believe",
-    wordMeaning: "믿다",
-    pronunciation: "bɪˈliːv",
-    koreanTargetWord: "믿니",
-    acceptableAnswers: ["믿니", "믿어"],
+    korean: "나는 어제 학교에 갔다.",
+    english: "I went to school yesterday.",
+    targetWord: "went",
+    wordMeaning: "갔다",
+    level: "초급",
+    koreanTargetWord: "갔다",
+    acceptableAnswers: ["갔다", "갔어"],
   },
   {
     id: 2,
-    korean: "나는 매일 아침 커피를 마신다.",
-    english: "I drink coffee every morning.",
-    targetWord: "drink",
-    wordMeaning: "마시다",
-    pronunciation: "drɪŋk",
-    koreanTargetWord: "마신다",
-    acceptableAnswers: ["마신다", "먹는다"],
+    korean: "우리는 원인에 집중해야 한다.",
+    english: "We need to zero in on the cause.",
+    targetWord: "zero in on",
+    wordMeaning: "집중 공략하다",
+    level: "고급",
+    koreanTargetWord: "집중해야 한다",
+    acceptableAnswers: ["집중해야 한다", "집중해야 해", "집중하다", "초점을 맞추다"],
   },
   {
     id: 3,
-    korean: "그녀는 아름다운 목소리를 가지고 있다.",
+    korean: "그녀는 아주 아름다운 목소리를 가졌다.",
     english: "She has a beautiful voice.",
     targetWord: "beautiful",
     wordMeaning: "아름다운",
-    pronunciation: "ˈbjuːtɪfl",
+    level: "초급",
     koreanTargetWord: "아름다운",
     acceptableAnswers: ["아름다운", "예쁜", "고운"],
   },
-  {
-    id: 4,
-    korean: "우리는 내일 공원에서 만날 거야.",
-    english: "We will meet at the park tomorrow.",
-    targetWord: "meet",
-    wordMeaning: "만나다",
-    pronunciation: "miːt",
-    koreanTargetWord: "만날",
-    acceptableAnswers: ["만날", "보는", "볼"],
-  },
-  {
-    id: 5,
-    korean: "그는 빠르게 달린다.",
-    english: "He runs quickly.",
-    targetWord: "quickly",
-    wordMeaning: "빠르게",
-    pronunciation: "ˈkwɪkli",
-    koreanTargetWord: "빠르게",
-    acceptableAnswers: ["빠르게", "신속하게", "재빠르게", "급히"],
-  },
-  {
-    id: 6,
-    korean: "이 책은 매우 흥미롭다.",
-    english: "This book is very interesting.",
-    targetWord: "interesting",
-    wordMeaning: "흥미로운",
-    pronunciation: "ˈɪntrəstɪŋ",
-    koreanTargetWord: "흥미롭다",
-    acceptableAnswers: ["흥미롭다", "재미있다", "재밌다"],
-  },
-  {
-    id: 7,
-    korean: "나는 새로운 차를 샀다.",
-    english: "I bought a new car.",
-    targetWord: "bought",
-    wordMeaning: "샀다",
-    pronunciation: "bɔːt",
-    koreanTargetWord: " 샀다",
-    acceptableAnswers: [" 샀다", "샀다", "구매했다", "구입했다"],
-  },
-  {
-    id: 8,
-    korean: "그들은 파티에서 춤을 췄다.",
-    english: "They danced at the party.",
-    targetWord: "danced",
-    wordMeaning: "춤췄다",
-    pronunciation: "dænst",
-    koreanTargetWord: "춤을 췄다",
-    acceptableAnswers: ["춤을 췄다", "춤췄다", "춤을 추었다", "춤을 춘"],
-  },
-  {
-    id: 9,
-    korean: "날씨가 오늘 정말 좋다.",
-    english: "The weather is really nice today.",
-    targetWord: "weather",
-    wordMeaning: "날씨",
-    pronunciation: "ˈweðər",
-    koreanTargetWord: "날씨",
-    acceptableAnswers: ["날씨", "기후", "날"],
-  },
-  {
-    id: 10,
-    korean: "그는 항상 친절하다.",
-    english: "He is always kind.",
-    targetWord: "kind",
-    wordMeaning: "친절한",
-    pronunciation: "kaɪnd",
-    koreanTargetWord: "친절하다",
-    acceptableAnswers: ["친절하다", "착하다", "다정하다", "상냥하다"],
-  },
 ];
+
+const koreanKeyboard = [
+  ["ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"],
+  ["ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"],
+  ["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"],
+];
+
+const searchCommonsImage = async (queryWord: string): Promise<CommonsImageResult | null> => {
+  const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
+  endpoint.searchParams.set("action", "query");
+  endpoint.searchParams.set("generator", "search");
+  endpoint.searchParams.set("gsrsearch", queryWord);
+  endpoint.searchParams.set("gsrnamespace", "6");
+  endpoint.searchParams.set("gsrlimit", "1");
+  endpoint.searchParams.set("prop", "imageinfo|info");
+  endpoint.searchParams.set("iiprop", "url");
+  endpoint.searchParams.set("iiurlwidth", "640");
+  endpoint.searchParams.set("inprop", "url");
+  endpoint.searchParams.set("format", "json");
+  endpoint.searchParams.set("formatversion", "2");
+  endpoint.searchParams.set("origin", "*");
+
+  const response = await fetch(endpoint.toString());
+  if (!response.ok) {
+    throw new Error(`Wikimedia Commons request failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    query?: {
+      pages?: Array<{
+        title?: string;
+        fullurl?: string;
+        imageinfo?: Array<{
+          thumburl?: string;
+          url?: string;
+        }>;
+      }>;
+    };
+  };
+
+  const page = data.query?.pages?.[0];
+  const imageInfo = page?.imageinfo?.[0];
+  const imageUrl = imageInfo?.thumburl || imageInfo?.url;
+  const descriptionUrl = page?.fullurl;
+
+  if (!page?.title || !imageUrl || !descriptionUrl) {
+    return null;
+  }
+
+  return {
+    imageUrl,
+    descriptionUrl,
+    title: page.title,
+  };
+};
+
+const calculateSimilarity = (source: string, target: string): number => {
+  const sourceLength = source.length;
+  const targetLength = target.length;
+  const matrix = Array.from({ length: targetLength + 1 }, () => Array(sourceLength + 1).fill(0));
+
+  for (let index = 0; index <= sourceLength; index += 1) {
+    matrix[0][index] = index;
+  }
+
+  for (let index = 0; index <= targetLength; index += 1) {
+    matrix[index][0] = index;
+  }
+
+  for (let row = 1; row <= targetLength; row += 1) {
+    for (let column = 1; column <= sourceLength; column += 1) {
+      const cost = source[column - 1] === target[row - 1] ? 0 : 1;
+      matrix[row][column] = Math.min(
+        matrix[row - 1][column] + 1,
+        matrix[row][column - 1] + 1,
+        matrix[row - 1][column - 1] + cost,
+      );
+    }
+  }
+
+  const distance = matrix[targetLength][sourceLength];
+  return 1 - distance / Math.max(sourceLength, targetLength, 1);
+};
+
+const createLocalFeedback = (
+  userAnswer: string,
+  correctAnswer: string,
+  question: QuizQuestion,
+): FeedbackData => {
+  const trimmedUser = userAnswer.trim();
+  const trimmedCorrect = correctAnswer.trim();
+
+  if (question.acceptableAnswers.includes(trimmedUser)) {
+    return {
+      isCorrect: true,
+      tone: "success",
+      message: `정답입니다. '${question.targetWord}'는 이 문장에서 '${trimmedCorrect}'로 쓰입니다.`,
+    };
+  }
+
+  if (trimmedUser.length === 0) {
+    return {
+      isCorrect: false,
+      tone: "error",
+      message: "답을 입력해 주세요.",
+      hint: `'${question.targetWord}'의 의미는 '${question.wordMeaning}'입니다.`,
+    };
+  }
+
+  const similarity = calculateSimilarity(trimmedUser, trimmedCorrect);
+  if (similarity > 0.7) {
+    return {
+      isCorrect: false,
+      tone: "close",
+      message: "거의 맞았어요.",
+      hint: `더 자연스러운 정답은 '${trimmedCorrect}'입니다.`,
+    };
+  }
+
+  return {
+    isCorrect: false,
+    tone: "error",
+    message: "다시 생각해 보세요.",
+    hint: `'${question.targetWord}'의 의미는 '${question.wordMeaning}'이고, 정답은 '${trimmedCorrect}'입니다.`,
+  };
+};
+
+const mapServerFeedback = (feedback: GradeWordAnswerResponse): FeedbackData => ({
+  isCorrect: feedback.verdict === "correct" || feedback.verdict === "correct_but_unnatural",
+  tone:
+    feedback.verdict === "close"
+      ? "close"
+      : feedback.verdict === "correct" || feedback.verdict === "correct_but_unnatural"
+        ? "success"
+        : "error",
+  message: feedback.message,
+  hint: feedback.hint,
+});
 
 export default function SentenceQuiz() {
   const navigate = useNavigate();
@@ -152,17 +254,18 @@ export default function SentenceQuiz() {
   const [wrongCount, setWrongCount] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showImageHint, setShowImageHint] = useState(false);
-  const [hintImageUrl, setHintImageUrl] = useState<string>("");
-  const [hintImageSourceUrl, setHintImageSourceUrl] = useState<string>("");
-  const [hintImageTitle, setHintImageTitle] = useState<string>("");
+  const [hintImageUrl, setHintImageUrl] = useState("");
+  const [hintImageSourceUrl, setHintImageSourceUrl] = useState("");
+  const [hintImageTitle, setHintImageTitle] = useState("");
   const [isHintLoading, setIsHintLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sourceQuestions, setSourceQuestions] = useState<QuizQuestion[]>([]);
   const [completionRecorded, setCompletionRecorded] = useState(false);
   const selectedStudyLevel = searchParams.get("level") || getStoredStudyLevel();
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
   const totalQuestions = quizQuestions.length;
-  const progress = totalQuestions > 0 ? ((completedCount) / totalQuestions) * 100 : 0;
+  const progress = totalQuestions > 0 ? (completedCount / totalQuestions) * 100 : 0;
 
   useEffect(() => {
     const loadQuizQuestions = async () => {
@@ -170,36 +273,20 @@ export default function SentenceQuiz() {
         const wordsQuery = query(collection(db, "words"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(wordsQuery);
 
-        const firestoreQuestions = snapshot.docs
-          .map((item, index) => {
-            const data = item.data();
-            const english = typeof data.exampleSentence === "string" ? data.exampleSentence.trim() : "";
-            const korean = typeof data.exampleTranslation === "string" ? data.exampleTranslation.trim() : "";
-            const koreanTargetWord = typeof data.quizKoreanBlank === "string" ? data.quizKoreanBlank.trim() : "";
-            const answers = Array.isArray(data.quizAnswers)
-              ? data.quizAnswers.filter((answer): answer is string => typeof answer === "string")
-              : [];
-            const targetWord = typeof data.word === "string" ? data.word.trim() : "";
-            const wordMeaning = typeof data.meaning === "string" ? data.meaning.trim() : "";
-
-            if (!english || !korean || !koreanTargetWord || answers.length === 0 || !targetWord) {
-              return null;
-            }
-
-            return {
-              id: index + 1,
-              korean,
-              english,
-              targetWord,
-              wordMeaning,
-              level: typeof data.level === "string" ? data.level.trim() : "",
-              koreanTargetWord,
-              acceptableAnswers: answers,
-            } satisfies QuizQuestion;
-          })
-          .filter((question): question is QuizQuestion => question !== null)
+        const firestoreQuestions = normalizeQuizWordDocs(snapshot.docs)
+          .filter(isQuizWordUsable)
+          .map((item, index) => ({
+            id: index + 1,
+            korean: item.exampleTranslation,
+            english: item.exampleSentence,
+            targetWord: item.word,
+            wordMeaning: item.meaning,
+            level: item.level,
+            koreanTargetWord: resolveQuizCorrectAnswer(item),
+            acceptableAnswers: item.quizAnswers,
+          }))
           .filter((question) => {
-            if (selectedStudyLevel === "전체") {
+            if (selectedStudyLevel === ALL_LEVEL) {
               return true;
             }
 
@@ -207,14 +294,16 @@ export default function SentenceQuiz() {
           });
 
         const fallbackQuestions =
-          selectedStudyLevel === "전체"
+          selectedStudyLevel === ALL_LEVEL
             ? fallbackQuizQuestions
             : fallbackQuizQuestions.filter((question) => question.level === selectedStudyLevel);
-        const nextQuestions = firestoreQuestions.length > 0
-          ? firestoreQuestions
-          : fallbackQuestions.length > 0
-            ? fallbackQuestions
-            : fallbackQuizQuestions;
+
+        const nextQuestions =
+          firestoreQuestions.length > 0
+            ? firestoreQuestions
+            : fallbackQuestions.length > 0
+              ? fallbackQuestions
+              : fallbackQuizQuestions;
 
         setSourceQuestions(nextQuestions);
         setQuizQuestions(shuffleArray(nextQuestions));
@@ -227,7 +316,7 @@ export default function SentenceQuiz() {
         setShowFeedback(null);
         setCompletionRecorded(false);
       } catch (error) {
-        console.error("문장 퀴즈 데이터 불러오기 실패:", error);
+        console.error("문장 퀴즈 데이터를 불러오지 못했습니다.", error);
       } finally {
         setIsLoading(false);
       }
@@ -236,21 +325,6 @@ export default function SentenceQuiz() {
     void loadQuizQuestions();
   }, [selectedStudyLevel]);
 
-  // 입력 필드에 자동으로 포커스
-  useEffect(() => {
-    if (!currentQuestion) {
-      return undefined;
-    }
-
-    // 약간의 지연을 주어 모바일 키보드가 확실히 나타나도록 함
-    const timer = setTimeout(() => {
-      return;
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [currentIndex]); // currentIndex가 바뀔 때마다 포커스
-
-  // 한국어 문장에서 타겟 단어를 ???로 대체
   useEffect(() => {
     const timer = setTimeout(() => {
       const activeElement = document.activeElement;
@@ -262,11 +336,86 @@ export default function SentenceQuiz() {
     return () => clearTimeout(timer);
   }, [currentIndex]);
 
-  const renderKoreanSentence = () => {
-    if (!currentQuestion) return null;
+  useEffect(() => {
+    if (!isCompleted || completionRecorded) {
+      return;
+    }
 
-    const { korean, koreanTargetWord } = currentQuestion;
-    const parts = korean.split(koreanTargetWord);
+    recordStudySessionCompletion({
+      correctCount,
+      wrongCount,
+    });
+    setCompletionRecorded(true);
+  }, [completionRecorded, correctCount, isCompleted, wrongCount]);
+
+  const handleNext = () => {
+    if (currentIndex < totalQuestions - 1) {
+      setCurrentIndex((value) => value + 1);
+      setUserInput("");
+      setShowFeedback(null);
+      setCompletedCount((value) => value + 1);
+      return;
+    }
+
+    setCompletedCount(totalQuestions);
+    setIsCompleted(true);
+  };
+
+  const applyCorrectResult = () => {
+    if (!currentQuestion) {
+      return;
+    }
+
+    const reward = recordCorrectAnswer({
+      wordId: currentQuestion.targetWord,
+      word: currentQuestion.targetWord,
+      level: currentQuestion.level,
+    });
+
+    setCorrectCount((value) => value + 1);
+    toast.success(`+${reward.rewardXp} XP`, {
+      description: `${currentQuestion.targetWord} 정답 보상`,
+    });
+  };
+
+  const applyWrongResult = () => {
+    if (!currentQuestion) {
+      return;
+    }
+
+    setWrongCount((value) => value + 1);
+    recordWrongAnswer({
+      wordId: currentQuestion.targetWord,
+      word: currentQuestion.targetWord,
+      level: currentQuestion.level,
+    });
+  };
+
+  const applyLocalFallback = (userAnswer: string, correctAnswer: string) => {
+    if (!currentQuestion) {
+      return;
+    }
+
+    const feedback = createLocalFeedback(userAnswer, correctAnswer, currentQuestion);
+    setShowFeedback(feedback);
+
+    if (feedback.isCorrect) {
+      applyCorrectResult();
+      window.setTimeout(() => {
+        handleNext();
+      }, 1000);
+      return;
+    }
+
+    applyWrongResult();
+  };
+
+  const renderKoreanSentence = () => {
+    if (!currentQuestion) {
+      return null;
+    }
+
+    const parts = currentQuestion.korean.split(currentQuestion.koreanTargetWord);
 
     return (
       <h2 className="text-2xl mb-2 flex items-center flex-wrap gap-1">
@@ -274,16 +423,16 @@ export default function SentenceQuiz() {
         <input
           type="text"
           value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
+          onChange={(event) => setUserInput(event.target.value)}
           onCompositionStart={() => setIsComposing(true)}
           onCompositionEnd={() => setIsComposing(false)}
-          onKeyDown={(e) => {
-            if (e.nativeEvent.isComposing || isComposing) {
+          onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing || isComposing) {
               return;
             }
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSubmit();
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void handleSubmit();
             }
           }}
           enterKeyHint="done"
@@ -300,44 +449,28 @@ export default function SentenceQuiz() {
     );
   };
 
-  // 문장에서 타겟 단어 하이라이트
   const renderHighlightedSentence = () => {
-    if (!currentQuestion) return null;
+    if (!currentQuestion) {
+      return null;
+    }
 
-    const { english, targetWord } = currentQuestion;
-    const parts = english.split(new RegExp(`(\\b${targetWord}\\b)`, "gi"));
+    const parts = currentQuestion.english.split(new RegExp(`(\\b${currentQuestion.targetWord}\\b)`, "gi"));
 
     return (
       <p className="text-2xl leading-relaxed text-gray-800">
-        {parts.map((part, index) => {
-          if (part.toLowerCase() === targetWord.toLowerCase()) {
-            return (
-              <span key={index} className="bg-cyan-100 text-cyan-600 px-2 py-1 rounded-lg font-medium">
-                {part}
-              </span>
-            );
-          }
-          return <span key={index}>{part}</span>;
-        })}
+        {parts.map((part, index) =>
+          part.toLowerCase() === currentQuestion.targetWord.toLowerCase() ? (
+            <span key={`${part}-${index}`} className="bg-cyan-100 text-cyan-600 px-2 py-1 rounded-lg font-medium">
+              {part}
+            </span>
+          ) : (
+            <span key={`${part}-${index}`}>{part}</span>
+          ),
+        )}
       </p>
     );
   };
 
-  // 다음 문제
-  const handleNext = () => {
-    if (currentIndex < totalQuestions - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setUserInput(""); // 입력 필드 초기화
-      setShowFeedback(null); // 피드백 초기화
-      setCompletedCount(completedCount + 1);
-    } else {
-      // 마지막 문제
-      setCompletedCount(totalQuestions);
-      setIsCompleted(true);
-    }
-  };
-
-  // 다시 학습하기
   const handleRestart = () => {
     setQuizQuestions(shuffleArray(sourceQuestions.length > 0 ? sourceQuestions : quizQuestions));
     setCurrentIndex(0);
@@ -350,95 +483,20 @@ export default function SentenceQuiz() {
     setCompletionRecorded(false);
   };
 
-  // AI 스타일 피드백 생성 함수
-  const generateFeedback = (userAnswer: string, correctAnswer: string, question: QuizQuestion): FeedbackData => {
-    const trimmedUser = userAnswer.trim();
-    const trimmedCorrect = correctAnswer.trim();
-
-    // 정답인 경우
-    if (question.acceptableAnswers.includes(trimmedUser)) {
-      const correctMessages = [
-        `완벽합니다! '${question.targetWord}'는 '${question.wordMeaning}'라는 의미로, 이 문맥에서 "${trimmedCorrect}"가 정확한 번역입니다.`,
-        `정답입니다! 영어 '${question.targetWord}'를 한국어로 '${trimmedCorrect}'라고 표현하는 것이 자연스럽습니다.`,
-        `맞았어요! 이 문장에서 '${question.targetWord}'는 '${trimmedCorrect}'로 번역되어 문맥상 완벽하게 맞습니다.`,
-      ];
-      setCorrectCount(correctCount + 1);
-      return {
-        isCorrect: true,
-        message: correctMessages[Math.floor(Math.random() * correctMessages.length)],
-      };
-    }
-
-    // 오답인 경우 - 유사도 체크
-    const similarity = calculateSimilarity(trimmedUser, trimmedCorrect);
-    
-    if (similarity > 0.7) {
-      // 비슷한 답변
-      setWrongCount(wrongCount + 1);
-      return {
-        isCorrect: false,
-        tone: "close",
-        message: `아쉽네요! 거의 다 맞았어요.`,
-        hint: `'${question.targetWord}'는 '${question.wordMeaning}'라는 뜻입니다. 정답은 '${trimmedCorrect}'입니다. 문법이나 형태를 다시 확인해보세요!`,
-      };
-    } else if (trimmedUser.length === 0) {
-      // 빈 답변
-      setWrongCount(wrongCount + 1);
-      return {
-        isCorrect: false,
-        message: `답을 입력해주세요!`,
-        hint: `'${question.targetWord}'의 의미는 '${question.wordMeaning}'입니다. 이 단어가 문장에서 어떻게 쓰이는지 생각해보세요.`,
-      };
-    } else {
-      // 완전히 다른 답변
-      setWrongCount(wrongCount + 1);
-      return {
-        isCorrect: false,
-        message: `틀렸습니다. 다시 생각해보세요!`,
-        hint: `'${question.targetWord}'는 '${question.wordMeaning}'를 의미합니다. 한국어 문장의 맥락을 고려해서 적절한 형태로 변환해보세요.`,
-      };
-    }
-  };
-
-  // 문자열 유사도 계산 (Levenshtein distance)
-  const calculateSimilarity = (str1: string, str2: string): number => {
-    const track = Array(str2.length + 1).fill(null).map(() =>
-      Array(str1.length + 1).fill(null));
-    for (let i = 0; i <= str1.length; i += 1) {
-      track[0][i] = i;
-    }
-    for (let j = 0; j <= str2.length; j += 1) {
-      track[j][0] = j;
-    }
-    for (let j = 1; j <= str2.length; j += 1) {
-      for (let i = 1; i <= str1.length; i += 1) {
-        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-        track[j][i] = Math.min(
-          track[j][i - 1] + 1,
-          track[j - 1][i] + 1,
-          track[j - 1][i - 1] + indicator,
-        );
-      }
-    }
-    const distance = track[str2.length][str1.length];
-    return 1 - distance / Math.max(str1.length, str2.length);
-  };
-
-  // 모르겠음 - 정답 보여주기
   const handleDontKnow = () => {
     if (!currentQuestion) {
       return;
     }
 
     setUserInput(currentQuestion.koreanTargetWord);
-    setShowFeedback({ 
-      isCorrect: false, 
-      message: "정답을 확인하세요!", 
-      hint: `'${currentQuestion.targetWord}'는 '${currentQuestion.wordMeaning}'라는 의미입니다. 다음에는 꼭 기억해보세요!`,
+    setShowFeedback({
+      isCorrect: false,
+      tone: "error",
+      message: "정답을 확인해 보세요.",
+      hint: `'${currentQuestion.targetWord}'의 의미는 '${currentQuestion.wordMeaning}'입니다. 다음에는 꼭 기억해 보세요!`,
     });
   };
 
-  // 발음 듣기 (문장 전체)
   const handlePronunciation = () => {
     if (!currentQuestion) {
       return;
@@ -450,60 +508,10 @@ export default function SentenceQuiz() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // 이미지 힌트 보기
   const handleImageHint = async () => {
     if (!currentQuestion) {
       return;
     }
-
-    const searchCommonsImage = async (queryWord: string): Promise<CommonsImageResult | null> => {
-      const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
-      endpoint.searchParams.set("action", "query");
-      endpoint.searchParams.set("generator", "search");
-      endpoint.searchParams.set("gsrsearch", queryWord);
-      endpoint.searchParams.set("gsrnamespace", "6");
-      endpoint.searchParams.set("gsrlimit", "1");
-      endpoint.searchParams.set("prop", "imageinfo|info");
-      endpoint.searchParams.set("iiprop", "url");
-      endpoint.searchParams.set("iiurlwidth", "640");
-      endpoint.searchParams.set("inprop", "url");
-      endpoint.searchParams.set("format", "json");
-      endpoint.searchParams.set("formatversion", "2");
-      endpoint.searchParams.set("origin", "*");
-
-      const response = await fetch(endpoint.toString());
-      if (!response.ok) {
-        throw new Error(`Wikimedia Commons request failed: ${response.status}`);
-      }
-
-      const data = await response.json() as {
-        query?: {
-          pages?: Array<{
-            title?: string;
-            fullurl?: string;
-            imageinfo?: Array<{
-              thumburl?: string;
-              url?: string;
-            }>;
-          }>;
-        };
-      };
-
-      const page = data.query?.pages?.[0];
-      const imageInfo = page?.imageinfo?.[0];
-      const imageUrl = imageInfo?.thumburl || imageInfo?.url;
-      const descriptionUrl = page?.fullurl;
-
-      if (!page?.title || !imageUrl || !descriptionUrl) {
-        return null;
-      }
-
-      return {
-        imageUrl,
-        descriptionUrl,
-        title: page.title,
-      };
-    };
 
     setIsHintLoading(true);
     setHintImageUrl("");
@@ -512,7 +520,40 @@ export default function SentenceQuiz() {
     setShowImageHint(true);
 
     try {
-      const result = await searchCommonsImage(currentQuestion.targetWord);
+      let result: CommonsImageResult | null = null;
+
+      try {
+        const response = await fetch(IMAGE_HINT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            targetWord: currentQuestion.targetWord,
+            english: currentQuestion.english,
+            wordMeaning: currentQuestion.wordMeaning,
+          }),
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as Partial<CommonsImageResult>;
+          if (data.imageUrl && data.descriptionUrl && data.title) {
+            result = {
+              imageUrl: data.imageUrl,
+              descriptionUrl: data.descriptionUrl,
+              title: data.title,
+            };
+          }
+        } else {
+          console.error("[Image Hint Error]", response.status);
+        }
+      } catch (error) {
+        console.error("[Image Hint Error]", error);
+      }
+
+      if (!result) {
+        result = await searchCommonsImage(currentQuestion.targetWord);
+      }
 
       if (!result) {
         toast.error(`'${currentQuestion.targetWord}'에 맞는 이미지 힌트를 찾지 못했습니다.`);
@@ -524,7 +565,7 @@ export default function SentenceQuiz() {
       setHintImageSourceUrl(result.descriptionUrl);
       setHintImageTitle(result.title);
     } catch (error) {
-      console.error("Wikimedia Commons 이미지 힌트 로드 실패:", error);
+      console.error("[Image Hint Error]", error);
       toast.error("이미지 힌트를 불러오지 못했습니다.");
       setShowImageHint(false);
     } finally {
@@ -532,74 +573,111 @@ export default function SentenceQuiz() {
     }
   };
 
-  // 정답 제출
-  const handleSubmit = () => {
-    if (!currentQuestion) {
+  const handleSubmit = async () => {
+    if (!currentQuestion || isSubmitting) {
       return;
     }
 
     const trimmedInput = userInput.trim();
     const correctAnswer = currentQuestion.koreanTargetWord.trim();
-    
-    const feedback = generateFeedback(trimmedInput, correctAnswer, currentQuestion);
-    setShowFeedback(feedback);
 
-    if (feedback.isCorrect) {
-      const reward = recordCorrectAnswer({
-        wordId: currentQuestion.targetWord,
-        word: currentQuestion.targetWord,
-        level: currentQuestion.level,
+    setIsSubmitting(true);
+
+    try {
+      const currentUser = auth.currentUser;
+      const token = currentUser ? await getIdToken(currentUser, false) : "";
+
+      if (!token) {
+        console.error("[No Auth Token]");
+        toast.error("로그인 정보가 필요합니다. 다시 로그인해 주세요.");
+        return;
+      }
+
+      const response = await fetch(GRADE_WORD_ANSWER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          english: currentQuestion.english,
+          korean: currentQuestion.korean,
+          targetWord: currentQuestion.targetWord,
+          wordMeaning: currentQuestion.wordMeaning,
+          acceptableAnswers: currentQuestion.acceptableAnswers,
+          correctAnswer,
+          userAnswer: trimmedInput,
+        }),
       });
-      toast.success(`+${reward.rewardXp} XP`, {
-        description: `${currentQuestion.targetWord} 정답 보상`,
-      });
-      setTimeout(() => {
-        handleNext();
-      }, 1000);
-    } else {
-      recordWrongAnswer({
-        wordId: currentQuestion.targetWord,
-        word: currentQuestion.targetWord,
-        level: currentQuestion.level,
-      });
+
+      if (response.status === 401 || response.status === 403) {
+        console.error("[Grade Auth Error]", response.status);
+        toast.error("인증 정보가 올바르지 않습니다. 다시 로그인해 주세요.");
+        return;
+      }
+
+      if (response.status === 400) {
+        const errorText = await response.text();
+        console.error("[Grade Bad Request]", errorText);
+        toast.error("채점 요청 형식에 문제가 있습니다.");
+        return;
+      }
+
+      if (!response.ok) {
+        if (response.status >= 500) {
+          console.error("[Grade Server Error]", response.status);
+          toast.error("서버 채점에 실패해 기본 채점으로 전환합니다.");
+          applyLocalFallback(trimmedInput, correctAnswer);
+          return;
+        }
+
+        console.error("[Grade Error]", response.status);
+        toast.error("채점 요청을 처리하지 못했습니다.");
+        return;
+      }
+
+      const feedback = (await response.json()) as GradeWordAnswerResponse;
+      setShowFeedback(mapServerFeedback(feedback));
+
+      if (feedback.verdict === "correct" || feedback.verdict === "correct_but_unnatural") {
+        applyCorrectResult();
+        window.setTimeout(() => {
+          handleNext();
+        }, feedback.verdict === "correct" ? 1000 : 1600);
+        return;
+      }
+
+      if (feedback.verdict === "close" || feedback.verdict === "incorrect" || feedback.verdict === "empty") {
+        applyWrongResult();
+      }
+    } catch (error) {
+      console.error("[Grade Network Error]", error);
+      toast.error("서버 채점에 실패해 기본 채점으로 전환합니다.");
+      applyLocalFallback(trimmedInput, correctAnswer);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // 키보드 키 입력
-  useEffect(() => {
-    if (!isCompleted || completionRecorded) {
+  const handleKeyPress = (key: string) => {
+    if (key === "backspace") {
+      setUserInput((value) => value.slice(0, -1));
       return;
     }
 
-    recordStudySessionCompletion({
-      correctCount,
-      wrongCount,
-    });
-    setCompletionRecorded(true);
-  }, [completionRecorded, correctCount, isCompleted, wrongCount]);
-
-  const handleKeyPress = (key: string) => {
-    if (key === 'backspace') {
-      setUserInput(userInput.slice(0, -1));
-    } else if (key === 'space') {
-      setUserInput(userInput + ' ');
-    } else {
-      setUserInput(userInput + key);
+    if (key === "space") {
+      setUserInput((value) => value + " ");
+      return;
     }
-  };
 
-  // 한글 자판 레이아웃
-  const koreanKeyboard = [
-    ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'],
-    ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'],
-    ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ'],
-  ];
+    setUserInput((value) => value + key);
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
         <div className="text-center">
-          <p className="text-lg text-gray-700 mb-2">문장 퀴즈를 준비하는 중입니다.</p>
+          <p className="text-lg text-gray-700 mb-2">문장 퀴즈를 준비하고 있습니다.</p>
           <p className="text-sm text-gray-500">Firestore의 `words` 문장 데이터를 확인하고 있습니다.</p>
         </div>
       </div>
@@ -611,7 +689,10 @@ export default function SentenceQuiz() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
         <div className="text-center max-w-sm">
           <p className="text-lg text-gray-700 mb-2">문장 퀴즈에 사용할 데이터가 없습니다.</p>
-          <p className="text-sm text-gray-500 mb-6">`words` 문서에 `exampleSentence`, `exampleTranslation`, `quizKoreanBlank`, `quizAnswers` 필드를 넣어주세요.</p>
+          <p className="text-sm text-gray-500 mb-6">
+            `words` 문서에 `exampleSentence`, `exampleTranslation`, `quizKoreanBlank`, `quizAnswers`
+            필드를 넣어 주세요.
+          </p>
           <Button onClick={() => navigate("/app/words")} className="rounded-xl">
             단어 목록으로
           </Button>
@@ -624,18 +705,11 @@ export default function SentenceQuiz() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {!isCompleted ? (
         <>
-          {/* Header */}
           <div className="bg-white/80 backdrop-blur-sm px-6 py-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/app/home")}
-              className="rounded-full"
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate("/app/home")} className="rounded-full">
               <ChevronLeft className="w-5 h-5" />
             </Button>
 
-            {/* Progress */}
             <div className="flex items-center gap-3 flex-1 mx-4">
               <div className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-full p-2">
                 <span className="text-white text-xs font-bold">
@@ -652,41 +726,27 @@ export default function SentenceQuiz() {
               </div>
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-full"
-            >
+            <Button variant="ghost" size="sm" className="rounded-full">
               <Settings className="w-5 h-5" />
             </Button>
           </div>
 
-          {/* Main Content */}
           <div className="flex-1 flex flex-col items-center justify-start px-6 pt-16 pb-4">
             <AnimatePresence mode="wait">
               <motion.div
-                key={currentQuestion?.id}
+                key={currentQuestion.id}
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 className="w-full max-w-lg"
               >
-                {/* Question Card */}
                 <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
-                  {/* English Sentence */}
-                  <div className="mb-8">
-                    {renderHighlightedSentence()}
-                  </div>
-
-                  {/* Korean Sentence */}
-                  <div className="mb-6">
-                    {renderKoreanSentence()}
-                  </div>
+                  <div className="mb-8">{renderHighlightedSentence()}</div>
+                  <div className="mb-6">{renderKoreanSentence()}</div>
                 </div>
 
-                {/* Action Buttons - 3개 버튼 */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  <button 
+                  <button
                     onClick={handleDontKnow}
                     className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-gray-400 to-gray-500 text-white shadow-lg hover:shadow-xl transition-shadow"
                   >
@@ -694,7 +754,7 @@ export default function SentenceQuiz() {
                     <span className="text-sm font-semibold">모르겠음</span>
                   </button>
 
-                  <button 
+                  <button
                     onClick={handlePronunciation}
                     className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-shadow"
                   >
@@ -702,25 +762,28 @@ export default function SentenceQuiz() {
                     <span className="text-sm font-semibold">발음듣기</span>
                   </button>
 
-                  <button 
-                    onClick={handleSubmit}
-                    className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-shadow"
+                  <button
+                    onClick={() => {
+                      void handleSubmit();
+                    }}
+                    disabled={isSubmitting}
+                    className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-shadow disabled:opacity-60"
                   >
                     <Play className="w-6 h-6" />
-                    <span className="text-sm font-semibold">정답제출</span>
+                    <span className="text-sm font-semibold">{isSubmitting ? "채점중" : "정답제출"}</span>
                   </button>
                 </div>
 
-                {/* Image Hint Button */}
                 <button
-                  onClick={handleImageHint}
+                  onClick={() => {
+                    void handleImageHint();
+                  }}
                   className="text-xs text-gray-400 hover:text-purple-500 transition-colors mb-4 flex items-center gap-1 mx-auto"
                 >
                   <ImageIcon className="w-3 h-3" />
                   <span>이미지 힌트</span>
                 </button>
 
-                {/* Feedback */}
                 {showFeedback && (
                   <div
                     className={`mb-4 p-4 rounded-3xl ${
@@ -739,13 +802,10 @@ export default function SentenceQuiz() {
                       )}
                       <span className="text-sm font-semibold">{showFeedback.message}</span>
                     </div>
-                    {showFeedback.hint && (
-                      <p className="mt-2 text-sm text-gray-600">힌트: {showFeedback.hint}</p>
-                    )}
+                    {showFeedback.hint && <p className="mt-2 text-sm text-gray-600">힌트: {showFeedback.hint}</p>}
                   </div>
                 )}
 
-                {/* Virtual Keyboard */}
                 <div className="bg-gray-200 rounded-3xl p-4 mb-4">
                   {koreanKeyboard.map((row, rowIndex) => (
                     <div key={rowIndex} className="flex justify-center gap-1 mb-2">
@@ -760,16 +820,15 @@ export default function SentenceQuiz() {
                       ))}
                     </div>
                   ))}
-                  {/* Bottom row with space and backspace */}
                   <div className="flex justify-center gap-1">
                     <button
-                      onClick={() => handleKeyPress('backspace')}
+                      onClick={() => handleKeyPress("backspace")}
                       className="bg-white text-gray-800 font-medium px-4 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex items-center justify-center"
                     >
                       <Delete className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => handleKeyPress('space')}
+                      onClick={() => handleKeyPress("space")}
                       className="bg-white text-gray-800 font-medium px-12 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex-1 max-w-[200px]"
                     >
                       스페이스
@@ -781,7 +840,6 @@ export default function SentenceQuiz() {
           </div>
         </>
       ) : (
-        /* Results Screen */
         <div className="flex-1 flex flex-col items-center justify-center px-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -789,42 +847,31 @@ export default function SentenceQuiz() {
             transition={{ duration: 0.5 }}
             className="w-full max-w-lg"
           >
-            {/* Trophy Icon */}
             <div className="flex justify-center mb-8">
               <div className="bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full p-8 shadow-2xl">
                 <Trophy className="w-20 h-20 text-white" />
               </div>
             </div>
 
-            {/* Title */}
-            <h1 className="text-4xl font-bold text-center mb-4 text-gray-800">
-              학습 완료!
-            </h1>
-            <p className="text-center text-gray-600 mb-8">수고하셨습니다! 🎉</p>
+            <h1 className="text-4xl font-bold text-center mb-4 text-gray-800">학습 완료!</h1>
+            <p className="text-center text-gray-600 mb-8">수고하셨어요.</p>
 
-            {/* Stats Card */}
             <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
               <div className="grid grid-cols-3 gap-4 mb-6">
-                {/* 총 문제 */}
                 <div className="text-center">
                   <div className="text-3xl font-bold text-gray-800 mb-1">{totalQuestions}</div>
                   <div className="text-sm text-gray-500">총 문제</div>
                 </div>
-
-                {/* 정답 */}
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-500 mb-1">{correctCount}</div>
                   <div className="text-sm text-gray-500">정답</div>
                 </div>
-
-                {/* 오답 */}
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-500 mb-1">{wrongCount}</div>
                   <div className="text-sm text-gray-500">오답</div>
                 </div>
               </div>
 
-              {/* 정답률 */}
               <div className="border-t border-gray-200 pt-6">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-gray-700 font-semibold">정답률</span>
@@ -836,16 +883,13 @@ export default function SentenceQuiz() {
                   <motion.div
                     className="h-full bg-gradient-to-r from-green-400 to-emerald-500"
                     initial={{ width: 0 }}
-                    animate={{ 
-                      width: `${totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0}%` 
-                    }}
+                    animate={{ width: `${totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0}%` }}
                     transition={{ duration: 1, delay: 0.5 }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={handleRestart}
@@ -867,7 +911,6 @@ export default function SentenceQuiz() {
         </div>
       )}
 
-      {/* Image Hint Modal */}
       <AnimatePresence>
         {showImageHint && (
           <motion.div
@@ -881,10 +924,9 @@ export default function SentenceQuiz() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
               className="relative bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl"
             >
-              {/* Close Button */}
               <button
                 onClick={() => setShowImageHint(false)}
                 className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -892,37 +934,25 @@ export default function SentenceQuiz() {
                 <XIcon className="w-5 h-5 text-gray-600" />
               </button>
 
-              {/* Title */}
-              <h3 className="text-2xl font-bold mb-6 text-gray-800">
-                {currentQuestion?.targetWord}
-              </h3>
+              <h3 className="text-2xl font-bold mb-6 text-gray-800">{currentQuestion.targetWord}</h3>
 
-              {/* Image */}
               <div className="rounded-2xl overflow-hidden bg-gray-100 mb-4 min-h-64 flex items-center justify-center">
                 {isHintLoading ? (
-                  <p className="text-sm text-gray-500">Wikimedia Commons에서 이미지를 찾는 중입니다.</p>
+                  <p className="text-sm text-gray-500">이미지를 불러오는 중입니다.</p>
                 ) : (
-                  <img
-                    src={hintImageUrl}
-                    alt={currentQuestion?.targetWord}
-                    className="w-full h-64 object-cover"
-                    key={hintImageUrl}
-                  />
+                  <img src={hintImageUrl} alt={currentQuestion.targetWord} className="w-full h-64 object-cover" />
                 )}
               </div>
 
-              {/* Hint Text */}
-              <p className="text-sm text-gray-500 text-center">
-                💡 이미지를 보고 단어의 의미를 떠올려보세요!
-              </p>
+              <p className="text-sm text-gray-500 text-center">이미지를 보고 단어의 의미를 떠올려 보세요.</p>
               {!isHintLoading && hintImageSourceUrl && (
                 <a
                   href={hintImageSourceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 block text-center text-xs text-blue-600 hover:underline"
+                  className="mt-4 block text-center text-sm text-blue-600 hover:underline"
                 >
-                  출처 보기: {hintImageTitle || "Wikimedia Commons"}
+                  출처 보기{hintImageTitle ? ` · ${hintImageTitle}` : ""}
                 </a>
               )}
             </motion.div>
