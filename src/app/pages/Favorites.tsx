@@ -7,7 +7,7 @@ import { communityPosts, getSavedCommunityPostIds } from "../lib/community";
 
 export default function Favorites() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [savedPostIds, setSavedPostIds] = useState<number[]>([]);
+  const [savedPostIds, setSavedPostIds] = useState<string[]>([]);
 
   const favorites = [
     { id: 1, word: "Serendipity", meaning: "뜻밖의 행운", level: "고급", mastery: 85, addedDate: "2026-03-20" },
@@ -25,7 +25,7 @@ export default function Favorites() {
     (item) =>
       item.word.toLowerCase().includes(searchQuery.toLowerCase()) || item.meaning.includes(searchQuery),
   );
-  const savedPosts = communityPosts.filter((post) => savedPostIds.includes(post.id));
+  const savedPosts = communityPosts.filter((post) => savedPostIds.includes(String(post.id)));
 
   return (
     <div className="min-h-screen bg-background pb-6">

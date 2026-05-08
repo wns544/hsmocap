@@ -1,59 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
 import { ChevronRight, Edit, Flame, MessageCircle, Search, ThumbsUp } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { CommunityCategoryOption, CommunityPostRecord, mapPostRecord } from "../lib/community";
 import { db } from "../lib/firebase";
-
-interface CategoryItem {
-  id: string;
-  name: string;
-}
-
-interface CommunityListPost {
-  id: string;
-  author: {
-    name: string;
-    avatar: string;
-    level: string;
-  };
-  title: string;
-  content: string;
-  categoryId: string;
-  categoryName: string;
-  likes: number;
-  comments: number;
-  views: number;
-  isHot: boolean;
-  timestamp: string;
-  hasImage?: boolean;
-  imageUrl?: string;
-}
 
 const text = {
   title: "\ucee4\ubba4\ub2c8\ud2f0",
   write: "\uae00\uc4f0\uae30",
   searchPlaceholder: "\uac8c\uc2dc\uae00\uc744 \uac80\uc0c9\ud574\ubcf4\uc138\uc694",
   all: "\uc804\uccb4",
-  unknown: "Unknown",
-  unknownLevel: "\ub808\ubca8 \uc815\ubcf4 \uc5c6\uc74c",
-  levelPrefix: "\ub808\ubca8",
-  untitled: "\uc81c\ubaa9 \uc5c6\uc74c",
-  uncategorized: "\ubbf8\ubd84\ub958",
-  justNow: "\ubc29\uae08 \uc804",
   empty: "\uc870\uac74\uc5d0 \ub9de\ub294 \uac8c\uc2dc\uae00\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.",
   loadMore: "\ub354\ubcf4\uae30",
 };
 
 export default function Community() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [categories, setCategories] = useState<CommunityCategoryOption[]>([]);
   const [activeCategory, setActiveCategory] = useState("all");
-  const [posts, setPosts] = useState<CommunityListPost[]>([]);
+  const [posts, setPosts] = useState<CommunityPostRecord[]>([]);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -78,40 +46,7 @@ export default function Community() {
       try {
         const postsQuery = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(postsQuery);
-        setPosts(
-          snapshot.docs.map((item) => {
-            const data = item.data();
-            const authorSnapshot =
-              typeof data.authorSnapshot === "object" && data.authorSnapshot ? data.authorSnapshot : {};
-            const imageUrls = Array.isArray(data.imageUrls) ? data.imageUrls : [];
-
-            return {
-              id: item.id,
-              author: {
-                name: typeof authorSnapshot.nickname === "string" ? authorSnapshot.nickname : text.unknown,
-                avatar: "",
-                level:
-                  typeof authorSnapshot.level === "number"
-                    ? `${text.levelPrefix} ${authorSnapshot.level}`
-                    : text.unknownLevel,
-              },
-              title: typeof data.title === "string" ? data.title : text.untitled,
-              content: typeof data.content === "string" ? data.content : "",
-              categoryId: typeof data.categoryId === "string" ? data.categoryId : "unknown",
-              categoryName: typeof data.categoryName === "string" ? data.categoryName : text.uncategorized,
-              likes: typeof data.likeCount === "number" ? data.likeCount : 0,
-              comments: typeof data.commentCount === "number" ? data.commentCount : 0,
-              views: typeof data.viewCount === "number" ? data.viewCount : 0,
-              isHot: Boolean(data.isHot),
-              timestamp:
-                data.createdAt && typeof data.createdAt.toDate === "function"
-                  ? formatDistanceToNow(data.createdAt.toDate(), { addSuffix: true, locale: ko })
-                  : text.justNow,
-              hasImage: imageUrls.length > 0,
-              imageUrl: typeof imageUrls[0] === "string" ? imageUrls[0] : undefined,
-            };
-          }),
-        );
+        setPosts(snapshot.docs.map((item) => mapPostRecord(item.id, item.data())));
       } catch (error) {
         console.error("Failed to load community posts:", error);
       }

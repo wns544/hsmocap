@@ -1,8 +1,9 @@
-import { addDoc, collection, getDocs, limit, query, serverTimestamp, where } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { toast } from "sonner";
 import ComposerForm from "../components/ComposerForm";
 import { useAuth } from "../contexts/AuthContext";
+import { CommunityCategoryOption } from "../lib/community";
 import { db, storage } from "../lib/firebase";
 
 export default function CreatePost() {
@@ -30,29 +31,14 @@ export default function CreatePost() {
   const handleSubmit = async (payload: {
     title: string;
     content: string;
-    category: string;
+    category: CommunityCategoryOption;
     imageUrls: string[];
   }) => {
     if (!user) {
       throw new Error("User is not authenticated.");
     }
 
-    let categoryId = payload.category;
     const uploadedImageUrls = await uploadImages(payload.imageUrls);
-
-    try {
-      const categoryQuery = query(
-        collection(db, "communityCategories"),
-        where("name", "==", payload.category),
-        limit(1),
-      );
-      const snapshot = await getDocs(categoryQuery);
-      if (!snapshot.empty) {
-        categoryId = snapshot.docs[0].id;
-      }
-    } catch (error) {
-      console.error("Failed to resolve category id:", error);
-    }
 
     await addDoc(collection(db, "posts"), {
       authorId: user.uid,
@@ -61,8 +47,8 @@ export default function CreatePost() {
         avatarUrl: user.photoURL || "",
         level: 1,
       },
-      categoryId,
-      categoryName: payload.category,
+      categoryId: payload.category.id,
+      categoryName: payload.category.name,
       title: payload.title,
       content: payload.content,
       imageUrls: uploadedImageUrls,

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { ChevronDown, Hash, Image, Smile, X } from "lucide-react";
 import { toast } from "sonner";
+import { CommunityCategoryOption } from "../lib/community";
 import { db } from "../lib/firebase";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -12,22 +13,22 @@ interface ComposerFormProps {
   submitLabel?: string;
   submittingLabel?: string;
   successPath: string;
-  categories?: string[];
+  categories?: CommunityCategoryOption[];
   onSubmit?: (payload: {
     title: string;
     content: string;
-    category: string;
+    category: CommunityCategoryOption;
     imageUrls: string[];
   }) => Promise<void> | void;
 }
 
-const defaultCategories = [
-  "\ud559\uc2b5\ud301",
-  "\uc2dc\ud5d8\ub300\ube44",
-  "\ub2e8\uc5b4",
-  "\ud6c4\uae30",
-  "\uc9c8\ubb38",
-  "\uc790\uc720",
+const defaultCategories: CommunityCategoryOption[] = [
+  { id: "study-tip", name: "\ud559\uc2b5\ud301" },
+  { id: "exam-prep", name: "\uc2dc\ud5d8\ub300\ube44" },
+  { id: "vocabulary", name: "\ub2e8\uc5b4" },
+  { id: "review", name: "\ud6c4\uae30" },
+  { id: "question", name: "\uc9c8\ubb38" },
+  { id: "free", name: "\uc790\uc720" },
 ];
 
 const text = {
@@ -58,8 +59,8 @@ export default function ComposerForm({
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [availableCategories, setAvailableCategories] = useState<string[]>(categories ?? defaultCategories);
-  const [selectedCategory, setSelectedCategory] = useState((categories ?? defaultCategories)[0] ?? "");
+  const [availableCategories, setAvailableCategories] = useState<CommunityCategoryOption[]>(categories ?? defaultCategories);
+  const [selectedCategoryId, setSelectedCategoryId] = useState((categories ?? defaultCategories)[0]?.id ?? "");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,7 +69,7 @@ export default function ComposerForm({
   useEffect(() => {
     if (categories && categories.length > 0) {
       setAvailableCategories(categories);
-      setSelectedCategory((current) => current || categories[0] || "");
+      setSelectedCategoryId((current) => current || categories[0]?.id || "");
       return;
     }
 
@@ -78,12 +79,18 @@ export default function ComposerForm({
         const categoriesQuery = query(collection(db, "communityCategories"), orderBy("sortOrder", "asc"));
         const snapshot = await getDocs(categoriesQuery);
         const fetchedCategories = snapshot.docs
-          .map((item) => item.data().name)
-          .filter((name): name is string => typeof name === "string" && name.length > 0);
+          .map((item) => {
+            const data = item.data();
+            return {
+              id: item.id,
+              name: typeof data.name === "string" && data.name.length > 0 ? data.name : item.id,
+            };
+          })
+          .filter((category) => category.name.length > 0);
 
         if (fetchedCategories.length > 0) {
           setAvailableCategories(fetchedCategories);
-          setSelectedCategory((current) => current || fetchedCategories[0] || "");
+          setSelectedCategoryId((current) => current || fetchedCategories[0]?.id || "");
           return;
         }
       } catch (error) {
@@ -93,14 +100,17 @@ export default function ComposerForm({
       }
 
       setAvailableCategories(defaultCategories);
-      setSelectedCategory((current) => current || defaultCategories[0] || "");
+      setSelectedCategoryId((current) => current || defaultCategories[0]?.id || "");
     };
 
     void loadCategories();
   }, [categories]);
 
+  const selectedCategory =
+    availableCategories.find((category) => category.id === selectedCategoryId) ?? availableCategories[0] ?? null;
+
   const handleSubmit = async () => {
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim() || !content.trim() || !selectedCategory) {
       toast.error(text.submitValidationMessage);
       return;
     }
@@ -194,7 +204,7 @@ export default function ComposerForm({
           disabled={isSubmitting || isLoadingCategories}
         >
           <Hash className="w-5 h-5" />
-          <span>{isLoadingCategories ? text.loadingCategories : selectedCategory}</span>
+          <span>{isLoadingCategories ? text.loadingCategories : selectedCategory?.name}</span>
           <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryPicker ? "rotate-180" : ""}`} />
         </button>
 
@@ -202,19 +212,19 @@ export default function ComposerForm({
           <div className="mt-3 flex flex-wrap gap-2">
             {availableCategories.map((category) => (
               <Badge
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
+                key={category.id}
+                variant={selectedCategoryId === category.id ? "default" : "outline"}
                 className={`cursor-pointer px-4 py-2 ${
-                  selectedCategory === category
+                  selectedCategoryId === category.id
                     ? "bg-primary text-white hover:bg-primary/90"
                     : "hover:bg-muted"
                 }`}
                 onClick={() => {
-                  setSelectedCategory(category);
+                  setSelectedCategoryId(category.id);
                   setShowCategoryPicker(false);
                 }}
               >
-                {category}
+                {category.name}
               </Badge>
             ))}
           </div>
