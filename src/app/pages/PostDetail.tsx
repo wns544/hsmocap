@@ -6,12 +6,12 @@ import {
   doc,
   getDoc,
   getDocs,
-  increment,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 import { Bookmark, ChevronLeft, Loader2, MessageCircle, MoreVertical, Send, Share2, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -25,7 +25,7 @@ import {
   mapPostRecord,
   toggleSavedCommunityPost,
 } from "../lib/community";
-import { db } from "../lib/firebase";
+import { db, functions } from "../lib/firebase";
 
 const text = {
   loading: "게시글을 불러오는 중입니다.",
@@ -88,13 +88,16 @@ export default function PostDetail() {
           views: postRecord.views + 1,
         });
 
-        await updateDoc(postRef, {
-          viewCount: increment(1),
-        });
-
         const commentsQuery = query(collection(db, "posts", id, "comments"), orderBy("createdAt", "asc"));
         const commentsSnapshot = await getDocs(commentsQuery);
         setComments(commentsSnapshot.docs.map((item) => mapCommentRecord(item.id, item.data())));
+
+        try {
+          const incrementPostView = httpsCallable<{ postId: string }, { success: boolean }>(functions, "incrementPostView");
+          await incrementPostView({ postId: id });
+        } catch (error) {
+          console.warn("Failed to increment post views:", error);
+        }
       } catch (error) {
         console.error("Failed to load post detail:", error);
         toast.error(text.loadError);
