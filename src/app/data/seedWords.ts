@@ -10,6 +10,7 @@ export interface SeedWord {
   exampleTranslation: string;
   quizKoreanBlank: string;
   quizAnswers: string[];
+  quizEnabled?: boolean;
 }
 
 export const seedWords = seedWordsJson as SeedWord[];
