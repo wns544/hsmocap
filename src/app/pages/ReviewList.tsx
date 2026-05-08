@@ -1,68 +1,52 @@
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { RotateCcw, Calendar, ChevronRight, PlayCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { shuffleArray } from "../lib/random";
+
+interface ReviewItem {
+  id: number;
+  word: string;
+  meaning: string;
+  level: string;
+  reviewCount: number;
+  nextReview: string;
+  dueDate: string;
+  isUrgent: boolean;
+}
+
+const reviewItems: ReviewItem[] = [
+  { id: 1, word: "Serendipity", meaning: "뜻밖의 행운", level: "고급", reviewCount: 3, nextReview: "오늘", dueDate: "2026-04-09", isUrgent: true },
+  { id: 2, word: "Eloquent", meaning: "웅변적인", level: "고급", reviewCount: 2, nextReview: "내일", dueDate: "2026-04-10", isUrgent: false },
+  { id: 3, word: "Diligent", meaning: "근면한", level: "초급", reviewCount: 5, nextReview: "3일 후", dueDate: "2026-04-12", isUrgent: false },
+  { id: 4, word: "Benevolent", meaning: "자비로운", level: "고급", reviewCount: 1, nextReview: "오늘", dueDate: "2026-04-09", isUrgent: true },
+  { id: 5, word: "Compassion", meaning: "연민", level: "중급", reviewCount: 4, nextReview: "1주일 후", dueDate: "2026-04-16", isUrgent: false },
+  { id: 6, word: "Frugal", meaning: "검소한", level: "비즈니스", reviewCount: 2, nextReview: "내일", dueDate: "2026-04-10", isUrgent: false },
+];
 
 export default function ReviewList() {
-  const reviewItems = [
-    {
-      id: 1,
-      word: "Serendipity",
-      meaning: "뜻밖의 행운",
-      reviewCount: 3,
-      nextReview: "오늘",
-      dueDate: "2026-03-27",
-      isUrgent: true,
-    },
-    {
-      id: 2,
-      word: "Eloquent",
-      meaning: "웅변의",
-      reviewCount: 2,
-      nextReview: "내일",
-      dueDate: "2026-03-28",
-      isUrgent: false,
-    },
-    {
-      id: 3,
-      word: "Diligent",
-      meaning: "부지런한",
-      reviewCount: 5,
-      nextReview: "3일 후",
-      dueDate: "2026-03-30",
-      isUrgent: false,
-    },
-    {
-      id: 4,
-      word: "Benevolent",
-      meaning: "자비로운",
-      reviewCount: 1,
-      nextReview: "오늘",
-      dueDate: "2026-03-27",
-      isUrgent: true,
-    },
-    {
-      id: 5,
-      word: "Compassion",
-      meaning: "연민",
-      reviewCount: 4,
-      nextReview: "1주일 후",
-      dueDate: "2026-04-03",
-      isUrgent: false,
-    },
-  ];
+  const [searchParams] = useSearchParams();
+  const selectedLevel = searchParams.get("level");
 
-  const urgentCount = reviewItems.filter((item) => item.isUrgent).length;
-  const totalCount = reviewItems.length;
+  const filteredReviewItems = shuffleArray(
+    !selectedLevel || selectedLevel === "전체"
+      ? reviewItems
+      : reviewItems.filter((item) => item.level === selectedLevel),
+  );
+
+  const urgentCount = filteredReviewItems.filter((item) => item.isUrgent).length;
+  const totalCount = filteredReviewItems.length;
 
   return (
     <div className="min-h-screen bg-background pb-6">
-      {/* Header */}
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
         <h1 className="text-3xl mb-2">복습하기</h1>
-        <p className="text-white/80">주기적으로 복습하고 기억을 강화하세요</p>
+        <p className="text-white/80">
+          {selectedLevel && selectedLevel !== "전체"
+            ? `${selectedLevel} 레벨 단어만 골라서 복습합니다.`
+            : "전체 단어를 주기적으로 복습합니다."}
+        </p>
 
-        {/* Stats */}
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
             <div className="text-2xl mb-1">{urgentCount}</div>
@@ -76,7 +60,6 @@ export default function ReviewList() {
       </div>
 
       <div className="px-6 mt-6">
-        {/* Quick Start */}
         {urgentCount > 0 && (
           <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl mb-6 flex items-center justify-center gap-2">
             <PlayCircle className="w-5 h-5" />
@@ -84,14 +67,13 @@ export default function ReviewList() {
           </Button>
         )}
 
-        {/* Review List */}
         <div className="mb-4">
           <h2 className="text-xl mb-4">복습 일정</h2>
         </div>
 
         <div className="space-y-3">
-          {reviewItems.map((item) => (
-            <Link key={item.id} to={`/app/words/${item.id}`}>
+          {filteredReviewItems.map((item) => (
+            <Link key={item.id} to={`/app/words/${item.id}?word=${encodeURIComponent(item.word)}`}>
               <div
                 className={`bg-white rounded-2xl p-5 border-2 ${
                   item.isUrgent ? "border-primary" : "border-border"
@@ -101,6 +83,9 @@ export default function ReviewList() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-lg">{item.word}</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {item.level}
+                      </Badge>
                       {item.isUrgent && (
                         <Badge variant="secondary" className="bg-primary text-white">
                           오늘
@@ -126,12 +111,10 @@ export default function ReviewList() {
           ))}
         </div>
 
-        {/* Info */}
         <div className="mt-6 bg-accent rounded-2xl p-5 border border-border">
-          <h3 className="mb-3">📚 복습 시스템</h3>
+          <h3 className="mb-3">복습 가이드</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            과학적으로 증명된 간격 반복 학습법을 사용합니다. 기억이 희미해지기 전에 최적의 타이밍에
-            복습 알림을 보내드립니다.
+            학습창에서 고른 레벨에 맞춰 복습 목록을 보여줍니다. 백엔드 구조는 바꾸지 않고 프론트에서만 필터링합니다.
           </p>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { db } from "../lib/firebase";
+import { fallbackWordSummaries } from "../lib/words";
 
 interface WordItem {
   id: string;
@@ -16,33 +17,23 @@ interface WordItem {
   isFavorite: boolean;
 }
 
-const fallbackWords: WordItem[] = [
-  { id: "1", word: "Serendipity", meaning: "뜻밖의 행운", level: "고급", mastery: 78, isFavorite: true },
-  { id: "2", word: "Abundant", meaning: "풍부한", level: "중급", mastery: 85, isFavorite: true },
-  { id: "3", word: "Benevolent", meaning: "자비로운", level: "고급", mastery: 72, isFavorite: false },
-  { id: "4", word: "Compassion", meaning: "연민, 동정심", level: "중급", mastery: 90, isFavorite: true },
-  { id: "5", word: "Diligent", meaning: "부지런한", level: "초급", mastery: 95, isFavorite: false },
-  { id: "6", word: "Eloquent", meaning: "웅변의", level: "고급", mastery: 68, isFavorite: true },
-  { id: "7", word: "Frugal", meaning: "검소한", level: "중급", mastery: 80, isFavorite: false },
-  { id: "8", word: "Gregarious", meaning: "사교적인", level: "고급", mastery: 55, isFavorite: false },
-  { id: "9", word: "Harmonious", meaning: "조화로운", level: "초급", mastery: 92, isFavorite: true },
-  { id: "10", word: "Simple", meaning: "간단한", level: "초급", mastery: 100, isFavorite: false },
-  { id: "11", word: "Happy", meaning: "행복한", level: "초급", mastery: 98, isFavorite: true },
-  { id: "12", word: "Leverage", meaning: "활용하다", level: "비즈니스", mastery: 65, isFavorite: false },
-  { id: "13", word: "Synergy", meaning: "시너지", level: "비즈니스", mastery: 70, isFavorite: true },
-  { id: "14", word: "Stakeholder", meaning: "이해관계자", level: "비즈니스", mastery: 82, isFavorite: false },
-  { id: "15", word: "Quarterly", meaning: "분기별", level: "비즈니스", mastery: 88, isFavorite: true },
-  { id: "16", word: "Revenue", meaning: "수익", level: "비즈니스", mastery: 75, isFavorite: false },
-];
+const fallbackWords: WordItem[] = fallbackWordSummaries.map((word) => ({
+  id: String(word.id),
+  word: word.word,
+  meaning: word.meaning,
+  level: word.level,
+  mastery: word.mastery,
+  isFavorite: word.isFavorite,
+}));
+
+const categories = ["전체", "초급", "중급", "고급", "비즈니스"] as const;
 
 export default function WordsList() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [words, setWords] = useState<WordItem[]>(fallbackWords);
   const [isLoading, setIsLoading] = useState(true);
-
-  const categories = ["전체", "초급", "중급", "고급", "비즈니스"];
-  const [activeCategory, setActiveCategory] = useState("전체");
+  const [activeCategory, setActiveCategory] = useState<(typeof categories)[number]>("전체");
 
   useEffect(() => {
     const loadWords = async () => {
@@ -81,10 +72,7 @@ export default function WordsList() {
       return true;
     }
 
-    return (
-      word.word.toLowerCase().includes(keyword) ||
-      word.meaning.toLowerCase().includes(keyword)
-    );
+    return word.word.toLowerCase().includes(keyword) || word.meaning.toLowerCase().includes(keyword);
   });
 
   const filteredWords =
@@ -92,13 +80,14 @@ export default function WordsList() {
       ? searchedWords
       : searchedWords.filter((word) => word.level === activeCategory);
 
+  const buildStudyPath = (path: string) =>
+    activeCategory === "전체" ? path : `${path}?level=${encodeURIComponent(activeCategory)}`;
+
   return (
     <div className="min-h-screen bg-background pb-6">
-      {/* Header */}
       <div className="bg-white border-b border-border px-6 pt-12 pb-4 sticky top-0 z-10">
         <h1 className="text-3xl mb-4">단어 학습</h1>
-        
-        {/* Search Bar */}
+
         <div className="relative mb-4">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
@@ -113,7 +102,6 @@ export default function WordsList() {
           </Button>
         </div>
 
-        {/* Categories */}
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6">
           {categories.map((category) => (
             <Button
@@ -122,9 +110,7 @@ export default function WordsList() {
               size="sm"
               onClick={() => setActiveCategory(category)}
               className={`rounded-full flex-shrink-0 ${
-                activeCategory === category
-                  ? "bg-primary text-white"
-                  : "bg-white hover:bg-muted"
+                activeCategory === category ? "bg-primary text-white" : "bg-white hover:bg-muted"
               }`}
             >
               {category}
@@ -133,28 +119,26 @@ export default function WordsList() {
         </div>
       </div>
 
-      {/* Words List */}
       <div className="px-6 mt-4">
-        {/* Study Action Buttons */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Button
-            onClick={() => navigate("/app/sentence-quiz")}
+            onClick={() => navigate(buildStudyPath("/app/sentence-quiz"))}
             className="h-auto py-4 px-3 flex flex-col items-center gap-2 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 rounded-2xl"
           >
             <BookOpen className="w-6 h-6" />
             <span className="text-sm font-medium">학습하기</span>
           </Button>
-          
+
           <Button
-            onClick={() => navigate("/app/flashcard-study")}
+            onClick={() => navigate(buildStudyPath("/app/flashcard-study"))}
             className="h-auto py-4 px-3 flex flex-col items-center gap-2 bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border-0 rounded-2xl"
           >
             <Layers className="w-6 h-6" />
             <span className="text-sm font-medium">Shorts</span>
           </Button>
-          
+
           <Button
-            onClick={() => navigate("/app/review")}
+            onClick={() => navigate(buildStudyPath("/app/review"))}
             className="h-auto py-4 px-3 flex flex-col items-center gap-2 bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 rounded-2xl"
           >
             <TrendingUp className="w-6 h-6" />
@@ -173,32 +157,23 @@ export default function WordsList() {
 
         <div className="space-y-3">
           {filteredWords.map((item) => (
-            <Link key={item.id} to={`/app/words/${item.id}`}>
+            <Link
+              key={item.id}
+              to={`/app/words/${item.id}?word=${encodeURIComponent(item.word)}`}
+              state={{ word: item }}
+            >
               <div className="bg-white rounded-2xl p-4 border border-border active:scale-[0.98] transition-transform">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-lg">{item.word}</h3>
-                      {item.isFavorite && (
-                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                      )}
+                      {item.isFavorite && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
                     </div>
                     <p className="text-muted-foreground mb-3">{item.meaning}</p>
                     <div className="flex items-center gap-3">
                       <Badge variant="secondary" className="text-xs">
                         {item.level}
                       </Badge>
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${item.mastery}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {item.mastery}%
-                        </span>
-                      </div>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground ml-2 flex-shrink-0" />

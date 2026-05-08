@@ -8,7 +8,7 @@ export default function Onboarding() {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate("/login");
-    }, 2200);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
@@ -20,15 +20,15 @@ export default function Onboarding() {
           <BookOpen className="w-12 h-12 text-primary" strokeWidth={2.5} />
         </div>
         <div className="text-center">
-          <h1 className="text-white text-4xl mb-2">Wordy</h1>
-          <p className="text-white/80 text-lg">문장과 퀴즈로 익히는 영어 학습</p>
+          <h1 className="text-white text-4xl mb-2">워디</h1>
+          <p className="text-white/80 text-lg">쉽고 재미있는 단어 학습</p>
         </div>
       </div>
       <div className="absolute bottom-8 left-0 right-0 flex justify-center">
         <div className="flex gap-2">
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }} />
-          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }} />
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
         </div>
       </div>
     </div>

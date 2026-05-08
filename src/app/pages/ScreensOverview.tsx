@@ -525,7 +525,6 @@ export default function ScreensOverview() {
   const totalSeedWords = seedWords.length;
   const quizReadySeedWords = seedWords.filter(
     (item) =>
-      item.quizEnabled !== false &&
       typeof item.exampleSentence === "string" &&
       typeof item.exampleTranslation === "string" &&
       typeof item.quizKoreanBlank === "string" &&

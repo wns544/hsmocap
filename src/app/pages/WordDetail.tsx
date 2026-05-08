@@ -1,33 +1,90 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Star, Volume2, BookOpen, Check } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import { ArrowLeft, BookOpen, Check, Star, Volume2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { getWordById, type WordDetailData, words } from "../lib/words";
+
+interface WordLocationState {
+  word?: {
+    id: string;
+    word: string;
+    meaning: string;
+    level: string;
+    mastery: number;
+    isFavorite: boolean;
+  };
+}
+
+function createFallbackDetail(source: NonNullable<WordLocationState["word"]>): WordDetailData {
+  return {
+    id: Number.isNaN(Number(source.id)) ? -1 : Number(source.id),
+    word: source.word,
+    meaning: source.meaning || "단어 뜻 정보가 아직 등록되지 않았습니다.",
+    level: source.level || "전체",
+    mastery: source.mastery ?? 0,
+    isFavorite: source.isFavorite ?? false,
+    pronunciation: `/${source.word}/`,
+    examples: [
+      {
+        en: `${source.word} is part of your study list.`,
+        ko: `${source.word} 단어가 학습 목록에 포함되어 있습니다.`,
+      },
+    ],
+    synonyms: ["추가 정보 준비 중"],
+    related: ["상세 데이터 연결 예정"],
+  };
+}
 
 export default function WordDetail() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [searchParams] = useSearchParams();
+  const locationState = location.state as WordLocationState | null;
 
-  const word = {
-    word: "Serendipity",
-    pronunciation: "/ˌserənˈdɪpɪti/",
-    meaning: "뜻밖의 행운, 우연한 발견",
-    level: "고급",
-    mastery: 85,
-    examples: [
-      { en: "Finding that book was pure serendipity.", ko: "그 책을 찾은 것은 순전히 우연한 행운이었다." },
-      { en: "By serendipity, I met my old friend at the airport.", ko: "우연히 공항에서 옛 친구를 만났다." },
-      { en: "The discovery was a result of serendipity.", ko: "그 발견은 우연한 행운의 결과였다." },
-    ],
-    synonyms: ["Fortune", "Luck", "Chance"],
-    related: ["Fortune", "Destiny", "Fate"],
-  };
+  const word = useMemo(() => {
+    const numericId = Number(id);
+    const byId = Number.isNaN(numericId) ? undefined : getWordById(numericId);
+
+    if (byId) {
+      return byId;
+    }
+
+    const wordName = searchParams.get("word");
+    if (wordName) {
+      const byName = words.find((item) => item.word.toLowerCase() === wordName.toLowerCase());
+      if (byName) {
+        return byName;
+      }
+    }
+
+    if (locationState?.word) {
+      return createFallbackDetail(locationState.word);
+    }
+
+    return undefined;
+  }, [id, locationState, searchParams]);
+
+  const [isFavorite, setIsFavorite] = useState(word?.isFavorite ?? false);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [id, searchParams]);
+
+  if (!word) {
+    return (
+      <div className="min-h-screen bg-background px-6 py-10">
+        <Button variant="outline" onClick={() => navigate("/app/words")}>
+          단어 목록으로 돌아가기
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-6">
-      {/* Header */}
       <div className="bg-primary text-white px-6 pt-12 pb-6 rounded-b-3xl">
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -37,9 +94,7 @@ export default function WordDetail() {
             onClick={() => setIsFavorite(!isFavorite)}
             className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"
           >
-            <Star
-              className={`w-5 h-5 ${isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`}
-            />
+            <Star className={`w-5 h-5 ${isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
           </button>
         </div>
 
@@ -58,7 +113,6 @@ export default function WordDetail() {
       </div>
 
       <div className="px-6 mt-6">
-        {/* Mastery Progress */}
         <div className="bg-white rounded-2xl p-5 border border-border mb-6">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -68,32 +122,28 @@ export default function WordDetail() {
             <span className="text-primary">{word.mastery}%</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full"
-              style={{ width: `${word.mastery}%` }}
-            />
+            <div className="h-full bg-primary rounded-full" style={{ width: `${word.mastery}%` }} />
           </div>
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="meaning" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="meaning">뜻</TabsTrigger>
+            <TabsTrigger value="meaning">의미</TabsTrigger>
             <TabsTrigger value="examples">예문</TabsTrigger>
-            <TabsTrigger value="related">연관 단어</TabsTrigger>
+            <TabsTrigger value="related">관련 단어</TabsTrigger>
           </TabsList>
 
           <TabsContent value="meaning" className="space-y-4">
             <div className="bg-white rounded-2xl p-5 border border-border">
-              <h3 className="text-sm text-muted-foreground mb-2">의미</h3>
+              <h3 className="text-sm text-muted-foreground mb-2">뜻</h3>
               <p className="text-lg">{word.meaning}</p>
             </div>
 
             <div className="bg-white rounded-2xl p-5 border border-border">
               <h3 className="text-sm text-muted-foreground mb-3">유의어</h3>
               <div className="flex flex-wrap gap-2">
-                {word.synonyms.map((synonym, index) => (
-                  <Badge key={index} variant="secondary" className="bg-accent">
+                {word.synonyms.map((synonym) => (
+                  <Badge key={synonym} variant="secondary" className="bg-accent">
                     {synonym}
                   </Badge>
                 ))}
@@ -116,9 +166,9 @@ export default function WordDetail() {
           </TabsContent>
 
           <TabsContent value="related" className="space-y-3">
-            {word.related.map((relatedWord, index) => (
+            {word.related.map((relatedWord) => (
               <div
-                key={index}
+                key={relatedWord}
                 className="bg-white rounded-2xl p-4 border border-border flex items-center justify-between"
               >
                 <span>{relatedWord}</span>
@@ -130,7 +180,6 @@ export default function WordDetail() {
           </TabsContent>
         </Tabs>
 
-        {/* Action Buttons */}
         <div className="mt-6 space-y-3">
           <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl">
             퀴즈로 복습하기
