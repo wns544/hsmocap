@@ -12,6 +12,12 @@ const allowedOrigins = new Set([
   "https://hsmocap-d907e.firebaseapp.com",
 ]);
 
+const previewChannelOriginPattern =
+  /^https:\/\/hsmocap-d907e--[a-z0-9-]+(?:-[a-z0-9]+)?\.web\.app$/i;
+
+const isAllowedOrigin = (origin?: string | null) =>
+  !!origin && (allowedOrigins.has(origin) || previewChannelOriginPattern.test(origin));
+
 initializeApp();
 
 type GradeWordAnswerRequest = {
@@ -288,7 +294,7 @@ const extractVerdict = (value: string): GradeWordAnswerResponse["verdict"] => {
 };
 
 const createCorsHeaders = (origin?: string | null) => ({
-  "Access-Control-Allow-Origin": origin && allowedOrigins.has(origin) ? origin : "http://localhost:5173",
+  "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin : "http://localhost:5173",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   Vary: "Origin",
@@ -526,7 +532,7 @@ export const gradeWordAnswerHttp = onRequest(
         return;
       }
 
-      if (!origin || !allowedOrigins.has(origin)) {
+      if (!isAllowedOrigin(origin)) {
         response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
         return;
       }
@@ -662,7 +668,7 @@ export const imageHintSearchHttp = onRequest(
         return;
       }
 
-      if (!origin || !allowedOrigins.has(origin)) {
+      if (!isAllowedOrigin(origin)) {
         response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
         return;
       }
