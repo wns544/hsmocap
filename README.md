@@ -1,50 +1,50 @@
 # hsmocap
 
-Firebase-based English vocabulary learning web app.
+Firebase 기반 영어 단어 학습 웹앱입니다.
 
-The current `main` branch is the latest baseline that combines:
+현재 `main` 브랜치는 아래를 모두 반영한 **최신 기준본**입니다.
 
-- the latest Soohyun UI
-- Onejun business logic
-- sentence quiz server grading
-- image hint Functions
-- Firebase Functions source in-repo
+- 최신 수현 UI
+- 원준 비즈니스 로직
+- 문장 퀴즈 서버 채점
+- 이미지 힌트 Firebase Functions 연동
+- 저장소 내 Firebase Functions 소스 복구
 
-## Live URLs
+## Live URL
 
 - [https://hsmocap-d907e.web.app](https://hsmocap-d907e.web.app)
 - [https://hsmocap-d907e.firebaseapp.com](https://hsmocap-d907e.firebaseapp.com)
 
-## Core Features
+## 주요 기능
 
-- word list and word detail
-- flashcard study
-- sentence study and sentence quiz
-- multiple choice and short answer quizzes
-- review and wrong answers flow
-- favorites
-- profile, progress, and settings
-- community and post creation
-- Google login and guest login
+- 단어 목록 / 단어 상세
+- 플래시카드 학습
+- 문장 학습 / 문장 퀴즈
+- 객관식 / 주관식 퀴즈
+- 복습 / 오답 노트 흐름
+- 즐겨찾기
+- 프로필 / 학습 진행도 / 설정
+- 커뮤니티 / 게시글 작성
+- Google 로그인 / 게스트 로그인
 
-## Sentence Quiz Server Flow
+## 문장 퀴즈 서버 연동 구조
 
-The sentence quiz uses Firebase Functions for the primary API flow.
+문장 퀴즈는 프론트 단독 처리보다 **Firebase Functions 기반 서버 처리**를 우선 사용합니다.
 
 - `gradeWordAnswerHttp`
-  - grades sentence quiz answers on the server
-  - uses `Authorization: Bearer <idToken>`
+  - 문장 퀴즈 정답 채점
+  - `Authorization: Bearer <idToken>` 기반 인증
 - `imageHintSearchHttp`
-  - returns image hints for the target word
-  - if the function fails, the frontend falls back to Wikimedia
+  - 단어 이미지 힌트 반환
+  - 함수 실패 시 프론트에서 Wikimedia fallback 사용
 
-Current architecture:
+현재 구조는 아래와 같습니다.
 
-- frontend -> Firebase Functions -> grading / image hint response
-- frontend -> Firestore -> words, progress, community data
-- frontend -> Firebase Authentication -> Google / anonymous auth
+- 프론트 -> Firebase Functions -> 채점 / 이미지 힌트 응답
+- 프론트 -> Firestore -> 단어 / 진행도 / 커뮤니티 데이터
+- 프론트 -> Firebase Authentication -> Google / 익명 로그인
 
-## Tech Stack
+## 기술 스택
 
 - React 18
 - Vite
@@ -54,29 +54,29 @@ Current architecture:
 - Firebase Firestore
 - Firebase Functions
 
-## Project Structure
+## 프로젝트 구조
 
 ```text
 src/app/
-  components/   shared UI
-  pages/        route-level pages
-  lib/          Firebase helpers, learning logic, adapters
-  data/         seed data
+  components/   공통 UI
+  pages/        화면 단위 페이지
+  lib/          Firebase 헬퍼, 학습 로직, 어댑터
+  data/         시드 데이터
 functions/
-  src/index.ts  Firebase Functions entry
-  scripts/      admin seed scripts
+  src/index.ts  Firebase Functions 엔트리
+  scripts/      관리자용 시드 스크립트
 ```
 
-## Local Development
+## 로컬 실행
 
-### Frontend
+### 프론트
 
 ```bash
 npm install
 npm run dev
 ```
 
-### Frontend Build
+### 프론트 빌드
 
 ```bash
 npm run build
@@ -90,36 +90,36 @@ npm install
 npm run build
 ```
 
-## Environment and Secrets
+## 환경 변수와 Secret
 
-Do not commit real values.
+실제 값은 저장소에 커밋하지 않습니다.
 
-Optional frontend env vars:
+### 프론트에서 선택적으로 사용할 수 있는 env
 
 ```env
 VITE_GRADE_WORD_ANSWER_URL=
 VITE_IMAGE_HINT_URL=
 ```
 
-If unset, the app uses the default deployed Firebase Functions URLs.
+값이 비어 있으면 기본 Firebase Functions URL을 사용합니다.
 
-Required Firebase Functions secrets:
+### Firebase Functions Secret
 
 ```text
 GROQ_API_KEY
 PEXELS_API_KEY
 ```
 
-## Deploy
+## 배포
 
-### Hosting
+### Hosting 배포
 
 ```bash
 npm run build
 firebase deploy --only hosting
 ```
 
-### Functions
+### Functions 배포
 
 ```bash
 cd functions
@@ -128,19 +128,19 @@ firebase deploy --only functions:gradeWordAnswerHttp
 firebase deploy --only functions:imageHintSearchHttp
 ```
 
-Targeted function deploys are recommended because legacy functions may still exist in the project.
+프로젝트에 레거시 함수가 남아 있을 수 있으므로, Functions는 전체 배포보다 **타깃 함수 배포**가 더 안전합니다.
 
-## Notes
+## 참고 사항
 
-- preview hosting channel origins are allowed in Functions CORS
-- image hint quality can vary by word and source result quality
-- `seedWords` cleanup can be handled as a later quality task
+- Preview Hosting 채널 도메인도 Functions CORS 허용 대상에 포함되어 있습니다.
+- 이미지 힌트 품질은 단어 성격과 외부 소스 품질에 따라 달라질 수 있습니다.
+- `seedWords` 정리는 후속 품질 개선 작업으로 분리할 수 있습니다.
 
-## Current Baseline
+## 현재 기준
 
-`main` now represents the latest production baseline with:
+`main` 브랜치는 현재 운영 기준 브랜치이며, 아래를 포함합니다.
 
-- latest UI baseline
-- sentence quiz server integration
-- image hint server integration
-- Firebase Functions source restored into the repository
+- 최신 UI 기준
+- 문장 퀴즈 서버 연동
+- 이미지 힌트 서버 연동
+- Firebase Functions 소스 복구
