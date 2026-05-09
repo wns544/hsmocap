@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "../components/ui/badge";
+import { Textarea } from "../components/ui/textarea";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -250,7 +251,7 @@ export default function PostDetail() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto pb-8">
         <div className="border-b-8 border-muted bg-white p-6">
           <Badge variant="outline" className="mb-4 border-primary/30 text-primary">
             {post.categoryName}
@@ -372,32 +373,38 @@ export default function PostDetail() {
             </div>
           )}
 
+          <div className="mt-6 rounded-2xl border border-border bg-muted/20 p-4">
+            <div className="mb-3 text-sm text-muted-foreground">댓글 작성</div>
+            <div className="space-y-3">
+              <Textarea
+                placeholder="댓글을 입력하세요"
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                className="min-h-24 bg-white"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void handleSubmitComment()}
+                  disabled={!comment.trim()}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-colors ${
+                    comment.trim()
+                      ? "bg-primary text-white hover:bg-primary/90"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  <Send className="h-4 w-4" />
+                  댓글 등록
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-6">
             <Link to="/app/favorites" className="text-sm text-primary hover:underline">
               저장한 게시글 목록 보러 가기
             </Link>
           </div>
-        </div>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-white p-4">
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            placeholder="댓글을 입력하세요"
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            className="flex-1 rounded-full border-0 bg-muted px-4 py-3 text-sm outline-none"
-          />
-          <button
-            onClick={() => void handleSubmitComment()}
-            disabled={!comment.trim()}
-            className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-              comment.trim() ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-            }`}
-          >
-            <Send className="h-5 w-5" />
-          </button>
         </div>
       </div>
     </div>
