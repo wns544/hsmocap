@@ -24,7 +24,18 @@ import { auth, db } from "../lib/firebase";
 import { shuffleArray } from "../lib/random";
 import { getStoredStudyLevel } from "../lib/studyPreferences";
 import { recordCorrectAnswer, recordStudySessionCompletion, recordWrongAnswer } from "../lib/studyProgress";
+import { getWordProgress, upsertWordProgress } from "../lib/wordProgresses";
 import { isQuizWordUsable, normalizeQuizWordDocs, resolveQuizCorrectAnswer } from "../lib/wordsAdapter";
+
+const REVIEW_QUEUE_STORAGE_KEY = "review-queue-word-ids";
+
+function clearReviewQueueStorage() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.removeItem(REVIEW_QUEUE_STORAGE_KEY);
+}
 
 interface QuizQuestion {
   id: number;
@@ -259,9 +270,11 @@ export default function SentenceQuiz() {
   const [hintImageTitle, setHintImageTitle] = useState("");
   const [isHintLoading, setIsHintLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [didRevealAnswerForCurrentQuestion, setDidRevealAnswerForCurrentQuestion] = useState(false);
   const [sourceQuestions, setSourceQuestions] = useState<QuizQuestion[]>([]);
   const [completionRecorded, setCompletionRecorded] = useState(false);
   const selectedStudyLevel = searchParams.get("level") || getStoredStudyLevel();
+  const reviewMode = searchParams.get("mode") === "review";
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
   const totalQuestions = quizQuestions.length;
@@ -298,12 +311,21 @@ export default function SentenceQuiz() {
             ? fallbackQuizQuestions
             : fallbackQuizQuestions.filter((question) => question.level === selectedStudyLevel);
 
-        const nextQuestions =
+        let nextQuestions =
           firestoreQuestions.length > 0
             ? firestoreQuestions
             : fallbackQuestions.length > 0
               ? fallbackQuestions
               : fallbackQuizQuestions;
+
+        if (reviewMode && typeof window !== "undefined") {
+          const rawQueue = window.sessionStorage.getItem(REVIEW_QUEUE_STORAGE_KEY);
+          const reviewQueue = rawQueue ? (JSON.parse(rawQueue) as string[]) : [];
+          const reviewTargets = new Set(reviewQueue.map((item) => item.toLowerCase()));
+          nextQuestions = nextQuestions.filter((question) =>
+            reviewTargets.has(question.targetWord.toLowerCase()),
+          );
+        }
 
         setSourceQuestions(nextQuestions);
         setQuizQuestions(shuffleArray(nextQuestions));
@@ -323,7 +345,15 @@ export default function SentenceQuiz() {
     };
 
     void loadQuizQuestions();
-  }, [selectedStudyLevel]);
+  }, [reviewMode, selectedStudyLevel]);
+
+  useEffect(() => {
+    if (!reviewMode || !isCompleted) {
+      return;
+    }
+
+    clearReviewQueueStorage();
+  }, [isCompleted, reviewMode]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -348,6 +378,10 @@ export default function SentenceQuiz() {
     setCompletionRecorded(true);
   }, [completionRecorded, correctCount, isCompleted, wrongCount]);
 
+  useEffect(() => {
+    setDidRevealAnswerForCurrentQuestion(false);
+  }, [currentQuestion?.id]);
+
   const handleNext = () => {
     if (currentIndex < totalQuestions - 1) {
       setCurrentIndex((value) => value + 1);
@@ -359,6 +393,72 @@ export default function SentenceQuiz() {
 
     setCompletedCount(totalQuestions);
     setIsCompleted(true);
+  };
+
+  const persistCurrentQuestionProgress = async (result: "correct" | "wrong") => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentQuestion) {
+      return;
+    }
+
+    try {
+      const existing = await getWordProgress(currentUser.uid, currentQuestion.targetWord);
+      const now = new Date();
+      const existingStage = existing?.currentStage ?? 0;
+      const getNextReviewAt = (stage: number) => {
+        const next = new Date(now);
+
+        if (stage <= 1) {
+          next.setDate(next.getDate() + 1);
+          return next;
+        }
+
+        if (stage === 2) {
+          next.setDate(next.getDate() + 3);
+          return next;
+        }
+
+        if (stage === 3) {
+          next.setDate(next.getDate() + 7);
+          return next;
+        }
+
+        return null;
+      };
+
+      const nextStage =
+        result === "correct"
+          ? Math.min(Math.max(existingStage, 1) + (reviewMode ? 1 : 0), 4)
+          : 1;
+      const nextStatus =
+        result === "wrong"
+          ? "REVIEW"
+          : nextStage >= 4
+            ? "MASTERED"
+            : nextStage >= 2
+              ? "REVIEW"
+              : "LEARNING";
+      const nextReviewAt =
+        result === "wrong"
+          ? getNextReviewAt(1)
+          : nextStage >= 4
+            ? null
+            : getNextReviewAt(nextStage);
+
+      await upsertWordProgress({
+        uid: currentUser.uid,
+        wordId: currentQuestion.targetWord,
+        status: nextStatus,
+        currentStage: nextStage,
+        totalAnswerCount: (existing?.totalAnswerCount ?? 0) + 1,
+        correctAnswerCount: (existing?.correctAnswerCount ?? 0) + (result === "correct" ? 1 : 0),
+        lastReviewedAt: now,
+        nextReviewAt,
+        lastResult: result,
+      });
+    } catch (error) {
+      console.error("[Word Progress Save Error]", error);
+    }
   };
 
   const applyCorrectResult = () => {
@@ -373,6 +473,7 @@ export default function SentenceQuiz() {
     });
 
     setCorrectCount((value) => value + 1);
+    void persistCurrentQuestionProgress("correct");
     toast.success(`+${reward.rewardXp} XP`, {
       description: `${currentQuestion.targetWord} 정답 보상`,
     });
@@ -389,6 +490,7 @@ export default function SentenceQuiz() {
       word: currentQuestion.targetWord,
       level: currentQuestion.level,
     });
+    void persistCurrentQuestionProgress("wrong");
   };
 
   const applyLocalFallback = (userAnswer: string, correctAnswer: string) => {
@@ -486,6 +588,11 @@ export default function SentenceQuiz() {
   const handleDontKnow = () => {
     if (!currentQuestion) {
       return;
+    }
+
+    if (!showFeedback && !didRevealAnswerForCurrentQuestion) {
+      applyWrongResult();
+      setDidRevealAnswerForCurrentQuestion(true);
     }
 
     setUserInput(currentQuestion.koreanTargetWord);
@@ -688,13 +795,21 @@ export default function SentenceQuiz() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
         <div className="text-center max-w-sm">
-          <p className="text-lg text-gray-700 mb-2">문장 퀴즈에 사용할 데이터가 없습니다.</p>
-          <p className="text-sm text-gray-500 mb-6">
-            `words` 문서에 `exampleSentence`, `exampleTranslation`, `quizKoreanBlank`, `quizAnswers`
-            필드를 넣어 주세요.
+          <p className="text-lg text-gray-700 mb-2">
+            {reviewMode
+              ? "지금 바로 복습할 단어가 없습니다."
+              : "문장 퀴즈에 사용할 데이터가 없습니다."}
           </p>
-          <Button onClick={() => navigate("/app/words")} className="rounded-xl">
-            단어 목록으로
+          <p className="text-sm text-gray-500 mb-6">
+            {reviewMode
+              ? "문장 퀴즈에서 오답이나 약한 단어를 더 만든 뒤 다시 복습 목록을 확인해보세요."
+              : "`words` 문서에 `exampleSentence`, `exampleTranslation`, `quizKoreanBlank`, `quizAnswers` 필드를 넣어 주세요."}
+          </p>
+          <Button
+            onClick={() => navigate(reviewMode ? "/app/review" : "/app/words")}
+            className="rounded-xl"
+          >
+            {reviewMode ? "복습 목록으로" : "단어 목록으로"}
           </Button>
         </div>
       </div>
@@ -740,6 +855,11 @@ export default function SentenceQuiz() {
                 exit={{ opacity: 0, x: -50 }}
                 className="w-full max-w-lg"
               >
+                {reviewMode && (
+                  <div className="mb-4 text-center text-sm font-medium text-orange-600">
+                    복습 {completedCount + 1}/{totalQuestions}
+                  </div>
+                )}
                 <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
                   <div className="mb-8">{renderHighlightedSentence()}</div>
                   <div className="mb-6">{renderKoreanSentence()}</div>
@@ -900,7 +1020,10 @@ export default function SentenceQuiz() {
               </button>
 
               <button
-                onClick={() => navigate("/app/home")}
+                onClick={() => {
+                  clearReviewQueueStorage();
+                  navigate("/app/home");
+                }}
                 className="flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-shadow"
               >
                 <Home className="w-5 h-5" />

@@ -8,6 +8,7 @@ const groqApiKey = defineSecret("GROQ_API_KEY");
 const pexelsApiKey = defineSecret("PEXELS_API_KEY");
 const allowedOrigins = new Set([
   "http://localhost:5173",
+  "http://127.0.0.1:5173",
   "https://hsmocap-d907e.web.app",
   "https://hsmocap-d907e.firebaseapp.com",
 ]);
