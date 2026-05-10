@@ -1,26 +1,33 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { 
+import {
   AuthError,
   createUserWithEmailAndPassword,
+  getRedirectResult,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
 } from "firebase/auth";
-import { auth, googleProvider } from "../lib/firebase";
-import { Button } from "../components/ui/button";
 import { LockKeyhole, Mail } from "lucide-react";
-import { Input } from "../components/ui/input";
 import { toast } from "sonner";
+
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
+import { auth, googleProvider } from "../lib/firebase";
 
-const GOOGLE_CHROME_LOGO_SRC = "https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg";
+const GOOGLE_CHROME_LOGO_SRC =
+  "https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg";
 
-function getAuthErrorMessage(error: unknown, mode: "login" | "signup" | "google" | "guest") {
+function getAuthErrorMessage(
+  error: unknown,
+  mode: "login" | "signup" | "google" | "guest",
+) {
   const code = (error as AuthError | undefined)?.code;
 
   switch (code) {
     case "auth/email-already-in-use":
-      return "이미 가입된 이메일입니다. 이메일 로그인을 이용하세요.";
+      return "이미 가입된 이메일입니다. 이메일 로그인을 이용해 주세요.";
     case "auth/invalid-email":
       return "이메일 형식이 올바르지 않습니다.";
     case "auth/user-not-found":
@@ -31,19 +38,21 @@ function getAuthErrorMessage(error: unknown, mode: "login" | "signup" | "google"
         ? "이메일 또는 비밀번호가 올바르지 않습니다."
         : "인증 정보가 올바르지 않습니다.";
     case "auth/weak-password":
-      return "비밀번호가 너무 짧습니다. 6자 이상으로 입력하세요.";
+      return "비밀번호가 너무 짧습니다. 6자 이상으로 입력해 주세요.";
     case "auth/popup-closed-by-user":
-      return "Google 로그인 창이 닫혔습니다. 다시 시도하세요.";
+      return "Google 로그인 창이 닫혔습니다. 다시 시도해 주세요.";
     case "auth/cancelled-popup-request":
-      return "Google 로그인 요청이 취소되었습니다. 다시 시도하세요.";
+      return "Google 로그인 요청이 취소되었습니다. 다시 시도해 주세요.";
     case "auth/popup-blocked":
-      return "브라우저가 팝업을 차단했습니다. 팝업 허용 후 다시 시도하세요.";
+      return "브라우저가 팝업을 차단했습니다. 팝업 허용 후 다시 시도해 주세요.";
     case "auth/admin-restricted-operation":
       return "현재 프로젝트 설정에서 허용되지 않은 로그인 방식입니다.";
     case "auth/operation-not-allowed":
       return "Firebase Authentication에서 해당 로그인 방식이 비활성화되어 있습니다.";
     case "auth/network-request-failed":
-      return "네트워크 오류가 발생했습니다. 인터넷 연결을 확인하세요.";
+      return "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해 주세요.";
+    case "auth/unauthorized-domain":
+      return "현재 접속 주소가 Firebase Authentication 허용 도메인에 등록되어 있지 않습니다.";
     default:
       if (mode === "signup") {
         return "회원가입에 실패했습니다.";
@@ -54,11 +63,20 @@ function getAuthErrorMessage(error: unknown, mode: "login" | "signup" | "google"
       }
 
       if (mode === "guest") {
-        return "게스트 로그인에 실패했습니다. Firebase 익명 로그인을 활성화하세요.";
+        return "게스트 로그인에 실패했습니다. Firebase 익명 로그인을 활성화해 주세요.";
       }
 
       return "이메일 로그인에 실패했습니다.";
   }
+}
+
+function isRedirectFallbackError(error: unknown) {
+  const code = (error as AuthError | undefined)?.code;
+  return code === "auth/popup-blocked" || code === "auth/cancelled-popup-request";
+}
+
+function isUnauthorizedDomainError(error: unknown) {
+  return (error as AuthError | undefined)?.code === "auth/unauthorized-domain";
 }
 
 export default function Login() {
@@ -70,14 +88,63 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const redirectPath = (location.state as { from?: string } | null)?.from || "/app/home";
 
+  useEffect(() => {
+    let mounted = true;
+
+    void getRedirectResult(auth)
+      .then((result) => {
+        if (!mounted || !result?.user) {
+          return;
+        }
+
+        toast.success("Google 로그인이 완료되었습니다.");
+        navigate(redirectPath, { replace: true });
+      })
+      .catch((error) => {
+        if (!mounted) {
+          return;
+        }
+
+        console.error("Google redirect 로그인 에러:", error);
+        toast.error(getAuthErrorMessage(error, "google"));
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [navigate, redirectPath]);
+
   const handleGoogleLogin = async () => {
     setLoading(true);
+
     try {
       await signInWithPopup(auth, googleProvider);
-      toast.success("Google 로그인 성공!");
+      toast.success("Google 로그인이 완료되었습니다.");
       navigate(redirectPath, { replace: true });
+      return;
     } catch (error) {
       console.error("Google 로그인 에러:", error);
+
+      if (isRedirectFallbackError(error)) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectError) {
+          console.error("Google redirect 로그인 에러:", redirectError);
+          toast.error(getAuthErrorMessage(redirectError, "google"));
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (isUnauthorizedDomainError(error) && window.location.hostname === "127.0.0.1") {
+        toast.error(
+          "127.0.0.1이 Firebase Authentication 허용 도메인에 없어서 Google 로그인이 막히고 있습니다. Firebase 콘솔의 Authentication > Settings > Authorized domains에 127.0.0.1을 추가해 주세요.",
+        );
+        setLoading(false);
+        return;
+      }
+
       toast.error(getAuthErrorMessage(error, "google"));
       setLoading(false);
     }
@@ -85,14 +152,14 @@ export default function Login() {
 
   const handleEmailLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      toast.error("이메일과 비밀번호를 입력하세요.");
+      toast.error("이메일과 비밀번호를 입력해 주세요.");
       return;
     }
 
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      toast.success("이메일 로그인 성공!");
+      toast.success("이메일 로그인이 완료되었습니다.");
       navigate(redirectPath, { replace: true });
     } catch (error) {
       console.error("이메일 로그인 에러:", error);
@@ -103,7 +170,7 @@ export default function Login() {
 
   const handleEmailSignUp = async () => {
     if (!email.trim() || !password.trim()) {
-      toast.error("회원가입할 이메일과 비밀번호를 입력하세요.");
+      toast.error("회원가입할 이메일과 비밀번호를 입력해 주세요.");
       return;
     }
 
@@ -123,7 +190,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signInAsGuest();
-      toast.success("게스트 로그인 성공!");
+      toast.success("게스트 로그인이 완료되었습니다.");
       navigate(redirectPath, { replace: true });
     } catch (error) {
       console.error("게스트 로그인 에러:", error);
@@ -136,7 +203,6 @@ export default function Login() {
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
         <div className="max-w-sm mx-auto w-full">
-          {/* Logo */}
           <div className="flex flex-col items-center mb-12">
             <div className="w-20 h-20 bg-primary rounded-3xl flex items-center justify-center mb-4 shadow-lg">
               <Mail className="w-10 h-10 text-white" strokeWidth={2.5} />
@@ -147,7 +213,6 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Email Login */}
           <div className="space-y-3 mb-6">
             <div className="space-y-2">
               <div className="relative">
@@ -218,14 +283,14 @@ export default function Login() {
             </Button>
           </div>
 
-          {/* Firebase Setup Notice */}
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
             <p className="text-xs text-yellow-800 text-center">
-              💡 Firebase 설정이 필요합니다. <br />
+              Firebase 설정이 필요합니다. <br />
               <code className="text-xs bg-yellow-100 px-2 py-1 rounded mt-1 inline-block">
                 /src/app/lib/firebase.ts
-              </code> 파일에서 <br />
-              Firebase 프로젝트 설정과 Authentication 제공업체를 업데이트하세요.
+              </code>{" "}
+              파일과 <br />
+              Firebase Authentication 제공업체 설정을 확인해 주세요.
             </p>
           </div>
         </div>

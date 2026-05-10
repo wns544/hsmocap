@@ -5,11 +5,13 @@ import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
 import { useAuth } from "../contexts/AuthContext";
 import { resolveProfileName, subscribeProfileName } from "../lib/profileName";
+import { listReviewQueueWordIds } from "../lib/wordProgresses";
 import { recentWordIds, words } from "../lib/words";
 
 export default function Home() {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState(() => resolveProfileName(user?.displayName, user?.email));
+  const [reviewQueueCount, setReviewQueueCount] = useState(0);
 
   const stats = [
     { label: "학습한 단어", value: "247", icon: BookOpen, color: "bg-blue-500" },
@@ -18,9 +20,27 @@ export default function Home() {
   ];
 
   const quickActions = [
-    { title: "학습하기", subtitle: "문장 퀴즈로 단어를 학습해요", path: "/app/sentence-quiz", icon: BookOpen, color: "bg-green-500" },
-    { title: "Shorts 학습", subtitle: "카드 넘기기로 빠르게 복습해요", path: "/app/flashcard-study", icon: Layers, color: "bg-purple-500" },
-    { title: "복습하기", subtitle: "42개의 복습 대기 단어", path: "/app/review", icon: TrendingUp, color: "bg-orange-500" },
+    {
+      title: "학습하기",
+      subtitle: "문장 퀴즈로 단어를 학습해요",
+      path: "/app/sentence-quiz",
+      icon: BookOpen,
+      color: "bg-green-500",
+    },
+    {
+      title: "Shorts 학습",
+      subtitle: "카드 넘기기로 빠르게 복습해요",
+      path: "/app/flashcard-study",
+      icon: Layers,
+      color: "bg-purple-500",
+    },
+    {
+      title: "복습하기",
+      subtitle: `${reviewQueueCount}개의 복습 대기 단어`,
+      path: "/app/review",
+      icon: TrendingUp,
+      color: "bg-orange-500",
+    },
   ];
 
   const recentWords = recentWordIds
@@ -41,6 +61,25 @@ export default function Home() {
       setDisplayName(nextName || resolveProfileName(user?.displayName, user?.email));
     });
   }, [user?.displayName, user?.email]);
+
+  useEffect(() => {
+    const loadReviewQueueCount = async () => {
+      if (!user) {
+        setReviewQueueCount(0);
+        return;
+      }
+
+      try {
+        const queue = await listReviewQueueWordIds(user.uid);
+        setReviewQueueCount(queue.length);
+      } catch (error) {
+        console.error("복습 대기 개수를 불러오지 못했습니다.", error);
+        setReviewQueueCount(0);
+      }
+    };
+
+    void loadReviewQueueCount();
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-background">
