@@ -122,7 +122,7 @@ Firestore 구조:
 2) 로컬 127.0.0.1 CORS 허용
 - Functions allowed origins에 http://127.0.0.1:5173 을 추가했다.
 - 재배포한 함수:
-  - gradeWordAnswerHttp
+  - gradeWordAnswerHttpV3
   - imageHintSearchHttp
 
 3) 결과
@@ -130,7 +130,7 @@ Firestore 구조:
 
 8. QA에서 확인된 사항
 직접 확인된 것:
-- gradeWordAnswerHttp가 200으로 정상 응답
+- gradeWordAnswerHttpV3가 200으로 정상 응답
 - 오답 제출 후 /app/review에 해당 단어가 복습 대상으로 뜸
 - Firestore users/{uid}/wordProgresses/{wordId}에 wrong 상태 저장됨
 - review mode로 다시 들어가 정답을 맞추면:

@@ -31,7 +31,7 @@ Firebase 기반 영어 단어 학습 웹앱입니다.
 
 문장 퀴즈는 프론트 단독 처리보다 **Firebase Functions 기반 서버 처리**를 우선 사용합니다.
 
-- `gradeWordAnswerHttp`
+- `gradeWordAnswerHttpV3`
   - 문장 퀴즈 정답 채점
   - `Authorization: Bearer <idToken>` 기반 인증
 - `imageHintSearchHttp`
@@ -124,7 +124,7 @@ firebase deploy --only hosting
 ```bash
 cd functions
 npm run build
-firebase deploy --only functions:gradeWordAnswerHttp
+firebase deploy --only functions:gradeWordAnswerHttpV3
 firebase deploy --only functions:imageHintSearchHttp
 ```
 

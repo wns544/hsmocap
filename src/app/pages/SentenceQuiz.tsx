@@ -72,7 +72,7 @@ interface CommonsImageResult {
 
 const GRADE_WORD_ANSWER_URL =
   import.meta.env.VITE_GRADE_WORD_ANSWER_URL ??
-  "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/gradeWordAnswerHttp";
+  "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/gradeWordAnswerHttpV3";
 
 const IMAGE_HINT_URL =
   import.meta.env.VITE_IMAGE_HINT_URL ??
