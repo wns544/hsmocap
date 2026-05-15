@@ -148,6 +148,14 @@ export default function PostDetail() {
 
       const nextComments = await listPostComments(postId);
       setComments(nextComments);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              commentCount: nextComments.length,
+            }
+          : current,
+      );
       setComment("");
       toast.success("댓글이 등록되었습니다.");
     } catch (error) {
@@ -232,6 +240,14 @@ export default function PostDetail() {
       await deletePostComment(postId, commentId);
       const nextComments = await listPostComments(postId);
       setComments(nextComments);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              commentCount: nextComments.length,
+            }
+          : current,
+      );
       toast.success("댓글을 삭제했습니다.");
     } catch (error) {
       console.error("댓글 삭제에 실패했습니다.", error);
@@ -269,6 +285,14 @@ export default function PostDetail() {
       });
       const nextComments = await listPostComments(postId);
       setComments(nextComments);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              commentCount: nextComments.length,
+            }
+          : current,
+      );
       cancelEditComment();
       toast.success("댓글을 수정했습니다.");
     } catch (error) {

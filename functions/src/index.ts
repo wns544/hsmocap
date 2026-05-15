@@ -768,3 +768,31 @@ export const decrementPostLikeCount = onDocumentDeleted(
     });
   },
 );
+
+export const incrementPostCommentCount = onDocumentCreated(
+  {
+    document: "posts/{postId}/comments/{commentId}",
+    region: "asia-northeast3",
+  },
+  async (event) => {
+    const postId = event.params.postId;
+    await firestore.doc(`posts/${postId}`).update({
+      commentCount: FieldValue.increment(1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+
+export const decrementPostCommentCount = onDocumentDeleted(
+  {
+    document: "posts/{postId}/comments/{commentId}",
+    region: "asia-northeast3",
+  },
+  async (event) => {
+    const postId = event.params.postId;
+    await firestore.doc(`posts/${postId}`).update({
+      commentCount: FieldValue.increment(-1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
