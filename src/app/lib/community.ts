@@ -96,6 +96,12 @@ export interface CreateCommunityCommentInput {
   content: string;
 }
 
+export interface UpdateCommunityCommentInput {
+  postId: string;
+  commentId: string;
+  content: string;
+}
+
 const SAVED_COMMUNITY_POSTS_KEY = "wordy.savedCommunityPosts";
 
 const sampleCategories: BoardCategory[] = [
@@ -379,6 +385,13 @@ export async function createPostComment(input: CreateCommunityCommentInput): Pro
   });
 
   return snapshot.id;
+}
+
+export async function updatePostComment(input: UpdateCommunityCommentInput): Promise<void> {
+  await updateDoc(doc(db, "posts", input.postId, "comments", input.commentId), {
+    content: input.content,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function isPostLikedByUser(postId: string, userId: string): Promise<boolean> {

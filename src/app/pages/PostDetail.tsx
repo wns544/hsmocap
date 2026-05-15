@@ -26,6 +26,7 @@ import {
   listPostComments,
   togglePostBookmark,
   togglePostLike,
+  updatePostComment,
   type CommunityCommentSummary,
   type CommunityPostSummary,
 } from "../lib/community";
@@ -44,6 +45,8 @@ export default function PostDetail() {
   const [liked, setLiked] = useState(false);
   const [comment, setComment] = useState("");
   const [bookmarked, setBookmarked] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState("");
   const isPostOwner = !!user && !!post && user.uid === post.userId;
 
   useEffect(() => {
@@ -228,6 +231,44 @@ export default function PostDetail() {
     }
   };
 
+  const startEditComment = (item: CommunityCommentSummary) => {
+    setEditingCommentId(item.id);
+    setEditingCommentContent(item.content);
+  };
+
+  const cancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentContent("");
+  };
+
+  const handleUpdateComment = async (commentId: string, commentUserId: string) => {
+    const trimmedContent = editingCommentContent.trim();
+    if (!trimmedContent) {
+      toast.error("댓글 내용을 입력해 주세요.");
+      return;
+    }
+
+    if (!user || user.uid !== commentUserId) {
+      toast.error("본인 댓글만 수정할 수 있습니다.");
+      return;
+    }
+
+    try {
+      await updatePostComment({
+        postId,
+        commentId,
+        content: trimmedContent,
+      });
+      const nextComments = await listPostComments(postId);
+      setComments(nextComments);
+      cancelEditComment();
+      toast.success("댓글을 수정했습니다.");
+    } catch (error) {
+      console.error("댓글 수정에 실패했습니다.", error);
+      toast.error("댓글 수정에 실패했습니다.");
+    }
+  };
+
   if (isPostLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -387,18 +428,62 @@ export default function PostDetail() {
                     <div className="mb-1 flex items-center gap-2">
                       <span className="text-sm">{item.authorSnapshot.name}</span>
                       {user?.uid === item.userId && (
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteComment(item.id, item.userId)}
-                          className="text-xs text-destructive hover:underline"
-                        >
-                          삭제
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => startEditComment(item)}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            수정
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteComment(item.id, item.userId)}
+                            className="text-xs text-destructive hover:underline"
+                          >
+                            삭제
+                          </button>
+                        </>
                       )}
                     </div>
-                    <p className="mb-2 text-sm">{item.content}</p>
+                    {editingCommentId === item.id ? (
+                      <div className="mb-3 space-y-2">
+                        <Textarea
+                          value={editingCommentContent}
+                          onChange={(event) => setEditingCommentContent(event.target.value)}
+                          className="min-h-20 bg-white text-sm"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={cancelEditComment}
+                            className="rounded-full border border-border px-3 py-1 text-xs transition-colors hover:bg-muted"
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleUpdateComment(item.id, item.userId)}
+                            disabled={!editingCommentContent.trim()}
+                            className={`rounded-full px-3 py-1 text-xs transition-colors ${
+                              editingCommentContent.trim()
+                                ? "bg-primary text-white hover:bg-primary/90"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            저장
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mb-2 text-sm">{item.content}</p>
+                    )}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{formatCommunityTimestamp(item.createdAt)}</span>
+                      {item.updatedAt &&
+                        item.createdAt?.getTime() !== item.updatedAt.getTime() && (
+                          <span>수정됨</span>
+                        )}
                     </div>
                   </div>
                 </div>
