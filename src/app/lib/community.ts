@@ -384,6 +384,43 @@ export async function togglePostLike(postId: string, userId: string): Promise<bo
   return true;
 }
 
+export async function isPostBookmarkedByUser(postId: string, userId: string): Promise<boolean> {
+  const snapshot = await getDoc(doc(db, "users", userId, "postBookmarks", postId));
+  return snapshot.exists();
+}
+
+export async function togglePostBookmark(postId: string, userId: string): Promise<boolean> {
+  const bookmarkRef = doc(db, "users", userId, "postBookmarks", postId);
+  const snapshot = await getDoc(bookmarkRef);
+
+  if (snapshot.exists()) {
+    await deleteDoc(bookmarkRef);
+    return false;
+  }
+
+  await setDoc(bookmarkRef, {
+    postId,
+    savedAt: serverTimestamp(),
+  });
+
+  return true;
+}
+
+export async function listBookmarkedPostIds(userId: string): Promise<string[]> {
+  const snapshot = await getDocs(query(collection(db, "users", userId, "postBookmarks"), limit(100)));
+
+  return snapshot.docs
+    .map((item) => String(item.data().postId ?? item.id))
+    .filter((value, index, array) => value.length > 0 && array.indexOf(value) === index);
+}
+
+export async function listBookmarkedPosts(userId: string): Promise<CommunityPostSummary[]> {
+  const bookmarkedIds = await listBookmarkedPostIds(userId);
+  const posts = await Promise.all(bookmarkedIds.map((postId) => getCommunityPostDetail(postId)));
+
+  return posts.filter((post): post is CommunityPostSummary => post !== null);
+}
+
 export async function deleteCommunityPost(postId: string): Promise<void> {
   const batch = writeBatch(db);
 

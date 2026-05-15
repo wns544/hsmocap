@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   Bookmark,
@@ -20,21 +20,15 @@ import {
   deletePostComment,
   formatCommunityTimestamp,
   getCommunityPostDetail,
-  isCommunityPostSaved,
+  isPostBookmarkedByUser,
   isPostLikedByUser,
   listPostComments,
+  togglePostBookmark,
   togglePostLike,
-  toggleSavedCommunityPost,
   type CommunityCommentSummary,
   type CommunityPostSummary,
 } from "../lib/community";
 import { resolveProfileName } from "../lib/profileName";
-
-function getBookmarkKey(post: CommunityPostSummary | null): number | null {
-  if (!post) return null;
-  const numericId = Number(post.id);
-  return Number.isNaN(numericId) ? null : numericId;
-}
 
 export default function PostDetail() {
   const navigate = useNavigate();
@@ -48,10 +42,7 @@ export default function PostDetail() {
   const [isCommentLoading, setIsCommentLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [comment, setComment] = useState("");
-  const bookmarkKey = useMemo(() => getBookmarkKey(post), [post]);
-  const [bookmarked, setBookmarked] = useState(() =>
-    bookmarkKey !== null ? isCommunityPostSaved(bookmarkKey) : false,
-  );
+  const [bookmarked, setBookmarked] = useState(false);
   const isPostOwner = !!user && !!post && user.uid === post.userId;
 
   useEffect(() => {
@@ -62,8 +53,6 @@ export default function PostDetail() {
       if (!isMounted) return;
       setPost(item);
       setIsPostLoading(false);
-      const nextBookmarkKey = getBookmarkKey(item);
-      setBookmarked(nextBookmarkKey !== null ? isCommunityPostSaved(nextBookmarkKey) : false);
     });
 
     return () => {
@@ -111,6 +100,31 @@ export default function PostDetail() {
     };
   }, [postId, user]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!user || !post) {
+      setBookmarked(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void isPostBookmarkedByUser(post.id, user.uid)
+      .then((value) => {
+        if (!isMounted) return;
+        setBookmarked(value);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setBookmarked(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [post, user]);
+
   const handleSubmitComment = async () => {
     const trimmedComment = comment.trim();
     if (!trimmedComment) return;
@@ -154,16 +168,22 @@ export default function PostDetail() {
     }
   };
 
-  const handleBookmarkToggle = () => {
-    if (bookmarkKey === null) {
-      toast.info("임시 게시글 북마크는 다음 단계에서 정리할 예정입니다.");
+  const handleBookmarkToggle = async () => {
+    if (!user) {
+      toast.error("게시글 저장은 로그인 후 이용할 수 있습니다.");
       return;
     }
 
-    const nextIds = toggleSavedCommunityPost(bookmarkKey);
-    const nextSaved = nextIds.includes(bookmarkKey);
-    setBookmarked(nextSaved);
-    toast.success(nextSaved ? "게시글을 저장했습니다." : "저장한 게시글에서 제거했습니다.");
+    if (!post) return;
+
+    try {
+      const nextSaved = await togglePostBookmark(post.id, user.uid);
+      setBookmarked(nextSaved);
+      toast.success(nextSaved ? "게시글을 저장했습니다." : "저장한 게시글에서 제거했습니다.");
+    } catch (error) {
+      console.error("게시글 저장 처리에 실패했습니다.", error);
+      toast.error("게시글 저장 처리에 실패했습니다.");
+    }
   };
 
   const handleDeletePost = async () => {
@@ -320,7 +340,10 @@ export default function PostDetail() {
             <span className="text-xs">댓글</span>
           </button>
 
-          <button onClick={handleBookmarkToggle} className="flex flex-1 flex-col items-center gap-1">
+          <button
+            onClick={() => void handleBookmarkToggle()}
+            className="flex flex-1 flex-col items-center gap-1"
+          >
             <div
               className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
                 bookmarked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
