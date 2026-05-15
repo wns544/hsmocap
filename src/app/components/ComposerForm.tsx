@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronDown, Hash, Image, Smile, X } from "lucide-react";
 import { Badge } from "./ui/badge";
@@ -14,6 +14,9 @@ interface ComposerFormProps {
   submitLabel?: string;
   successPath: string;
   categories?: ComposerCategoryOption[];
+  initialTitle?: string;
+  initialContent?: string;
+  initialCategory?: ComposerCategoryOption;
   onSubmit?: (input: { title: string; content: string; category: ComposerCategoryOption }) => Promise<void>;
 }
 
@@ -28,17 +31,39 @@ export default function ComposerForm({
   submitLabel = "완료",
   successPath,
   categories = defaultCategories,
+  initialTitle = "",
+  initialContent = "",
+  initialCategory,
   onSubmit,
 }: ComposerFormProps) {
   const navigate = useNavigate();
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
   const [selectedCategory, setSelectedCategory] = useState<ComposerCategoryOption>(
-    categories[0] ?? defaultCategories[0],
+    initialCategory ?? categories[0] ?? defaultCategories[0],
   );
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setTitle(initialTitle);
+  }, [initialTitle]);
+
+  useEffect(() => {
+    setContent(initialContent);
+  }, [initialContent]);
+
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+      return;
+    }
+
+    setSelectedCategory((current) =>
+      categories.some((category) => category.id === current.id) ? current : categories[0] ?? defaultCategories[0],
+    );
+  }, [categories, initialCategory?.id, initialCategory?.name]);
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {

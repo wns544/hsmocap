@@ -9,6 +9,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
   writeBatch,
   type DocumentData,
@@ -76,6 +77,14 @@ export interface CreateCommunityPostInput {
   categoryName: string;
   userId: string;
   authorName: string;
+  title: string;
+  body: string;
+}
+
+export interface UpdateCommunityPostInput {
+  postId: string;
+  categoryId: string;
+  categoryName: string;
   title: string;
   body: string;
 }
@@ -346,6 +355,16 @@ export async function createCommunityPost(input: CreateCommunityPostInput): Prom
   });
 
   return snapshot.id;
+}
+
+export async function updateCommunityPost(input: UpdateCommunityPostInput): Promise<void> {
+  await updateDoc(doc(db, "posts", input.postId), {
+    categoryId: input.categoryId,
+    categoryName: input.categoryName,
+    title: input.title,
+    body: input.body,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function createPostComment(input: CreateCommunityCommentInput): Promise<string> {

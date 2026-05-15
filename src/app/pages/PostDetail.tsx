@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   MessageCircle,
   MoreVertical,
+  Pencil,
   Send,
   Share2,
   ThumbsUp,
@@ -292,13 +293,22 @@ export default function PostDetail() {
               </div>
             </div>
             {isPostOwner && (
-              <button
-                type="button"
-                onClick={() => void handleDeletePost()}
-                className="rounded-full border border-destructive/20 px-3 py-1 text-xs text-destructive transition-colors hover:bg-destructive/5"
-              >
-                삭제
-              </button>
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/app/community/${post.id}/edit`}
+                  className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs transition-colors hover:bg-muted"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  수정
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void handleDeletePost()}
+                  className="rounded-full border border-destructive/20 px-3 py-1 text-xs text-destructive transition-colors hover:bg-destructive/5"
+                >
+                  삭제
+                </button>
+              </div>
             )}
           </div>
 

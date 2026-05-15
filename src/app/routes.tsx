@@ -126,6 +126,10 @@ export const router = createBrowserRouter([
             element: <CreatePost />,
           },
           {
+            path: "community/:id/edit",
+            element: <CreatePost />,
+          },
+          {
             path: "community/:id",
             element: <PostDetail />,
           },
