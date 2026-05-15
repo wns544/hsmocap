@@ -54,6 +54,10 @@ type ImageHintResponse = {
   title: string;
 };
 
+type IncrementPostViewRequest = {
+  postId: string;
+};
+
 const SYSTEM_PROMPT = [
   "You are a Korean vocabulary grading assistant.",
   "Judge the user's Korean answer for the highlighted English target word using the full English sentence, full Korean sentence, target word, and meaning.",
@@ -737,6 +741,66 @@ export const imageHintSearchHttp = onRequest(
     } catch (error) {
       console.error("imageHintSearchHttp failed:", error);
       response.status(500).json({ error: "Image hint search failed." });
+    }
+  },
+);
+
+export const incrementPostViewHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    try {
+      const origin = request.headers.origin;
+      const corsHeaders = createCorsHeaders(origin);
+
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const authHeader = request.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      try {
+        await getAuth().verifyIdToken(authHeader.slice("Bearer ".length));
+      } catch {
+        response.status(401).set(corsHeaders).json({ error: "Invalid auth token." });
+        return;
+      }
+
+      const data = request.body as Partial<IncrementPostViewRequest>;
+      const postId = typeof data.postId === "string" ? data.postId.trim() : "";
+      if (!postId) {
+        response.status(400).set(corsHeaders).json({ error: "postId is required." });
+        return;
+      }
+
+      await firestore.doc(`posts/${postId}`).update({
+        viewCount: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      response.status(200).set(corsHeaders).json({ ok: true });
+    } catch (error) {
+      console.error("incrementPostViewHttp failed:", error);
+      response.status(500).json({ error: "Post view increment failed." });
     }
   },
 );

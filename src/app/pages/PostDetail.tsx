@@ -21,6 +21,7 @@ import {
   deletePostComment,
   formatCommunityTimestamp,
   getCommunityPostDetail,
+  incrementPostView,
   isPostBookmarkedByUser,
   isPostLikedByUser,
   listPostComments,
@@ -63,6 +64,27 @@ export default function PostDetail() {
       isMounted = false;
     };
   }, [postId]);
+
+  useEffect(() => {
+    if (!postId || !user) return;
+
+    const viewedKey = `wordy.viewedPost.${postId}`;
+    if (sessionStorage.getItem(viewedKey)) return;
+
+    sessionStorage.setItem(viewedKey, "1");
+    setPost((current) =>
+      current
+        ? {
+            ...current,
+            viewCount: current.viewCount + 1,
+          }
+        : current,
+    );
+
+    void incrementPostView(postId).catch((error) => {
+      console.error("조회수 증가에 실패했습니다.", error);
+    });
+  }, [postId, user]);
 
   useEffect(() => {
     let isMounted = true;

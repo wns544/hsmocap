@@ -15,6 +15,7 @@ import {
   type DocumentData,
   type Timestamp,
 } from "firebase/firestore";
+import { auth } from "./firebase";
 import { db } from "./firebase";
 
 export interface CommunityPost {
@@ -103,6 +104,8 @@ export interface UpdateCommunityCommentInput {
 }
 
 const SAVED_COMMUNITY_POSTS_KEY = "wordy.savedCommunityPosts";
+const INCREMENT_POST_VIEW_URL =
+  "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/incrementPostViewHttp";
 
 const sampleCategories: BoardCategory[] = [
   { id: "free", name: "자유", description: "자유롭게 학습 경험을 나누는 공간" },
@@ -487,6 +490,26 @@ export async function getCommunityPostDetail(
   }
 
   return samplePostSummaries.find((post) => post.id === postId) ?? null;
+}
+
+export async function incrementPostView(postId: string): Promise<void> {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error("Authentication is required to increment post views");
+  }
+
+  const response = await fetch(INCREMENT_POST_VIEW_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ postId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Post view increment failed: ${response.status}`);
+  }
 }
 
 export async function listPostComments(postId: string): Promise<CommunityCommentSummary[]> {
