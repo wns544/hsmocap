@@ -728,7 +728,7 @@ export const imageHintSearchHttp = onRequest(
         best?.photo.src?.original;
       const bestDescriptionUrl = best?.photo.url;
 
-      if (best && best.score >= 20 && bestImageUrl && bestDescriptionUrl) {
+      if (best && best.score >= 0 && bestImageUrl && bestDescriptionUrl) {
         response.status(200).set(corsHeaders).json({
           imageUrl: bestImageUrl,
           descriptionUrl: bestDescriptionUrl,

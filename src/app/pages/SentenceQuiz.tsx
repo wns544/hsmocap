@@ -119,13 +119,30 @@ const koreanKeyboard = [
   ["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"],
 ];
 
+const isLowQualityCommonsResult = (title: string, imageUrl: string) => {
+  const value = `${title} ${imageUrl}`.toLowerCase();
+  return [
+    ".pdf",
+    ".djvu",
+    "thesis",
+    "dissertation",
+    "document",
+    "manuscript",
+    "book cover",
+    "cover page",
+    "scan",
+    "text",
+    "logo",
+  ].some((term) => value.includes(term));
+};
+
 const searchCommonsImage = async (queryWord: string): Promise<CommonsImageResult | null> => {
   const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
   endpoint.searchParams.set("action", "query");
   endpoint.searchParams.set("generator", "search");
-  endpoint.searchParams.set("gsrsearch", queryWord);
+  endpoint.searchParams.set("gsrsearch", `${queryWord} photo -pdf -document -thesis -dissertation`);
   endpoint.searchParams.set("gsrnamespace", "6");
-  endpoint.searchParams.set("gsrlimit", "1");
+  endpoint.searchParams.set("gsrlimit", "5");
   endpoint.searchParams.set("prop", "imageinfo|info");
   endpoint.searchParams.set("iiprop", "url");
   endpoint.searchParams.set("iiurlwidth", "640");
@@ -152,7 +169,11 @@ const searchCommonsImage = async (queryWord: string): Promise<CommonsImageResult
     };
   };
 
-  const page = data.query?.pages?.[0];
+  const page = data.query?.pages?.find((candidate) => {
+    const imageInfo = candidate.imageinfo?.[0];
+    const imageUrl = imageInfo?.thumburl || imageInfo?.url || "";
+    return !!candidate.title && !!imageUrl && !isLowQualityCommonsResult(candidate.title, imageUrl);
+  });
   const imageInfo = page?.imageinfo?.[0];
   const imageUrl = imageInfo?.thumburl || imageInfo?.url;
   const descriptionUrl = page?.fullurl;
@@ -286,7 +307,7 @@ export default function SentenceQuiz() {
         const wordsQuery = query(collection(db, "words"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(wordsQuery);
 
-        const firestoreQuestions = normalizeQuizWordDocs(snapshot.docs)
+        const firestoreQuestionCandidates = normalizeQuizWordDocs(snapshot.docs)
           .filter(isQuizWordUsable)
           .map((item, index) => ({
             id: index + 1,
@@ -297,17 +318,20 @@ export default function SentenceQuiz() {
             level: item.level,
             koreanTargetWord: resolveQuizCorrectAnswer(item),
             acceptableAnswers: item.quizAnswers,
-          }))
-          .filter((question) => {
-            if (selectedStudyLevel === ALL_LEVEL) {
-              return true;
-            }
+          }));
 
-            return question.level === selectedStudyLevel;
-          });
+        const firestoreQuestions = reviewMode
+          ? firestoreQuestionCandidates
+          : firestoreQuestionCandidates.filter((question) => {
+              if (selectedStudyLevel === ALL_LEVEL) {
+                return true;
+              }
+
+              return question.level === selectedStudyLevel;
+            });
 
         const fallbackQuestions =
-          selectedStudyLevel === ALL_LEVEL
+          reviewMode || selectedStudyLevel === ALL_LEVEL
             ? fallbackQuizQuestions
             : fallbackQuizQuestions.filter((question) => question.level === selectedStudyLevel);
 
@@ -322,9 +346,16 @@ export default function SentenceQuiz() {
           const rawQueue = window.sessionStorage.getItem(REVIEW_QUEUE_STORAGE_KEY);
           const reviewQueue = rawQueue ? (JSON.parse(rawQueue) as string[]) : [];
           const reviewTargets = new Set(reviewQueue.map((item) => item.toLowerCase()));
-          nextQuestions = nextQuestions.filter((question) =>
-            reviewTargets.has(question.targetWord.toLowerCase()),
+          const reviewQuestionMap = new Map(
+            [...fallbackQuizQuestions, ...firestoreQuestionCandidates].map((question) => [
+              question.targetWord.toLowerCase(),
+              question,
+            ]),
           );
+          nextQuestions = reviewQueue
+            .map((word) => reviewQuestionMap.get(word.toLowerCase()))
+            .filter((question): question is QuizQuestion => !!question)
+            .filter((question) => reviewTargets.has(question.targetWord.toLowerCase()));
         }
 
         setSourceQuestions(nextQuestions);
