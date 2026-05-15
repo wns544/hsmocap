@@ -9,11 +9,13 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
   writeBatch,
   type DocumentData,
   type Timestamp,
 } from "firebase/firestore";
+import { auth } from "./firebase";
 import { db } from "./firebase";
 
 export interface CommunityPost {
@@ -78,6 +80,16 @@ export interface CreateCommunityPostInput {
   authorName: string;
   title: string;
   body: string;
+  imageUrls?: string[];
+}
+
+export interface UpdateCommunityPostInput {
+  postId: string;
+  categoryId: string;
+  categoryName: string;
+  title: string;
+  body: string;
+  imageUrls?: string[];
 }
 
 export interface CreateCommunityCommentInput {
@@ -87,7 +99,15 @@ export interface CreateCommunityCommentInput {
   content: string;
 }
 
+export interface UpdateCommunityCommentInput {
+  postId: string;
+  commentId: string;
+  content: string;
+}
+
 const SAVED_COMMUNITY_POSTS_KEY = "wordy.savedCommunityPosts";
+const INCREMENT_POST_VIEW_URL =
+  "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/incrementPostViewHttp";
 
 const sampleCategories: BoardCategory[] = [
   { id: "free", name: "자유", description: "자유롭게 학습 경험을 나누는 공간" },
@@ -340,12 +360,23 @@ export async function createCommunityPost(input: CreateCommunityPostInput): Prom
     likeCount: 0,
     commentCount: 0,
     viewCount: 0,
-    imageUrls: [],
+    imageUrls: input.imageUrls ?? [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
   return snapshot.id;
+}
+
+export async function updateCommunityPost(input: UpdateCommunityPostInput): Promise<void> {
+  await updateDoc(doc(db, "posts", input.postId), {
+    categoryId: input.categoryId,
+    categoryName: input.categoryName,
+    title: input.title,
+    body: input.body,
+    imageUrls: input.imageUrls ?? [],
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function createPostComment(input: CreateCommunityCommentInput): Promise<string> {
@@ -360,6 +391,13 @@ export async function createPostComment(input: CreateCommunityCommentInput): Pro
   });
 
   return snapshot.id;
+}
+
+export async function updatePostComment(input: UpdateCommunityCommentInput): Promise<void> {
+  await updateDoc(doc(db, "posts", input.postId, "comments", input.commentId), {
+    content: input.content,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function isPostLikedByUser(postId: string, userId: string): Promise<boolean> {
@@ -382,6 +420,43 @@ export async function togglePostLike(postId: string, userId: string): Promise<bo
   });
 
   return true;
+}
+
+export async function isPostBookmarkedByUser(postId: string, userId: string): Promise<boolean> {
+  const snapshot = await getDoc(doc(db, "users", userId, "postBookmarks", postId));
+  return snapshot.exists();
+}
+
+export async function togglePostBookmark(postId: string, userId: string): Promise<boolean> {
+  const bookmarkRef = doc(db, "users", userId, "postBookmarks", postId);
+  const snapshot = await getDoc(bookmarkRef);
+
+  if (snapshot.exists()) {
+    await deleteDoc(bookmarkRef);
+    return false;
+  }
+
+  await setDoc(bookmarkRef, {
+    postId,
+    savedAt: serverTimestamp(),
+  });
+
+  return true;
+}
+
+export async function listBookmarkedPostIds(userId: string): Promise<string[]> {
+  const snapshot = await getDocs(query(collection(db, "users", userId, "postBookmarks"), limit(100)));
+
+  return snapshot.docs
+    .map((item) => String(item.data().postId ?? item.id))
+    .filter((value, index, array) => value.length > 0 && array.indexOf(value) === index);
+}
+
+export async function listBookmarkedPosts(userId: string): Promise<CommunityPostSummary[]> {
+  const bookmarkedIds = await listBookmarkedPostIds(userId);
+  const posts = await Promise.all(bookmarkedIds.map((postId) => getCommunityPostDetail(postId)));
+
+  return posts.filter((post): post is CommunityPostSummary => post !== null);
 }
 
 export async function deleteCommunityPost(postId: string): Promise<void> {
@@ -418,6 +493,26 @@ export async function getCommunityPostDetail(
   }
 
   return samplePostSummaries.find((post) => post.id === postId) ?? null;
+}
+
+export async function incrementPostView(postId: string): Promise<void> {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error("Authentication is required to increment post views");
+  }
+
+  const response = await fetch(INCREMENT_POST_VIEW_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ postId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Post view increment failed: ${response.status}`);
+  }
 }
 
 export async function listPostComments(postId: string): Promise<CommunityCommentSummary[]> {

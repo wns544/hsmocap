@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc",
     "deploy": "firebase deploy --only functions",
+    "seed:community": "node ./scripts/seed-community-showcase.mjs",
     "seed:words": "node ./scripts/replace-words-from-seed-admin.mjs",
     "serve": "npm run build && firebase emulators:start --only functions",
     "watch": "tsc --watch"

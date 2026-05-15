@@ -1,6 +1,8 @@
 import { onRequest } from "firebase-functions/v2/https";
+import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import Groq from "groq-sdk";
 
@@ -20,6 +22,7 @@ const isAllowedOrigin = (origin?: string | null) =>
   !!origin && (allowedOrigins.has(origin) || previewChannelOriginPattern.test(origin));
 
 initializeApp();
+const firestore = getFirestore();
 
 type GradeWordAnswerRequest = {
   english: string;
@@ -49,6 +52,10 @@ type ImageHintResponse = {
   imageUrl: string;
   descriptionUrl: string;
   title: string;
+};
+
+type IncrementPostViewRequest = {
+  postId: string;
 };
 
 const SYSTEM_PROMPT = [
@@ -735,5 +742,121 @@ export const imageHintSearchHttp = onRequest(
       console.error("imageHintSearchHttp failed:", error);
       response.status(500).json({ error: "Image hint search failed." });
     }
+  },
+);
+
+export const incrementPostViewHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    try {
+      const origin = request.headers.origin;
+      const corsHeaders = createCorsHeaders(origin);
+
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const authHeader = request.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      try {
+        await getAuth().verifyIdToken(authHeader.slice("Bearer ".length));
+      } catch {
+        response.status(401).set(corsHeaders).json({ error: "Invalid auth token." });
+        return;
+      }
+
+      const data = request.body as Partial<IncrementPostViewRequest>;
+      const postId = typeof data.postId === "string" ? data.postId.trim() : "";
+      if (!postId) {
+        response.status(400).set(corsHeaders).json({ error: "postId is required." });
+        return;
+      }
+
+      await firestore.doc(`posts/${postId}`).update({
+        viewCount: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      response.status(200).set(corsHeaders).json({ ok: true });
+    } catch (error) {
+      console.error("incrementPostViewHttp failed:", error);
+      response.status(500).json({ error: "Post view increment failed." });
+    }
+  },
+);
+
+export const incrementPostLikeCount = onDocumentCreated(
+  {
+    document: "posts/{postId}/likes/{userId}",
+    region: "asia-northeast3",
+  },
+  async (event) => {
+    const postId = event.params.postId;
+    await firestore.doc(`posts/${postId}`).update({
+      likeCount: FieldValue.increment(1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+
+export const decrementPostLikeCount = onDocumentDeleted(
+  {
+    document: "posts/{postId}/likes/{userId}",
+    region: "asia-northeast3",
+  },
+  async (event) => {
+    const postId = event.params.postId;
+    await firestore.doc(`posts/${postId}`).update({
+      likeCount: FieldValue.increment(-1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+
+export const incrementPostCommentCount = onDocumentCreated(
+  {
+    document: "posts/{postId}/comments/{commentId}",
+    region: "asia-northeast3",
+  },
+  async (event) => {
+    const postId = event.params.postId;
+    await firestore.doc(`posts/${postId}`).update({
+      commentCount: FieldValue.increment(1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+
+export const decrementPostCommentCount = onDocumentDeleted(
+  {
+    document: "posts/{postId}/comments/{commentId}",
+    region: "asia-northeast3",
+  },
+  async (event) => {
+    const postId = event.params.postId;
+    await firestore.doc(`posts/${postId}`).update({
+      commentCount: FieldValue.increment(-1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
   },
 );

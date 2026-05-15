@@ -3,11 +3,13 @@ import { Link } from "react-router";
 import { BookOpen, Bookmark, ChevronRight, MessageCircle, Search, Star, ThumbsUp, Zap } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
-import { communityPosts, getSavedCommunityPostIds } from "../lib/community";
+import { useAuth } from "../contexts/AuthContext";
+import { formatCommunityTimestamp, listBookmarkedPosts, type CommunityPostSummary } from "../lib/community";
 
 export default function Favorites() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [savedPostIds, setSavedPostIds] = useState<number[]>([]);
+  const [savedPosts, setSavedPosts] = useState<CommunityPostSummary[]>([]);
 
   const favorites = [
     { id: 1, word: "Serendipity", meaning: "뜻밖의 행운", level: "고급", mastery: 85, addedDate: "2026-03-20" },
@@ -18,14 +20,34 @@ export default function Favorites() {
   ];
 
   useEffect(() => {
-    setSavedPostIds(getSavedCommunityPostIds());
-  }, []);
+    let isMounted = true;
+
+    if (!user) {
+      setSavedPosts([]);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void listBookmarkedPosts(user.uid)
+      .then((items) => {
+        if (!isMounted) return;
+        setSavedPosts(items);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setSavedPosts([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const filteredFavorites = favorites.filter(
     (item) =>
       item.word.toLowerCase().includes(searchQuery.toLowerCase()) || item.meaning.includes(searchQuery),
   );
-  const savedPosts = communityPosts.filter((post) => savedPostIds.includes(post.id));
 
   return (
     <div className="min-h-screen bg-background pb-6">
@@ -167,27 +189,22 @@ export default function Favorites() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant="outline" className="text-primary border-primary/30">
-                              {post.category}
+                              {post.categoryName}
                             </Badge>
-                            {post.isHot && (
-                              <Badge variant="secondary" className="bg-orange-100 text-orange-700">
-                                HOT
-                              </Badge>
-                            )}
                           </div>
                           <h4 className="text-base mb-2">{post.title}</h4>
-                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.content}</p>
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.body}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>{post.author.name}</span>
+                            <span>{post.authorSnapshot.name}</span>
                             <div className="flex items-center gap-1">
                               <ThumbsUp className="w-3.5 h-3.5" />
-                              <span>{post.likes}</span>
+                              <span>{post.likeCount}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <MessageCircle className="w-3.5 h-3.5" />
-                              <span>{post.comments}</span>
+                              <span>{post.commentCount}</span>
                             </div>
-                            <span>{post.timestamp}</span>
+                            <span>{formatCommunityTimestamp(post.createdAt)}</span>
                           </div>
                         </div>
                         <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />

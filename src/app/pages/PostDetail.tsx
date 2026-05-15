@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   Bookmark,
   ChevronLeft,
   MessageCircle,
   MoreVertical,
+  Pencil,
   Send,
   Share2,
   ThumbsUp,
@@ -20,21 +21,17 @@ import {
   deletePostComment,
   formatCommunityTimestamp,
   getCommunityPostDetail,
-  isCommunityPostSaved,
+  incrementPostView,
+  isPostBookmarkedByUser,
   isPostLikedByUser,
   listPostComments,
+  togglePostBookmark,
   togglePostLike,
-  toggleSavedCommunityPost,
+  updatePostComment,
   type CommunityCommentSummary,
   type CommunityPostSummary,
 } from "../lib/community";
 import { resolveProfileName } from "../lib/profileName";
-
-function getBookmarkKey(post: CommunityPostSummary | null): number | null {
-  if (!post) return null;
-  const numericId = Number(post.id);
-  return Number.isNaN(numericId) ? null : numericId;
-}
 
 export default function PostDetail() {
   const navigate = useNavigate();
@@ -48,10 +45,9 @@ export default function PostDetail() {
   const [isCommentLoading, setIsCommentLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [comment, setComment] = useState("");
-  const bookmarkKey = useMemo(() => getBookmarkKey(post), [post]);
-  const [bookmarked, setBookmarked] = useState(() =>
-    bookmarkKey !== null ? isCommunityPostSaved(bookmarkKey) : false,
-  );
+  const [bookmarked, setBookmarked] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState("");
   const isPostOwner = !!user && !!post && user.uid === post.userId;
 
   useEffect(() => {
@@ -62,14 +58,33 @@ export default function PostDetail() {
       if (!isMounted) return;
       setPost(item);
       setIsPostLoading(false);
-      const nextBookmarkKey = getBookmarkKey(item);
-      setBookmarked(nextBookmarkKey !== null ? isCommunityPostSaved(nextBookmarkKey) : false);
     });
 
     return () => {
       isMounted = false;
     };
   }, [postId]);
+
+  useEffect(() => {
+    if (!postId || !user) return;
+
+    const viewedKey = `wordy.viewedPost.${postId}`;
+    if (sessionStorage.getItem(viewedKey)) return;
+
+    sessionStorage.setItem(viewedKey, "1");
+    setPost((current) =>
+      current
+        ? {
+            ...current,
+            viewCount: current.viewCount + 1,
+          }
+        : current,
+    );
+
+    void incrementPostView(postId).catch((error) => {
+      console.error("조회수 증가에 실패했습니다.", error);
+    });
+  }, [postId, user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -111,6 +126,31 @@ export default function PostDetail() {
     };
   }, [postId, user]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!user || !post) {
+      setBookmarked(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void isPostBookmarkedByUser(post.id, user.uid)
+      .then((value) => {
+        if (!isMounted) return;
+        setBookmarked(value);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setBookmarked(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [post, user]);
+
   const handleSubmitComment = async () => {
     const trimmedComment = comment.trim();
     if (!trimmedComment) return;
@@ -130,6 +170,14 @@ export default function PostDetail() {
 
       const nextComments = await listPostComments(postId);
       setComments(nextComments);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              commentCount: nextComments.length,
+            }
+          : current,
+      );
       setComment("");
       toast.success("댓글이 등록되었습니다.");
     } catch (error) {
@@ -147,6 +195,14 @@ export default function PostDetail() {
     try {
       const nextLiked = await togglePostLike(postId, user.uid);
       setLiked(nextLiked);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              likeCount: Math.max(0, current.likeCount + (nextLiked ? 1 : -1)),
+            }
+          : current,
+      );
       toast.success(nextLiked ? "좋아요를 눌렀습니다." : "좋아요를 취소했습니다.");
     } catch (error) {
       console.error("좋아요 처리에 실패했습니다.", error);
@@ -154,16 +210,22 @@ export default function PostDetail() {
     }
   };
 
-  const handleBookmarkToggle = () => {
-    if (bookmarkKey === null) {
-      toast.info("임시 게시글 북마크는 다음 단계에서 정리할 예정입니다.");
+  const handleBookmarkToggle = async () => {
+    if (!user) {
+      toast.error("게시글 저장은 로그인 후 이용할 수 있습니다.");
       return;
     }
 
-    const nextIds = toggleSavedCommunityPost(bookmarkKey);
-    const nextSaved = nextIds.includes(bookmarkKey);
-    setBookmarked(nextSaved);
-    toast.success(nextSaved ? "게시글을 저장했습니다." : "저장한 게시글에서 제거했습니다.");
+    if (!post) return;
+
+    try {
+      const nextSaved = await togglePostBookmark(post.id, user.uid);
+      setBookmarked(nextSaved);
+      toast.success(nextSaved ? "게시글을 저장했습니다." : "저장한 게시글에서 제거했습니다.");
+    } catch (error) {
+      console.error("게시글 저장 처리에 실패했습니다.", error);
+      toast.error("게시글 저장 처리에 실패했습니다.");
+    }
   };
 
   const handleDeletePost = async () => {
@@ -200,10 +262,64 @@ export default function PostDetail() {
       await deletePostComment(postId, commentId);
       const nextComments = await listPostComments(postId);
       setComments(nextComments);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              commentCount: nextComments.length,
+            }
+          : current,
+      );
       toast.success("댓글을 삭제했습니다.");
     } catch (error) {
       console.error("댓글 삭제에 실패했습니다.", error);
       toast.error("댓글 삭제에 실패했습니다.");
+    }
+  };
+
+  const startEditComment = (item: CommunityCommentSummary) => {
+    setEditingCommentId(item.id);
+    setEditingCommentContent(item.content);
+  };
+
+  const cancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentContent("");
+  };
+
+  const handleUpdateComment = async (commentId: string, commentUserId: string) => {
+    const trimmedContent = editingCommentContent.trim();
+    if (!trimmedContent) {
+      toast.error("댓글 내용을 입력해 주세요.");
+      return;
+    }
+
+    if (!user || user.uid !== commentUserId) {
+      toast.error("본인 댓글만 수정할 수 있습니다.");
+      return;
+    }
+
+    try {
+      await updatePostComment({
+        postId,
+        commentId,
+        content: trimmedContent,
+      });
+      const nextComments = await listPostComments(postId);
+      setComments(nextComments);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              commentCount: nextComments.length,
+            }
+          : current,
+      );
+      cancelEditComment();
+      toast.success("댓글을 수정했습니다.");
+    } catch (error) {
+      console.error("댓글 수정에 실패했습니다.", error);
+      toast.error("댓글 수정에 실패했습니다.");
     }
   };
 
@@ -272,13 +388,22 @@ export default function PostDetail() {
               </div>
             </div>
             {isPostOwner && (
-              <button
-                type="button"
-                onClick={() => void handleDeletePost()}
-                className="rounded-full border border-destructive/20 px-3 py-1 text-xs text-destructive transition-colors hover:bg-destructive/5"
-              >
-                삭제
-              </button>
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/app/community/${post.id}/edit`}
+                  className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs transition-colors hover:bg-muted"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  수정
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void handleDeletePost()}
+                  className="rounded-full border border-destructive/20 px-3 py-1 text-xs text-destructive transition-colors hover:bg-destructive/5"
+                >
+                  삭제
+                </button>
+              </div>
             )}
           </div>
 
@@ -320,7 +445,10 @@ export default function PostDetail() {
             <span className="text-xs">댓글</span>
           </button>
 
-          <button onClick={handleBookmarkToggle} className="flex flex-1 flex-col items-center gap-1">
+          <button
+            onClick={() => void handleBookmarkToggle()}
+            className="flex flex-1 flex-col items-center gap-1"
+          >
             <div
               className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
                 bookmarked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
@@ -354,18 +482,62 @@ export default function PostDetail() {
                     <div className="mb-1 flex items-center gap-2">
                       <span className="text-sm">{item.authorSnapshot.name}</span>
                       {user?.uid === item.userId && (
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteComment(item.id, item.userId)}
-                          className="text-xs text-destructive hover:underline"
-                        >
-                          삭제
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => startEditComment(item)}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            수정
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteComment(item.id, item.userId)}
+                            className="text-xs text-destructive hover:underline"
+                          >
+                            삭제
+                          </button>
+                        </>
                       )}
                     </div>
-                    <p className="mb-2 text-sm">{item.content}</p>
+                    {editingCommentId === item.id ? (
+                      <div className="mb-3 space-y-2">
+                        <Textarea
+                          value={editingCommentContent}
+                          onChange={(event) => setEditingCommentContent(event.target.value)}
+                          className="min-h-20 bg-white text-sm"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={cancelEditComment}
+                            className="rounded-full border border-border px-3 py-1 text-xs transition-colors hover:bg-muted"
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleUpdateComment(item.id, item.userId)}
+                            disabled={!editingCommentContent.trim()}
+                            className={`rounded-full px-3 py-1 text-xs transition-colors ${
+                              editingCommentContent.trim()
+                                ? "bg-primary text-white hover:bg-primary/90"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            저장
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mb-2 text-sm">{item.content}</p>
+                    )}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{formatCommunityTimestamp(item.createdAt)}</span>
+                      {item.updatedAt &&
+                        item.createdAt?.getTime() !== item.updatedAt.getTime() && (
+                          <span>수정됨</span>
+                        )}
                     </div>
                   </div>
                 </div>
