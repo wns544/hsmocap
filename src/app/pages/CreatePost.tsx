@@ -11,6 +11,7 @@ import {
   type BoardCategory,
   type CommunityPostSummary,
 } from "../lib/community";
+import { uploadCommunityPostImages } from "../lib/communityImages";
 import { resolveProfileName } from "../lib/profileName";
 
 function mapCategoryToOption(category: BoardCategory): ComposerCategoryOption {
@@ -92,11 +93,16 @@ export default function CreatePost() {
     title: string;
     content: string;
     category: ComposerCategoryOption;
+    imageFiles: File[];
+    existingImageUrls: string[];
   }) => {
     if (!user) {
       toast.error("게시글 작성은 로그인 후 이용할 수 있습니다.");
       throw new Error("Community post creation requires authentication");
     }
+
+    const uploadedImageUrls = await uploadCommunityPostImages(user.uid, input.imageFiles);
+    const imageUrls = [...input.existingImageUrls, ...uploadedImageUrls].slice(0, 5);
 
     if (isEditMode) {
       if (!id || !editingPost || editingPost.userId !== user.uid) {
@@ -110,6 +116,7 @@ export default function CreatePost() {
         categoryName: input.category.name,
         title: input.title,
         body: input.content,
+        imageUrls,
       });
 
       toast.success("게시글을 수정했습니다.");
@@ -125,6 +132,7 @@ export default function CreatePost() {
       authorName,
       title: input.title,
       body: input.content,
+      imageUrls,
     });
 
     toast.success("게시글이 등록되었습니다.");
@@ -146,6 +154,7 @@ export default function CreatePost() {
       categories={categories}
       initialTitle={editingPost?.title ?? ""}
       initialContent={editingPost?.body ?? ""}
+      initialImageUrls={editingPost?.imageUrls ?? []}
       initialCategory={
         editingPost
           ? { id: editingPost.categoryId, name: editingPost.categoryName }

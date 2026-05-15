@@ -80,6 +80,7 @@ export interface CreateCommunityPostInput {
   authorName: string;
   title: string;
   body: string;
+  imageUrls?: string[];
 }
 
 export interface UpdateCommunityPostInput {
@@ -88,6 +89,7 @@ export interface UpdateCommunityPostInput {
   categoryName: string;
   title: string;
   body: string;
+  imageUrls?: string[];
 }
 
 export interface CreateCommunityCommentInput {
@@ -358,7 +360,7 @@ export async function createCommunityPost(input: CreateCommunityPostInput): Prom
     likeCount: 0,
     commentCount: 0,
     viewCount: 0,
-    imageUrls: [],
+    imageUrls: input.imageUrls ?? [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -372,6 +374,7 @@ export async function updateCommunityPost(input: UpdateCommunityPostInput): Prom
     categoryName: input.categoryName,
     title: input.title,
     body: input.body,
+    imageUrls: input.imageUrls ?? [],
     updatedAt: serverTimestamp(),
   });
 }

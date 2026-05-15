@@ -17,8 +17,22 @@ interface ComposerFormProps {
   initialTitle?: string;
   initialContent?: string;
   initialCategory?: ComposerCategoryOption;
-  onSubmit?: (input: { title: string; content: string; category: ComposerCategoryOption }) => Promise<void>;
+  initialImageUrls?: string[];
+  onSubmit?: (input: {
+    title: string;
+    content: string;
+    category: ComposerCategoryOption;
+    imageFiles: File[];
+    existingImageUrls: string[];
+  }) => Promise<void>;
 }
+
+type ComposerImageItem = {
+  id: string;
+  previewUrl: string;
+  file?: File;
+  existingUrl?: string;
+};
 
 const defaultCategories: ComposerCategoryOption[] = [
   { id: "free", name: "자유" },
@@ -34,6 +48,7 @@ export default function ComposerForm({
   initialTitle = "",
   initialContent = "",
   initialCategory,
+  initialImageUrls = [],
   onSubmit,
 }: ComposerFormProps) {
   const navigate = useNavigate();
@@ -43,7 +58,7 @@ export default function ComposerForm({
     initialCategory ?? categories[0] ?? defaultCategories[0],
   );
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<ComposerImageItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -65,6 +80,16 @@ export default function ComposerForm({
     );
   }, [categories, initialCategory?.id, initialCategory?.name]);
 
+  useEffect(() => {
+    setSelectedImages(
+      initialImageUrls.map((url) => ({
+        id: url,
+        previewUrl: url,
+        existingUrl: url,
+      })),
+    );
+  }, [initialImageUrls.join("|")]);
+
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
       alert("제목과 내용을 모두 입력해주세요.");
@@ -82,6 +107,8 @@ export default function ComposerForm({
         title: title.trim(),
         content: content.trim(),
         category: selectedCategory,
+        imageFiles: selectedImages.flatMap((image) => (image.file ? [image.file] : [])),
+        existingImageUrls: selectedImages.flatMap((image) => (image.existingUrl ? [image.existingUrl] : [])),
       });
       navigate(successPath);
     } finally {
@@ -93,21 +120,21 @@ export default function ComposerForm({
     const files = event.target.files;
     if (!files) return;
 
-    const nextImages: string[] = [];
-    const allowedCount = Math.min(files.length, 5 - selectedImages.length);
+    const allowedCount = 5 - selectedImages.length;
+    const nextImages = Array.from(files)
+      .filter((file) => file.type.startsWith("image/"))
+      .slice(0, allowedCount)
+      .map((file, index) => ({
+        id: `${file.name}-${file.lastModified}-${index}`,
+        previewUrl: URL.createObjectURL(file),
+        file,
+      }));
 
-    for (let index = 0; index < allowedCount; index += 1) {
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        if (readerEvent.target?.result) {
-          nextImages.push(readerEvent.target.result as string);
-          if (nextImages.length === allowedCount) {
-            setSelectedImages((current) => [...current, ...nextImages]);
-          }
-        }
-      };
-      reader.readAsDataURL(files[index]);
+    if (nextImages.length > 0) {
+      setSelectedImages((current) => [...current, ...nextImages]);
     }
+
+    event.target.value = "";
   };
 
   const removeImage = (index: number) => {
@@ -201,8 +228,8 @@ export default function ComposerForm({
         {selectedImages.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
             {selectedImages.map((image, index) => (
-              <div key={index} className="relative aspect-square">
-                <img src={image} alt={`Preview ${index + 1}`} className="h-full w-full rounded-xl object-cover" />
+              <div key={image.id} className="relative aspect-square">
+                <img src={image.previewUrl} alt={`Preview ${index + 1}`} className="h-full w-full rounded-xl object-cover" />
                 <button
                   onClick={() => removeImage(index)}
                   className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white"
