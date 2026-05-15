@@ -165,6 +165,14 @@ export default function PostDetail() {
     try {
       const nextLiked = await togglePostLike(postId, user.uid);
       setLiked(nextLiked);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              likeCount: Math.max(0, current.likeCount + (nextLiked ? 1 : -1)),
+            }
+          : current,
+      );
       toast.success(nextLiked ? "좋아요를 눌렀습니다." : "좋아요를 취소했습니다.");
     } catch (error) {
       console.error("좋아요 처리에 실패했습니다.", error);

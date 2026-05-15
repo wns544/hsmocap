@@ -1,6 +1,8 @@
 import { onRequest } from "firebase-functions/v2/https";
+import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import Groq from "groq-sdk";
 
@@ -20,6 +22,7 @@ const isAllowedOrigin = (origin?: string | null) =>
   !!origin && (allowedOrigins.has(origin) || previewChannelOriginPattern.test(origin));
 
 initializeApp();
+const firestore = getFirestore();
 
 type GradeWordAnswerRequest = {
   english: string;
@@ -735,5 +738,33 @@ export const imageHintSearchHttp = onRequest(
       console.error("imageHintSearchHttp failed:", error);
       response.status(500).json({ error: "Image hint search failed." });
     }
+  },
+);
+
+export const incrementPostLikeCount = onDocumentCreated(
+  {
+    document: "posts/{postId}/likes/{userId}",
+    region: "asia-northeast3",
+  },
+  async (event) => {
+    const postId = event.params.postId;
+    await firestore.doc(`posts/${postId}`).update({
+      likeCount: FieldValue.increment(1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+
+export const decrementPostLikeCount = onDocumentDeleted(
+  {
+    document: "posts/{postId}/likes/{userId}",
+    region: "asia-northeast3",
+  },
+  async (event) => {
+    const postId = event.params.postId;
+    await firestore.doc(`posts/${postId}`).update({
+      likeCount: FieldValue.increment(-1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
   },
 );
