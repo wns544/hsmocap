@@ -12,8 +12,7 @@ import {
   listWordProgresses,
   type WordProgressRecord,
 } from "../lib/wordProgresses";
-import { words as localWords } from "../lib/words";
-import { normalizeQuizWordDocs } from "../lib/wordsAdapter";
+import { isQuizWordUsable, normalizeQuizWordDocs, type NormalizedQuizWord } from "../lib/wordsAdapter";
 
 interface ReviewItem {
   id: string;
@@ -22,12 +21,12 @@ interface ReviewItem {
   level: string;
   reviewCount: number;
   nextReview: string;
-  dueDate: string;
   isUrgent: boolean;
   mastery: number;
 }
 
 const REVIEW_QUEUE_STORAGE_KEY = "review-queue-word-ids";
+const ALL_LEVEL = "전체";
 
 function formatNextReviewLabel(nextReviewAt: Date | null, now: Date) {
   if (!nextReviewAt) {
@@ -43,12 +42,19 @@ function formatNextReviewLabel(nextReviewAt: Date | null, now: Date) {
   return `${Math.ceil(diffDays / 7)}주 후`;
 }
 
-function formatDueDate(nextReviewAt: Date | null) {
-  if (!nextReviewAt) {
-    return "-";
-  }
+function isUrgentReview(progress: WordProgressRecord, now: Date) {
+  return (
+    progress.lastResult === "wrong" ||
+    (progress.nextReviewAt !== null && progress.nextReviewAt.getTime() <= now.getTime())
+  );
+}
 
-  return nextReviewAt.toLocaleDateString("ko-KR");
+function buildQuizReadyWordMap(words: NormalizedQuizWord[]) {
+  return new Map(
+    words
+      .filter(isQuizWordUsable)
+      .map((word) => [word.word.toLowerCase(), word]),
+  );
 }
 
 export default function ReviewList() {
@@ -60,6 +66,8 @@ export default function ReviewList() {
   const selectedLevel = searchParams.get("level");
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadReviewItems = async () => {
       if (!user) {
         setItems([]);
@@ -76,81 +84,74 @@ export default function ReviewList() {
           getDocs(query(collection(db, "words"), orderBy("createdAt", "desc"))),
         ]);
 
-        const normalizedWords = normalizeQuizWordDocs(wordsSnapshot.docs);
-        const firestoreWordMap = new Map(
-          normalizedWords.map((item) => [item.word.toLowerCase(), item]),
-        );
-        const fallbackWordMap = new Map(
-          localWords.map((item) => [item.word.toLowerCase(), item]),
-        );
-
         const now = new Date();
+        const quizReadyWordMap = buildQuizReadyWordMap(normalizeQuizWordDocs(wordsSnapshot.docs));
         const reviewQueueIdSet = new Set(reviewQueueIds.map((item) => item.toLowerCase()));
-        const selectedProgresses = progresses.filter((item) =>
-          reviewQueueIdSet.has(item.wordId.toLowerCase()),
-        );
 
-        const nextItems = selectedProgresses
+        const nextItems = progresses
+          .filter((progress) => reviewQueueIdSet.has(progress.wordId.toLowerCase()))
           .map((progress): ReviewItem | null => {
-            const firestoreWord = firestoreWordMap.get(progress.wordId.toLowerCase());
-            const fallbackWord = fallbackWordMap.get(progress.wordId.toLowerCase());
+            const quizWord = quizReadyWordMap.get(progress.wordId.toLowerCase());
 
-            const word = firestoreWord?.word ?? fallbackWord?.word ?? progress.wordId;
-            const meaning =
-              firestoreWord?.meaning ??
-              fallbackWord?.meaning ??
-              "아직 단어 뜻 정보가 준비되지 않았습니다.";
-            const level = firestoreWord?.level ?? fallbackWord?.level ?? "전체";
-            const mastery =
-              fallbackWord?.mastery ??
-              (progress.totalAnswerCount > 0
-                ? Math.round((progress.correctAnswerCount / progress.totalAnswerCount) * 100)
-                : 0);
-
-            if (selectedLevel && selectedLevel !== "전체" && level !== selectedLevel) {
+            // Count only words that can actually become a sentence-quiz question.
+            if (!quizWord) {
               return null;
             }
 
+            if (selectedLevel && selectedLevel !== ALL_LEVEL && quizWord.level !== selectedLevel) {
+              return null;
+            }
+
+            const mastery =
+              progress.totalAnswerCount > 0
+                ? Math.round((progress.correctAnswerCount / progress.totalAnswerCount) * 100)
+                : 0;
+
             return {
               id: progress.wordId,
-              word,
-              meaning,
-              level,
+              word: quizWord.word,
+              meaning: quizWord.meaning,
+              level: quizWord.level || ALL_LEVEL,
               reviewCount: progress.totalAnswerCount,
               nextReview: formatNextReviewLabel(progress.nextReviewAt, now),
-              dueDate: formatDueDate(progress.nextReviewAt),
-              isUrgent:
-                progress.lastResult === "wrong" ||
-                (progress.nextReviewAt !== null && progress.nextReviewAt.getTime() <= now.getTime()),
+              isUrgent: isUrgentReview(progress, now),
               mastery,
             };
           })
           .filter((item): item is ReviewItem => item !== null);
 
+        if (!isMounted) return;
         setItems(shuffleArray(nextItems));
       } catch (error) {
         console.error("복습 목록을 불러오지 못했습니다.", error);
+        if (!isMounted) return;
         setItems([]);
       } finally {
+        if (!isMounted) return;
         setIsLoading(false);
       }
     };
 
     void loadReviewItems();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedLevel, user]);
 
-  const urgentCount = useMemo(
-    () => items.filter((item) => item.isUrgent).length,
-    [items],
-  );
+  const urgentItems = useMemo(() => items.filter((item) => item.isUrgent), [items]);
+  const urgentCount = urgentItems.length;
   const totalCount = items.length;
 
-  const startReviewSession = (wordIds: string[]) => {
-    if (wordIds.length === 0) {
+  const startReviewSession = (reviewItems: ReviewItem[]) => {
+    if (reviewItems.length === 0) {
       return;
     }
 
-    window.sessionStorage.setItem(REVIEW_QUEUE_STORAGE_KEY, JSON.stringify(wordIds));
+    window.sessionStorage.setItem(
+      REVIEW_QUEUE_STORAGE_KEY,
+      JSON.stringify(reviewItems.map((item) => item.word)),
+    );
     navigate("/app/sentence-quiz?mode=review");
   };
 
@@ -159,7 +160,7 @@ export default function ReviewList() {
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
         <h1 className="text-3xl mb-2">복습하기</h1>
         <p className="text-white/80">
-          {selectedLevel && selectedLevel !== "전체"
+          {selectedLevel && selectedLevel !== ALL_LEVEL
             ? `${selectedLevel} 레벨 단어만 골라서 복습합니다.`
             : "틀렸거나 아직 약한 단어를 다시 복습합니다."}
         </p>
@@ -179,9 +180,7 @@ export default function ReviewList() {
       <div className="px-6 mt-6">
         {urgentCount > 0 && (
           <Button
-            onClick={() =>
-              startReviewSession(items.filter((item) => item.isUrgent).map((item) => item.word))
-            }
+            onClick={() => startReviewSession(urgentItems)}
             className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl mb-6 flex items-center justify-center gap-2"
           >
             <PlayCircle className="w-5 h-5" />
@@ -259,14 +258,14 @@ export default function ReviewList() {
         <div className="mt-6 bg-accent rounded-2xl p-5 border border-border">
           <h3 className="mb-3">복습 가이드</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            틀렸거나 아직 약한 단어를 우선으로 복습 목록에 보여줍니다. 현재 단계에서는 기존 UI를 유지하면서
-            Firestore의 진행도 데이터만 연결하는 방식으로 동작합니다.
+            틀렸거나 아직 약한 단어 중에서 문장 퀴즈 데이터가 준비된 단어만 복습 목록에 표시합니다.
+            그래서 표시된 복습 개수와 실제 복습 퀴즈 진입 개수가 일치합니다.
           </p>
           {totalCount > 0 && (
             <Button
               variant="outline"
               className="mt-4 rounded-xl"
-              onClick={() => startReviewSession(items.map((item) => item.word))}
+              onClick={() => startReviewSession(items)}
             >
               전체 복습 시작
             </Button>
