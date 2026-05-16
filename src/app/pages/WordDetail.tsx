@@ -1,27 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, Check, Star, Volume2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { useAuth } from "../contexts/AuthContext";
+import { isFavoriteWord, toggleFavoriteWord } from "../lib/favoriteWords";
 import { getWordById, type WordDetailData, words } from "../lib/words";
 
 interface WordLocationState {
   word?: {
-    id: string;
+    id: string | number;
     word: string;
     meaning: string;
     level: string;
     mastery: number;
-    isFavorite: boolean;
+    isFavorite?: boolean;
   };
 }
 
 function createFallbackDetail(source: NonNullable<WordLocationState["word"]>): WordDetailData {
+  const numericId = Number(source.id);
+
   return {
-    id: Number.isNaN(Number(source.id)) ? -1 : Number(source.id),
+    id: Number.isNaN(numericId) ? -1 : numericId,
     word: source.word,
-    meaning: source.meaning || "단어 뜻 정보가 아직 등록되지 않았습니다.",
+    meaning: source.meaning || "뜻 정보가 준비되지 않았습니다.",
     level: source.level || "전체",
     mastery: source.mastery ?? 0,
     isFavorite: source.isFavorite ?? false,
@@ -40,9 +45,12 @@ function createFallbackDetail(source: NonNullable<WordLocationState["word"]>): W
 export default function WordDetail() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const locationState = location.state as WordLocationState | null;
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isSavingFavorite, setIsSavingFavorite] = useState(false);
 
   const word = useMemo(() => {
     const numericId = Number(id);
@@ -67,11 +75,82 @@ export default function WordDetail() {
     return undefined;
   }, [id, locationState, searchParams]);
 
-  const [isFavorite, setIsFavorite] = useState(word?.isFavorite ?? false);
+  const favoriteWordId = useMemo(() => {
+    if (!word) return "";
+    if (id && id !== "-1") return id;
+    return word.word;
+  }, [id, word]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [id, searchParams]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!word) {
+      setIsFavorite(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setIsFavorite(word.isFavorite ?? false);
+
+    if (!user || !favoriteWordId) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void isFavoriteWord(user.uid, favoriteWordId)
+      .then((result) => {
+        if (!isMounted) return;
+        setIsFavorite(result);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setIsFavorite(word.isFavorite ?? false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [favoriteWordId, user, word]);
+
+  const handleToggleFavorite = async () => {
+    if (!word) return;
+
+    if (!user) {
+      toast.error("즐겨찾기는 로그인 후 이용할 수 있습니다.");
+      return;
+    }
+
+    const nextFavorite = !isFavorite;
+    setIsSavingFavorite(true);
+    setIsFavorite(nextFavorite);
+
+    try {
+      await toggleFavoriteWord(
+        user.uid,
+        {
+          id: favoriteWordId,
+          word: word.word,
+          meaning: word.meaning,
+          level: word.level,
+          mastery: word.mastery,
+        },
+        nextFavorite,
+      );
+      toast.success(nextFavorite ? "단어를 즐겨찾기에 추가했습니다." : "단어를 즐겨찾기에서 제거했습니다.");
+    } catch (error) {
+      console.error("즐겨찾기 처리에 실패했습니다.", error);
+      setIsFavorite(!nextFavorite);
+      toast.error("즐겨찾기 처리에 실패했습니다.");
+    } finally {
+      setIsSavingFavorite(false);
+    }
+  };
 
   if (!word) {
     return (
@@ -91,8 +170,10 @@ export default function WordDetail() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setIsFavorite(!isFavorite)}
-            className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"
+            onClick={handleToggleFavorite}
+            disabled={isSavingFavorite}
+            className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center disabled:opacity-60"
+            aria-label={isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
           >
             <Star className={`w-5 h-5 ${isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
           </button>
@@ -128,14 +209,14 @@ export default function WordDetail() {
 
         <Tabs defaultValue="meaning" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="meaning">의미</TabsTrigger>
+            <TabsTrigger value="meaning">뜻</TabsTrigger>
             <TabsTrigger value="examples">예문</TabsTrigger>
             <TabsTrigger value="related">관련 단어</TabsTrigger>
           </TabsList>
 
           <TabsContent value="meaning" className="space-y-4">
             <div className="bg-white rounded-2xl p-5 border border-border">
-              <h3 className="text-sm text-muted-foreground mb-2">뜻</h3>
+              <h3 className="text-sm text-muted-foreground mb-2">의미</h3>
               <p className="text-lg">{word.meaning}</p>
             </div>
 
@@ -184,8 +265,8 @@ export default function WordDetail() {
           <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl">
             퀴즈로 복습하기
           </Button>
-          <Button variant="outline" className="w-full h-14 rounded-xl">
-            복습 리스트에 추가
+          <Button variant="outline" className="w-full h-14 rounded-xl" onClick={handleToggleFavorite}>
+            {isFavorite ? "즐겨찾기에서 제거" : "즐겨찾기에 추가"}
           </Button>
         </div>
       </div>

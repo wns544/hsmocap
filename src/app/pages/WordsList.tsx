@@ -1,77 +1,61 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Search, Filter, ChevronRight, Star, BookOpen, Layers, TrendingUp } from "lucide-react";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { db } from "../lib/firebase";
-import { fallbackWordSummaries } from "../lib/words";
+import { useAuth } from "../contexts/AuthContext";
+import { listFavoriteWords } from "../lib/favoriteWords";
+import { listWordLibraryItems, type WordLibraryItem } from "../lib/wordLibrary";
 
-interface WordItem {
-  id: string;
-  word: string;
-  meaning: string;
-  level: string;
-  mastery: number;
+interface WordItem extends WordLibraryItem {
   isFavorite: boolean;
 }
 
-const fallbackWords: WordItem[] = fallbackWordSummaries.map((word) => ({
-  id: String(word.id),
-  word: word.word,
-  meaning: word.meaning,
-  level: word.level,
-  mastery: word.mastery,
-  isFavorite: word.isFavorite,
-}));
-
-const categories = ["전체", "초급", "중급", "고급", "비즈니스"] as const;
+const categories = ["전체", "초급", "중급", "고급"] as const;
 
 export default function WordsList() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [words, setWords] = useState<WordItem[]>(fallbackWords);
+  const [words, setWords] = useState<WordItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<(typeof categories)[number]>("전체");
 
   useEffect(() => {
     const loadWords = async () => {
+      setIsLoading(true);
+
       try {
-        const wordsQuery = query(collection(db, "words"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(wordsQuery);
+        const [wordItems, favoriteItems] = await Promise.all([
+          listWordLibraryItems(),
+          user ? listFavoriteWords(user.uid) : Promise.resolve([]),
+        ]);
+        const favoriteKeys = new Set(
+          favoriteItems.flatMap((item) => [item.id.toLowerCase(), item.word.toLowerCase()]),
+        );
 
-        if (!snapshot.empty) {
-          const firestoreWords = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              word: typeof data.word === "string" ? data.word : "Untitled",
-              meaning: typeof data.meaning === "string" ? data.meaning : "",
-              level: typeof data.level === "string" ? data.level : "전체",
-              mastery: typeof data.mastery === "number" ? data.mastery : 0,
-              isFavorite: Boolean(data.isFavorite),
-            } satisfies WordItem;
-          });
-
-          setWords(firestoreWords);
-        }
+        setWords(
+          wordItems.map((word) => ({
+            ...word,
+            isFavorite:
+              favoriteKeys.has(word.id.toLowerCase()) || favoriteKeys.has(word.word.toLowerCase()),
+          })),
+        );
       } catch (error) {
-        console.error("단어 목록 불러오기 실패:", error);
+        console.error("단어 목록을 불러오지 못했습니다.", error);
+        setWords([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadWords();
-  }, []);
+  }, [user]);
 
   const searchedWords = words.filter((word) => {
     const keyword = searchQuery.trim().toLowerCase();
-    if (!keyword) {
-      return true;
-    }
-
+    if (!keyword) return true;
     return word.word.toLowerCase().includes(keyword) || word.meaning.toLowerCase().includes(keyword);
   });
 
@@ -94,7 +78,7 @@ export default function WordsList() {
             type="text"
             placeholder="단어 검색..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) => setSearchQuery(event.target.value)}
             className="pl-12 pr-12 h-12 rounded-xl bg-input-background"
           />
           <Button variant="ghost" size="sm" className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -159,7 +143,7 @@ export default function WordsList() {
           {filteredWords.map((item) => (
             <Link
               key={item.id}
-              to={`/app/words/${item.id}?word=${encodeURIComponent(item.word)}`}
+              to={`/app/words/${encodeURIComponent(item.id)}?word=${encodeURIComponent(item.word)}`}
               state={{ word: item }}
             >
               <div className="bg-white rounded-2xl p-4 border border-border active:scale-[0.98] transition-transform">
