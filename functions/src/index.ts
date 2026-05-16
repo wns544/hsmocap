@@ -364,21 +364,80 @@ const ENGLISH_STOPWORDS = new Set([
 
 const TEXT_HEAVY_HINTS = [
   "alphabet",
+  "analysis",
+  "article",
+  "book",
+  "book cover",
   "caption",
+  "chart",
+  "cost benefit",
+  "cost-benefit",
+  "diagram",
+  "dissertation",
+  "document",
+  "ebook",
   "font",
+  "graph",
+  "handwriting",
   "headline",
+  "infographic",
+  "journal",
   "letter",
   "letters",
   "logo",
+  "magazine",
+  "manuscript",
+  "newspaper",
+  "notebook",
+  "page",
+  "paper",
+  "pdf",
+  "presentation",
+  "receipt",
+  "report",
+  "scan",
+  "screenshot",
   "scrabble",
   "sign",
+  "slide",
+  "spreadsheet",
   "subtitle",
+  "table",
   "text",
+  "thesis",
   "typography",
+  "website",
+  "whiteboard",
   "word",
   "words",
+  "worksheet",
   "writing",
 ];
+
+const POSITIVE_PHOTO_HINTS = [
+  "adult",
+  "animal",
+  "child",
+  "family",
+  "hands",
+  "landscape",
+  "man",
+  "nature",
+  "outdoor",
+  "people",
+  "person",
+  "portrait",
+  "woman",
+];
+
+const ABSTRACT_IMAGE_QUERY_HINTS: Record<string, string[]> = {
+  benefit: ["health benefits people", "happy healthy lifestyle", "exercise health benefits"],
+  benefits: ["health benefits people", "happy healthy lifestyle", "exercise health benefits"],
+  energy: ["active people exercise", "person full of energy", "healthy lifestyle energy"],
+  attitude: ["person confident attitude", "positive attitude people"],
+  advantage: ["winning advantage people", "success advantage person"],
+  success: ["successful person celebration", "achievement happy people"],
+};
 
 const tokenizeEnglish = (value: string) =>
   value
@@ -402,6 +461,7 @@ const buildImageQueries = (targetWord: string, english?: string, wordMeaning?: s
   return Array.from(
     new Set(
       [
+        ...(ABSTRACT_IMAGE_QUERY_HINTS[normalizedTarget.toLowerCase()] ?? []),
         `${quoted} realistic photo`,
         `${quoted} ${contextTail}`.trim(),
         `${quoted} ${compactMeaning}`.trim(),
@@ -445,6 +505,15 @@ const fetchPexelsCandidates = async (
 
 const includesAnyTerm = (value: string, terms: string[]) =>
   terms.some((term) => value.includes(term));
+
+const isRejectedImageCandidate = (photo: PexelsPhoto) => {
+  const value = [photo.alt, photo.url, photo.src?.original, photo.src?.large2x, photo.src?.large]
+    .filter((item): item is string => typeof item === "string")
+    .join(" ")
+    .toLowerCase();
+
+  return includesAnyTerm(value, TEXT_HEAVY_HINTS);
+};
 
 const scorePexelsPhoto = (
   photo: PexelsPhoto,
@@ -493,9 +562,15 @@ const scorePexelsPhoto = (
       reasons.push("meaning-token");
     }
 
-    if (includesAnyTerm(alt, TEXT_HEAVY_HINTS)) {
-      score -= 35;
+    if (isRejectedImageCandidate(photo)) {
+      score -= 80;
       reasons.push("text-heavy");
+    }
+
+    const matchedPositiveHints = POSITIVE_PHOTO_HINTS.filter((token) => alt.includes(token)).length;
+    score += matchedPositiveHints * 3;
+    if (matchedPositiveHints > 0) {
+      reasons.push("photo-like");
     }
   }
 
@@ -714,6 +789,7 @@ export const imageHintSearchHttp = onRequest(
       }
 
       const ranked = Array.from(deduplicated.values())
+        .filter((photo) => !isRejectedImageCandidate(photo))
         .map((photo) => {
           const scored = scorePexelsPhoto(photo, targetWord, english, wordMeaning);
           return { photo, ...scored };
@@ -728,7 +804,7 @@ export const imageHintSearchHttp = onRequest(
         best?.photo.src?.original;
       const bestDescriptionUrl = best?.photo.url;
 
-      if (best && best.score >= 0 && bestImageUrl && bestDescriptionUrl) {
+      if (best && best.score >= 12 && bestImageUrl && bestDescriptionUrl) {
         response.status(200).set(corsHeaders).json({
           imageUrl: bestImageUrl,
           descriptionUrl: bestDescriptionUrl,

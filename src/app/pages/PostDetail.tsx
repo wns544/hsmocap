@@ -410,12 +410,21 @@ export default function PostDetail() {
           <div className="mb-6 whitespace-pre-wrap text-base leading-relaxed">{post.body}</div>
 
           {post.imageUrls.length > 0 && (
-            <div className="mb-6">
-              <ImageWithFallback
-                src={post.imageUrls[0]}
-                alt={post.title}
-                className="h-64 w-full rounded-2xl object-cover"
-              />
+            <div
+              className={`mb-6 grid gap-2 ${
+                post.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"
+              }`}
+            >
+              {post.imageUrls.slice(0, 5).map((imageUrl, index) => (
+                <ImageWithFallback
+                  key={imageUrl}
+                  src={imageUrl}
+                  alt={`${post.title} 첨부 이미지 ${index + 1}`}
+                  className={`w-full rounded-2xl object-cover ${
+                    post.imageUrls.length === 1 || index === 0 ? "h-64" : "h-36"
+                  }`}
+                />
+              ))}
             </div>
           )}
 

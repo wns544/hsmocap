@@ -124,15 +124,41 @@ const isLowQualityCommonsResult = (title: string, imageUrl: string) => {
   return [
     ".pdf",
     ".djvu",
+    "analysis",
+    "article",
+    "book",
+    "chart",
+    "cost benefit",
+    "cost-benefit",
+    "diagram",
     "thesis",
     "dissertation",
     "document",
+    "ebook",
+    "graph",
+    "handwriting",
+    "infographic",
+    "journal",
     "manuscript",
+    "newspaper",
+    "notebook",
+    "page",
+    "paper",
     "book cover",
     "cover page",
+    "presentation",
+    "receipt",
+    "report",
     "scan",
+    "screenshot",
+    "slide",
+    "spreadsheet",
+    "table",
     "text",
     "logo",
+    "website",
+    "whiteboard",
+    "worksheet",
   ].some((term) => value.includes(term));
 };
 
@@ -140,7 +166,10 @@ const searchCommonsImage = async (queryWord: string): Promise<CommonsImageResult
   const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
   endpoint.searchParams.set("action", "query");
   endpoint.searchParams.set("generator", "search");
-  endpoint.searchParams.set("gsrsearch", `${queryWord} photo -pdf -document -thesis -dissertation`);
+  endpoint.searchParams.set(
+    "gsrsearch",
+    `${queryWord} photo -pdf -document -thesis -dissertation -book -scan -logo -text -chart -diagram`,
+  );
   endpoint.searchParams.set("gsrnamespace", "6");
   endpoint.searchParams.set("gsrlimit", "5");
   endpoint.searchParams.set("prop", "imageinfo|info");

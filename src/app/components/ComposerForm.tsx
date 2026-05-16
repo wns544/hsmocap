@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronDown, Hash, Image, Smile, X } from "lucide-react";
+import { validateCommunityPostImages } from "../lib/communityImages";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
@@ -33,6 +34,8 @@ type ComposerImageItem = {
   file?: File;
   existingUrl?: string;
 };
+
+const MAX_IMAGE_COUNT = 5;
 
 const defaultCategories: ComposerCategoryOption[] = [
   { id: "free", name: "자유" },
@@ -76,7 +79,9 @@ export default function ComposerForm({
     }
 
     setSelectedCategory((current) =>
-      categories.some((category) => category.id === current.id) ? current : categories[0] ?? defaultCategories[0],
+      categories.some((category) => category.id === current.id)
+        ? current
+        : categories[0] ?? defaultCategories[0],
     );
   }, [categories, initialCategory?.id, initialCategory?.name]);
 
@@ -120,15 +125,28 @@ export default function ComposerForm({
     const files = event.target.files;
     if (!files) return;
 
-    const allowedCount = 5 - selectedImages.length;
-    const nextImages = Array.from(files)
-      .filter((file) => file.type.startsWith("image/"))
-      .slice(0, allowedCount)
-      .map((file, index) => ({
-        id: `${file.name}-${file.lastModified}-${index}`,
-        previewUrl: URL.createObjectURL(file),
-        file,
-      }));
+    const selectedFiles = Array.from(files);
+    const allowedCount = MAX_IMAGE_COUNT - selectedImages.length;
+    const candidateFiles = selectedFiles.slice(0, allowedCount);
+    const validationError = validateCommunityPostImages(candidateFiles);
+
+    if (allowedCount <= 0) {
+      alert(`이미지는 최대 ${MAX_IMAGE_COUNT}장까지 첨부할 수 있습니다.`);
+      event.target.value = "";
+      return;
+    }
+
+    if (validationError) {
+      alert(validationError);
+      event.target.value = "";
+      return;
+    }
+
+    const nextImages = candidateFiles.map((file, index) => ({
+      id: `${file.name}-${file.lastModified}-${index}`,
+      previewUrl: URL.createObjectURL(file),
+      file,
+    }));
 
     if (nextImages.length > 0) {
       setSelectedImages((current) => [...current, ...nextImages]);
@@ -138,7 +156,7 @@ export default function ComposerForm({
   };
 
   const removeImage = (index: number) => {
-    setSelectedImages(selectedImages.filter((_, currentIndex) => currentIndex !== index));
+    setSelectedImages((current) => current.filter((_, currentIndex) => currentIndex !== index));
   };
 
   return (
@@ -213,7 +231,7 @@ export default function ComposerForm({
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-4 py-2 transition-colors hover:bg-muted/50">
           <Image className="h-5 w-5 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            사진 추가 {selectedImages.length > 0 && `(${selectedImages.length}/5)`}
+            사진 추가 {selectedImages.length > 0 && `(${selectedImages.length}/${MAX_IMAGE_COUNT})`}
           </span>
           <input
             type="file"
@@ -221,7 +239,7 @@ export default function ComposerForm({
             multiple
             onChange={handleImageSelect}
             className="hidden"
-            disabled={selectedImages.length >= 5}
+            disabled={selectedImages.length >= MAX_IMAGE_COUNT}
           />
         </label>
 
@@ -229,7 +247,11 @@ export default function ComposerForm({
           <div className="grid grid-cols-3 gap-2">
             {selectedImages.map((image, index) => (
               <div key={image.id} className="relative aspect-square">
-                <img src={image.previewUrl} alt={`Preview ${index + 1}`} className="h-full w-full rounded-xl object-cover" />
+                <img
+                  src={image.previewUrl}
+                  alt={`첨부 이미지 ${index + 1}`}
+                  className="h-full w-full rounded-xl object-cover"
+                />
                 <button
                   onClick={() => removeImage(index)}
                   className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white"
@@ -243,7 +265,7 @@ export default function ComposerForm({
 
         {selectedImages.length > 0 && (
           <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-            이미지 업로드 저장은 다음 단계에서 연결할 예정입니다. 이번 단계에서는 텍스트 게시글 저장이 우선입니다.
+            첨부한 이미지는 게시글 저장 시 Firebase Storage에 업로드됩니다.
           </div>
         )}
 
@@ -260,7 +282,7 @@ export default function ComposerForm({
               multiple
               onChange={handleImageSelect}
               className="hidden"
-              disabled={selectedImages.length >= 5}
+              disabled={selectedImages.length >= MAX_IMAGE_COUNT}
             />
           </label>
           <button className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted">
@@ -270,7 +292,9 @@ export default function ComposerForm({
             <Hash className="h-5 w-5 text-muted-foreground" />
           </button>
           {selectedImages.length > 0 && (
-            <span className="ml-auto text-xs text-muted-foreground">{selectedImages.length} / 5</span>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {selectedImages.length} / {MAX_IMAGE_COUNT}
+            </span>
           )}
         </div>
       </div>

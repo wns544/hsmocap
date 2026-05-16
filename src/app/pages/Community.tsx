@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ChevronRight, Edit, MessageCircle, Search, ThumbsUp } from "lucide-react";
+import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import {
@@ -142,52 +143,63 @@ export default function Community() {
             </div>
           ) : filteredPosts.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-white p-8 text-center">
-              <p className="text-sm text-muted-foreground">아직 게시글이 없어요.</p>
+              <p className="text-sm text-muted-foreground">아직 게시글이 없습니다.</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 첫 번째 게시글을 작성해서 커뮤니티를 시작해보세요.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredPosts.map((post) => (
-                <Link key={post.id} to={`/app/community/${post.id}`}>
-                  <article className="rounded-2xl border border-border bg-white p-5 transition-transform active:scale-[0.99]">
-                    <div className="mb-3 flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{post.authorSnapshot.name}</span>
-                          <Badge variant="outline" className="border-primary/20 text-primary">
-                            {post.categoryName}
-                          </Badge>
-                        </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {formatCommunityTimestamp(post.createdAt)}
-                        </div>
-                      </div>
-                    </div>
+              {filteredPosts.map((post) => {
+                const thumbnailUrl = post.imageUrls[0];
 
-                    <h3 className="line-clamp-1 text-lg">{post.title}</h3>
-                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{post.body}</p>
+                return (
+                  <Link key={post.id} to={`/app/community/${post.id}`}>
+                    <article className="rounded-2xl border border-border bg-white p-5 transition-transform active:scale-[0.99]">
+                      <div className="mb-3 flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{post.authorSnapshot.name}</span>
+                            <Badge variant="outline" className="border-primary/20 text-primary">
+                              {post.categoryName}
+                            </Badge>
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {formatCommunityTimestamp(post.createdAt)}
+                          </div>
+                        </div>
+                        {thumbnailUrl && (
+                          <ImageWithFallback
+                            src={thumbnailUrl}
+                            alt={post.title}
+                            className="h-20 w-20 shrink-0 rounded-xl object-cover"
+                          />
+                        )}
+                      </div>
 
-                    <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-                      <div className="flex items-center gap-4">
+                      <h3 className="line-clamp-1 text-lg">{post.title}</h3>
+                      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{post.body}</p>
+
+                      <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1">
+                            <ThumbsUp className="h-4 w-4" />
+                            {post.likeCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle className="h-4 w-4" />
+                            {post.commentCount}
+                          </span>
+                        </div>
                         <span className="flex items-center gap-1">
-                          <ThumbsUp className="h-4 w-4" />
-                          {post.likeCount}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="h-4 w-4" />
-                          {post.commentCount}
+                          상세보기
+                          <ChevronRight className="h-4 w-4" />
                         </span>
                       </div>
-                      <span className="flex items-center gap-1">
-                        상세보기
-                        <ChevronRight className="h-4 w-4" />
-                      </span>
-                    </div>
-                  </article>
-                </Link>
-              ))}
+                    </article>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </section>
