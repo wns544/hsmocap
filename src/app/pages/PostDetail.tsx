@@ -11,9 +11,9 @@ import {
   ThumbsUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../contexts/AuthContext";
 import {
   createPostComment,
@@ -290,7 +290,7 @@ export default function PostDetail() {
   const handleUpdateComment = async (commentId: string, commentUserId: string) => {
     const trimmedContent = editingCommentContent.trim();
     if (!trimmedContent) {
-      toast.error("댓글 내용을 입력해 주세요.");
+      toast.error("댓글 내용을 입력해주세요.");
       return;
     }
 

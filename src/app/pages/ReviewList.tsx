@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { RotateCcw, Calendar, ChevronRight, PlayCircle } from "lucide-react";
-import { Button } from "../components/ui/button";
+import { Calendar, ChevronRight, PlayCircle, RotateCcw } from "lucide-react";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../lib/firebase";
 import { shuffleArray } from "../lib/random";
@@ -93,7 +93,7 @@ export default function ReviewList() {
           .map((progress): ReviewItem | null => {
             const quizWord = quizReadyWordMap.get(progress.wordId.toLowerCase());
 
-            // Count only words that can actually become a sentence-quiz question.
+            // 문장 퀴즈로 실제 출제 가능한 단어만 복습 목록에 표시한다.
             if (!quizWord) {
               return null;
             }
@@ -157,48 +157,48 @@ export default function ReviewList() {
 
   return (
     <div className="min-h-screen bg-background pb-6">
-      <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
-        <h1 className="text-3xl mb-2">복습하기</h1>
+      <div className="rounded-b-3xl bg-primary px-6 pb-8 pt-12 text-white">
+        <h1 className="mb-2 text-3xl">복습하기</h1>
         <p className="text-white/80">
           {selectedLevel && selectedLevel !== ALL_LEVEL
-            ? `${selectedLevel} 레벨 단어만 골라서 복습합니다.`
+            ? `${selectedLevel} 레벨 단어만 골라 복습합니다.`
             : "틀렸거나 아직 약한 단어를 다시 복습합니다."}
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-            <div className="text-2xl mb-1">{urgentCount}</div>
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+            <div className="mb-1 text-2xl">{urgentCount}</div>
             <div className="text-sm text-white/80">오늘 복습할 단어</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-            <div className="text-2xl mb-1">{totalCount}</div>
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+            <div className="mb-1 text-2xl">{totalCount}</div>
             <div className="text-sm text-white/80">전체 복습 대기</div>
           </div>
         </div>
       </div>
 
-      <div className="px-6 mt-6">
+      <div className="mt-6 px-6">
         {urgentCount > 0 && (
           <Button
             onClick={() => startReviewSession(urgentItems)}
-            className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl mb-6 flex items-center justify-center gap-2"
+            className="mb-6 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-white hover:bg-primary/90"
           >
-            <PlayCircle className="w-5 h-5" />
+            <PlayCircle className="h-5 w-5" />
             오늘 복습 시작하기 ({urgentCount}개)
           </Button>
         )}
 
         <div className="mb-4">
-          <h2 className="text-xl mb-4">복습 일정</h2>
+          <h2 className="mb-4 text-xl">복습 일정</h2>
         </div>
 
         {isLoading ? (
-          <div className="bg-white rounded-2xl p-5 border border-border text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-border bg-white p-5 text-sm text-muted-foreground">
             복습 대상을 불러오는 중입니다.
           </div>
         ) : totalCount === 0 ? (
-          <div className="bg-white rounded-2xl p-5 border border-border text-sm text-muted-foreground">
-            지금 복습할 단어가 없습니다. 문장 퀴즈를 풀고 다시 확인해보세요.
+          <div className="rounded-2xl border border-border bg-white p-5 text-sm text-muted-foreground">
+            지금 복습할 단어가 없습니다. 문장 퀴즈에서 오답이나 약한 단어를 만든 뒤 다시 확인해보세요.
           </div>
         ) : (
           <div className="space-y-3">
@@ -218,13 +218,13 @@ export default function ReviewList() {
                 }}
               >
                 <div
-                  className={`bg-white rounded-2xl p-5 border-2 ${
+                  className={`rounded-2xl border-2 bg-white p-5 transition-transform active:scale-[0.98] ${
                     item.isUrgent ? "border-primary" : "border-border"
-                  } active:scale-[0.98] transition-transform`}
+                  }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="mb-2 flex items-center gap-2">
                         <h3 className="text-lg">{item.word}</h3>
                         <Badge variant="secondary" className="text-xs">
                           {item.level}
@@ -235,19 +235,19 @@ export default function ReviewList() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-muted-foreground mb-3">{item.meaning}</p>
+                      <p className="mb-3 text-muted-foreground">{item.meaning}</p>
                       <div className="flex items-center gap-4 text-sm">
                         <div className="flex items-center gap-1 text-muted-foreground">
-                          <RotateCcw className="w-4 h-4" />
+                          <RotateCcw className="h-4 w-4" />
                           <span>{item.reviewCount}회 복습</span>
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="h-4 w-4" />
                           <span>{item.nextReview}</span>
                         </div>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground ml-2 flex-shrink-0" />
+                    <ChevronRight className="ml-2 h-5 w-5 flex-shrink-0 text-muted-foreground" />
                   </div>
                 </div>
               </Link>
@@ -255,11 +255,11 @@ export default function ReviewList() {
           </div>
         )}
 
-        <div className="mt-6 bg-accent rounded-2xl p-5 border border-border">
-          <h3 className="mb-3">복습 가이드</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+        <div className="mt-6 rounded-2xl border border-border bg-accent p-5">
+          <h3 className="mb-3">복습 안내</h3>
+          <p className="text-sm leading-relaxed text-muted-foreground">
             틀렸거나 아직 약한 단어 중에서 문장 퀴즈 데이터가 준비된 단어만 복습 목록에 표시합니다.
-            그래서 표시된 복습 개수와 실제 복습 퀴즈 진입 개수가 일치합니다.
+            그래서 화면에 표시된 복습 개수와 실제 복습 퀴즈 진입 개수가 일치합니다.
           </p>
           {totalCount > 0 && (
             <Button
