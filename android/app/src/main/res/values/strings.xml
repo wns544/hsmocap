@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">&#xC6CC;&#xB514;</string>
+    <string name="title_activity_main">&#xC6CC;&#xB514;</string>
+    <string name="package_name">com.hsmocap.app</string>
+    <string name="custom_url_scheme">com.hsmocap.app</string>
+    <string name="loading_title">&#xC571;&#xC744; &#xBD88;&#xB7EC;&#xC624;&#xB294; &#xC911;&#xC785;&#xB2C8;&#xB2E4;</string>
+    <string name="loading_message">&#xC7A0;&#xC2DC;&#xB9CC; &#xAE30;&#xB2E4;&#xB824;&#xC8FC;&#xC138;&#xC694;.</string>
+    <string name="offline_title">&#xC778;&#xD130;&#xB137; &#xC5F0;&#xACB0;&#xC744; &#xD655;&#xC778;&#xD574;&#xC8FC;&#xC138;&#xC694;</string>
+    <string name="offline_message">&#xC774; &#xC571;&#xC740; &#xD604;&#xC7AC; &#xBC30;&#xD3EC; &#xC911;&#xC778; &#xC6F9; &#xC11C;&#xBE44;&#xC2A4;&#xB97C; &#xBD88;&#xB7EC;&#xC635;&#xB2C8;&#xB2E4;. &#xB124;&#xD2B8;&#xC6CC;&#xD06C; &#xC5F0;&#xACB0; &#xD6C4; &#xB2E4;&#xC2DC; &#xC2DC;&#xB3C4;&#xD574;&#xC8FC;&#xC138;&#xC694;.</string>
+    <string name="retry_button">&#xB2E4;&#xC2DC; &#xC2DC;&#xB3C4;</string>
+    <string name="back_press_exit">&#xD55C; &#xBC88; &#xB354; &#xB204;&#xB974;&#xBA74; &#xC571;&#xC774; &#xC885;&#xB8CC;&#xB429;&#xB2C8;&#xB2E4;.</string>
+</resources>

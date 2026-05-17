@@ -1,0 +1,9 @@
+{
+  "appId": "com.hsmocap.app",
+  "appName": "HSMOCAP",
+  "webDir": "dist",
+  "server": {
+    "url": "https://hsmocap-d907e.web.app",
+    "cleartext": false
+  }
+}
