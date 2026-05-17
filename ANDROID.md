@@ -11,6 +11,23 @@ The current Android app opens the hosted site directly:
 - `capacitor.config.json`
 - `android/`
 
+## Team setup from GitHub
+
+Fresh clones should run Capacitor sync before opening the Android project.
+
+```bash
+git clone https://github.com/wns544/hsmocap.git
+cd hsmocap/hsmocap-app
+git checkout android-app-capacitor
+npm install
+npm run android:sync
+npm run android:open
+```
+
+After Android Studio opens, wait for Gradle sync to finish, select a virtual device, and run the `app` configuration.
+
+Do not open only the `android/` folder from a fresh clone before running `npm run android:sync`. Capacitor intentionally generates some Android support files locally, including `android/app/src/main/assets/capacitor.config.json` and `android/capacitor-cordova-android-plugins/`.
+
 ## Useful commands
 
 ```bash
