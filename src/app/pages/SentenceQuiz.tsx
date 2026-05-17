@@ -68,7 +68,78 @@ interface CommonsImageResult {
   imageUrl: string;
   descriptionUrl: string;
   title: string;
+  scenePlan?: ImageHintScenePlan;
 }
+
+interface ImageHintScenePlan {
+  searchPhrases: string[];
+  avoidTerms: string[];
+  senseSummary: string;
+  sceneSummary: string;
+}
+
+interface CommonsCandidate {
+  imageUrl: string;
+  descriptionUrl: string;
+  title: string;
+  score: number;
+}
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const buildEnglishSurfaceVariants = (targetWord: string) => {
+  const lower = targetWord.toLowerCase().trim();
+  if (!lower) {
+    return [];
+  }
+
+  const variants = new Set<string>([lower]);
+
+  variants.add(`${lower}s`);
+  variants.add(`${lower}es`);
+  variants.add(`${lower}ed`);
+  variants.add(`${lower}ing`);
+
+  if (lower.endsWith("e")) {
+    variants.add(`${lower}d`);
+    variants.add(`${lower.slice(0, -1)}ing`);
+  }
+
+  if (lower.endsWith("y") && lower.length > 1) {
+    variants.add(`${lower.slice(0, -1)}ies`);
+    variants.add(`${lower.slice(0, -1)}ied`);
+  }
+
+  const doubledConsonantMatch = lower.match(/([aeiou][^aeiouy])$/);
+  if (doubledConsonantMatch) {
+    const lastChar = lower.slice(-1);
+    variants.add(`${lower}${lastChar}ed`);
+    variants.add(`${lower}${lastChar}ing`);
+  }
+
+  return Array.from(variants);
+};
+
+const resolveSentenceTargetWord = (english: string, targetWord: string) => {
+  const normalizedEnglish = english.trim();
+  const normalizedTarget = targetWord.trim();
+  if (!normalizedEnglish || !normalizedTarget) {
+    return normalizedTarget;
+  }
+
+  const exactMatch = normalizedEnglish.match(
+    new RegExp(`\\b${escapeRegExp(normalizedTarget)}\\b`, "i"),
+  );
+  if (exactMatch) {
+    return exactMatch[0];
+  }
+
+  const variantMatch = buildEnglishSurfaceVariants(normalizedTarget)
+    .map((variant) => normalizedEnglish.match(new RegExp(`\\b${escapeRegExp(variant)}\\b`, "i")))
+    .find((match): match is RegExpMatchArray => !!match);
+
+  return variantMatch?.[0] ?? normalizedTarget;
+};
 
 const GRADE_WORD_ANSWER_URL =
   import.meta.env.VITE_GRADE_WORD_ANSWER_URL ??
@@ -162,59 +233,261 @@ const isLowQualityCommonsResult = (title: string, imageUrl: string) => {
   ].some((term) => value.includes(term));
 };
 
-const searchCommonsImage = async (queryWord: string): Promise<CommonsImageResult | null> => {
-  const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
-  endpoint.searchParams.set("action", "query");
-  endpoint.searchParams.set("generator", "search");
-  endpoint.searchParams.set(
-    "gsrsearch",
-    `${queryWord} photo -pdf -document -thesis -dissertation -book -scan -logo -text -chart -diagram`,
-  );
-  endpoint.searchParams.set("gsrnamespace", "6");
-  endpoint.searchParams.set("gsrlimit", "5");
-  endpoint.searchParams.set("prop", "imageinfo|info");
-  endpoint.searchParams.set("iiprop", "url");
-  endpoint.searchParams.set("iiurlwidth", "640");
-  endpoint.searchParams.set("inprop", "url");
-  endpoint.searchParams.set("format", "json");
-  endpoint.searchParams.set("formatversion", "2");
-  endpoint.searchParams.set("origin", "*");
+const tokenizeEnglishHint = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/g)
+    .filter((token) => token.length > 1);
 
-  const response = await fetch(endpoint.toString());
-  if (!response.ok) {
-    throw new Error(`Wikimedia Commons request failed: ${response.status}`);
+const COMMONS_ACTION_HINTS: Record<string, string[]> = {
+  invite: ["welcoming guests home", "friends visiting house"],
+  invited: ["welcoming guests home", "friends visiting house"],
+  lend: ["lending an umbrella to another person", "person borrowing an umbrella from a friend"],
+  lent: ["lending an umbrella to another person", "person borrowing an umbrella from a friend"],
+  pass: ["passing salt at dinner table", "handing salt shaker to another person"],
+  passed: ["passing salt at dinner table", "handing salt shaker to another person"],
+  repeat: ["person asking to repeat a word", "two people talking and listening"],
+  repeated: ["person asking to repeat a word", "two people talking and listening"],
+  catch: ["person catching the last bus", "running to board a bus"],
+  caught: ["person catching the last bus", "running to board a bus"],
+  travel: ["family traveling in spring", "people on a spring trip"],
+  traveled: ["family traveling in spring", "people on a spring trip"],
+  travelled: ["family traveling in spring", "people on a spring trip"],
+  pay: ["paying for a ticket online", "online payment for a ticket"],
+  paid: ["paying for a ticket online", "online payment for a ticket"],
+  stop: ["bus stopped on the street near a bank", "bus standing still in front of a building"],
+  stopped: ["bus stopped on the street near a bank", "bus standing still in front of a building"],
+};
+
+const COMMONS_INTERACTION_HINTS: Record<string, string[]> = {
+  lend: ["lend", "lending", "borrow", "borrowing", "hand", "handing", "offer", "offering", "share", "sharing", "give", "giving", "use", "using"],
+  lent: ["lend", "lending", "borrow", "borrowing", "hand", "handing", "offer", "offering", "share", "sharing", "give", "giving", "use", "using"],
+  pass: ["pass", "passing", "hand", "handing", "share", "sharing", "give", "giving"],
+  passed: ["pass", "passing", "hand", "handing", "share", "sharing", "give", "giving"],
+  catch: ["catch", "caught", "board", "boarding", "run", "running", "hurry", "hurried"],
+  caught: ["catch", "caught", "board", "boarding", "run", "running", "hurry", "hurried"],
+  pay: ["pay", "paying", "payment", "purchase", "buy", "buying", "checkout"],
+  paid: ["pay", "paying", "payment", "purchase", "buy", "buying", "checkout"],
+};
+
+const COMMONS_CONTEXT_HINTS: Record<string, string[]> = {
+  password: ["changing password on laptop", "account security password reset", "computer login screen"],
+  salt: ["passing salt at dinner table", "handing salt shaker to another person"],
+  umbrella: ["umbrella sharing in rainy weather", "person handing an umbrella to another person"],
+  bus: ["city bus on the street", "person boarding a bus"],
+  bank: ["bus in front of a bank building"],
+  ticket: ["buying a ticket online", "digital ticket payment"],
+  online: ["using a laptop for online payment", "online checkout on a computer"],
+  spring: ["family trip in spring", "people traveling during spring"],
+};
+
+const COMMONS_ACTION_NEGATIVE_HINTS: Record<string, string[]> = {
+  lend: ["skyline", "architecture", "cityscape", "tower", "aerial"],
+  lent: ["skyline", "architecture", "cityscape", "tower", "aerial"],
+  catch: ["baseball", "stadium", "field", "sport", "glove"],
+  caught: ["baseball", "stadium", "field", "sport", "glove"],
+  travel: ["camera", "film", "postcard", "souvenir", "vintage"],
+  traveled: ["camera", "film", "postcard", "souvenir", "vintage"],
+  travelled: ["camera", "film", "postcard", "souvenir", "vintage"],
+  pay: ["logo", "text", "illustration", "mockup", "poster"],
+  paid: ["logo", "text", "illustration", "mockup", "poster"],
+};
+
+const buildCommonsHintQueries = (
+  targetWord: string,
+  english?: string,
+  scenePlan?: ImageHintScenePlan | null,
+) => {
+  const targetKey = targetWord.toLowerCase().trim();
+  const contextTokens = tokenizeEnglishHint(english ?? "").filter((token) => !token.includes(targetKey));
+  const contextTail = contextTokens.slice(0, 5).join(" ");
+  const actionHints = COMMONS_ACTION_HINTS[targetKey] ?? [];
+  const contextHints = contextTokens.flatMap((token) => COMMONS_CONTEXT_HINTS[token] ?? []);
+  const negativeHints = [
+    ...(COMMONS_ACTION_NEGATIVE_HINTS[targetKey] ?? []),
+    ...(scenePlan?.avoidTerms ?? []),
+  ].map((term) => `-${term}`);
+
+  return Array.from(
+    new Set(
+      [
+        ...(scenePlan?.searchPhrases ?? []),
+        scenePlan?.senseSummary ?? "",
+        scenePlan?.sceneSummary ?? "",
+        ...actionHints,
+        ...contextHints,
+        `${targetWord} ${contextTail}`.trim(),
+        `${contextTail} photo`.trim(),
+        `${targetWord} scene ${contextTail}`.trim(),
+      ]
+        .map((query) => `${query} ${negativeHints.join(" ")}`.trim())
+        .filter(Boolean),
+    ),
+  );
+};
+
+const scoreCommonsCandidate = (
+  candidate: { title: string; imageUrl: string; descriptionUrl: string },
+  queryWord: string,
+  english?: string,
+  scenePlan?: ImageHintScenePlan | null,
+) => {
+  const value = `${candidate.title} ${candidate.imageUrl} ${candidate.descriptionUrl}`.toLowerCase();
+  const targetKey = queryWord.toLowerCase().trim();
+  const queryTokens = tokenizeEnglishHint(queryWord);
+  const contextTokens = tokenizeEnglishHint(english ?? "").filter((token) => !queryTokens.includes(token)).slice(0, 6);
+  const senseTokens = tokenizeEnglishHint(scenePlan?.senseSummary ?? "").slice(0, 8);
+  const sceneTokens = tokenizeEnglishHint(scenePlan?.sceneSummary ?? "").slice(0, 8);
+  const actionHintTokens = (COMMONS_ACTION_HINTS[targetKey] ?? []).flatMap((hint) => tokenizeEnglishHint(hint));
+  const interactionHintTokens = COMMONS_INTERACTION_HINTS[targetKey] ?? [];
+  const contextHintTokens = contextTokens.flatMap((token) =>
+    (COMMONS_CONTEXT_HINTS[token] ?? []).flatMap((hint) => tokenizeEnglishHint(hint)),
+  );
+  const negativeHintTokens = [
+    ...(COMMONS_ACTION_NEGATIVE_HINTS[targetKey] ?? []),
+    ...(scenePlan?.avoidTerms ?? []),
+  ].map((term) => term.toLowerCase());
+  const avoidTerms = (scenePlan?.avoidTerms ?? []).map((term) => term.toLowerCase());
+
+  let score = 0;
+  let positiveSignalCount = 0;
+
+  if (queryTokens.some((token) => value.includes(token))) {
+    score += 8;
+    positiveSignalCount += 1;
   }
 
-  const data = (await response.json()) as {
-    query?: {
-      pages?: Array<{
-        title?: string;
-        fullurl?: string;
-        imageinfo?: Array<{
-          thumburl?: string;
-          url?: string;
+  const matchedContextTokens = contextTokens.filter((token) => value.includes(token)).length;
+  score += matchedContextTokens * 5;
+  positiveSignalCount += matchedContextTokens;
+
+  const matchedSenseTokens = senseTokens.filter((token) => value.includes(token)).length;
+  score += matchedSenseTokens * 9;
+  positiveSignalCount += matchedSenseTokens;
+
+  const matchedSceneTokens = sceneTokens.filter((token) => value.includes(token)).length;
+  score += matchedSceneTokens * 8;
+  positiveSignalCount += matchedSceneTokens;
+
+  const matchedActionHintTokens = actionHintTokens.filter((token) => value.includes(token)).length;
+  score += matchedActionHintTokens * 7;
+  positiveSignalCount += matchedActionHintTokens;
+
+  const matchedInteractionHintTokens = interactionHintTokens.filter((token) => value.includes(token)).length;
+  score += matchedInteractionHintTokens * 10;
+  positiveSignalCount += matchedInteractionHintTokens;
+
+  const matchedContextHintTokens = contextHintTokens.filter((token) => value.includes(token)).length;
+  score += matchedContextHintTokens * 6;
+  positiveSignalCount += matchedContextHintTokens;
+
+  const matchedAvoidTerms = avoidTerms.filter((term) => value.includes(term)).length;
+  score -= matchedAvoidTerms * 18;
+
+  const matchedNegativeHintTokens = negativeHintTokens.filter((term) => value.includes(term)).length;
+  score -= matchedNegativeHintTokens * 22;
+
+  if (isLowQualityCommonsResult(candidate.title, candidate.imageUrl)) {
+    score -= 100;
+  }
+
+  if (scenePlan && positiveSignalCount === 0) {
+    score -= 60;
+  }
+
+  if (scenePlan && matchedNegativeHintTokens > 0 && positiveSignalCount < 3) {
+    score -= 40;
+  }
+
+  if ((targetKey === "lend" || targetKey === "lent") && matchedInteractionHintTokens === 0) {
+    score -= 45;
+  }
+
+  return score;
+};
+
+const searchCommonsImage = async (
+  queryWord: string,
+  english?: string,
+  scenePlan?: ImageHintScenePlan | null,
+): Promise<CommonsImageResult | null> => {
+  const searchQueries = buildCommonsHintQueries(queryWord, english, scenePlan);
+  const candidates: CommonsCandidate[] = [];
+
+  for (const searchQuery of searchQueries) {
+    const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
+    endpoint.searchParams.set("action", "query");
+    endpoint.searchParams.set("generator", "search");
+    endpoint.searchParams.set(
+      "gsrsearch",
+      `${searchQuery} -pdf -document -thesis -dissertation -book -scan -logo -text -chart -diagram`,
+    );
+    endpoint.searchParams.set("gsrnamespace", "6");
+    endpoint.searchParams.set("gsrlimit", "5");
+    endpoint.searchParams.set("prop", "imageinfo|info");
+    endpoint.searchParams.set("iiprop", "url");
+    endpoint.searchParams.set("iiurlwidth", "640");
+    endpoint.searchParams.set("inprop", "url");
+    endpoint.searchParams.set("format", "json");
+    endpoint.searchParams.set("formatversion", "2");
+    endpoint.searchParams.set("origin", "*");
+
+    const response = await fetch(endpoint.toString());
+    if (!response.ok) {
+      throw new Error(`Wikimedia Commons request failed: ${response.status}`);
+    }
+
+    const data = (await response.json()) as {
+      query?: {
+        pages?: Array<{
+          title?: string;
+          fullurl?: string;
+          imageinfo?: Array<{
+            thumburl?: string;
+            url?: string;
+          }>;
         }>;
-      }>;
+      };
     };
-  };
 
-  const page = data.query?.pages?.find((candidate) => {
-    const imageInfo = candidate.imageinfo?.[0];
-    const imageUrl = imageInfo?.thumburl || imageInfo?.url || "";
-    return !!candidate.title && !!imageUrl && !isLowQualityCommonsResult(candidate.title, imageUrl);
-  });
-  const imageInfo = page?.imageinfo?.[0];
-  const imageUrl = imageInfo?.thumburl || imageInfo?.url;
-  const descriptionUrl = page?.fullurl;
+    for (const page of data.query?.pages ?? []) {
+      const imageInfo = page.imageinfo?.[0];
+      const imageUrl = imageInfo?.thumburl || imageInfo?.url;
+      const descriptionUrl = page.fullurl;
 
-  if (!page?.title || !imageUrl || !descriptionUrl) {
+      if (!page.title || !imageUrl || !descriptionUrl) {
+        continue;
+      }
+
+      candidates.push({
+        title: page.title,
+        imageUrl,
+        descriptionUrl,
+        score: scoreCommonsCandidate(
+          {
+            title: page.title,
+            imageUrl,
+            descriptionUrl,
+          },
+          queryWord,
+          english,
+          scenePlan,
+        ),
+      });
+    }
+  }
+
+  const best = candidates.sort((left, right) => right.score - left.score)[0];
+  const minimumScore = scenePlan ? 12 : 4;
+  if (!best || best.score < minimumScore) {
     return null;
   }
 
   return {
-    imageUrl,
-    descriptionUrl,
-    title: page.title,
+    imageUrl: best.imageUrl,
+    descriptionUrl: best.descriptionUrl,
+    title: best.title,
   };
 };
 
@@ -327,6 +600,9 @@ export default function SentenceQuiz() {
   const reviewMode = searchParams.get("mode") === "review";
 
   const currentQuestion = quizQuestions[currentIndex] ?? null;
+  const sentenceTargetWord = currentQuestion
+    ? resolveSentenceTargetWord(currentQuestion.english, currentQuestion.targetWord)
+    : "";
   const totalQuestions = quizQuestions.length;
   const progress = totalQuestions > 0 ? (completedCount / totalQuestions) * 100 : 0;
 
@@ -616,12 +892,13 @@ export default function SentenceQuiz() {
       return null;
     }
 
-    const parts = currentQuestion.english.split(new RegExp(`(\\b${currentQuestion.targetWord}\\b)`, "gi"));
+    const highlightedWord = sentenceTargetWord || currentQuestion.targetWord;
+    const parts = currentQuestion.english.split(new RegExp(`(\\b${escapeRegExp(highlightedWord)}\\b)`, "gi"));
 
     return (
       <p className="text-2xl leading-relaxed text-gray-800">
         {parts.map((part, index) =>
-          part.toLowerCase() === currentQuestion.targetWord.toLowerCase() ? (
+          part.toLowerCase() === highlightedWord.toLowerCase() ? (
             <span key={`${part}-${index}`} className="bg-cyan-100 text-cyan-600 px-2 py-1 rounded-lg font-medium">
               {part}
             </span>
@@ -697,6 +974,7 @@ export default function SentenceQuiz() {
           },
           body: JSON.stringify({
             targetWord: currentQuestion.targetWord,
+            queryWord: sentenceTargetWord || currentQuestion.targetWord,
             english: currentQuestion.english,
             wordMeaning: currentQuestion.wordMeaning,
           }),
@@ -709,17 +987,27 @@ export default function SentenceQuiz() {
               imageUrl: data.imageUrl,
               descriptionUrl: data.descriptionUrl,
               title: data.title,
+              scenePlan: data.scenePlan,
             };
           }
         } else {
+          const data = (await response.json()) as Partial<CommonsImageResult> & {
+            scenePlan?: ImageHintScenePlan;
+          };
+          const fallbackScenePlan = data.scenePlan ?? null;
           console.error("[Image Hint Error]", response.status);
+          result = await searchCommonsImage(
+            sentenceTargetWord || currentQuestion.targetWord,
+            currentQuestion.english,
+            fallbackScenePlan,
+          );
         }
       } catch (error) {
         console.error("[Image Hint Error]", error);
       }
 
       if (!result) {
-        result = await searchCommonsImage(currentQuestion.targetWord);
+        result = await searchCommonsImage(sentenceTargetWord || currentQuestion.targetWord, currentQuestion.english);
       }
 
       if (!result) {
@@ -1117,13 +1405,17 @@ export default function SentenceQuiz() {
                 <XIcon className="w-5 h-5 text-gray-600" />
               </button>
 
-              <h3 className="text-2xl font-bold mb-6 text-gray-800">{currentQuestion.targetWord}</h3>
+              <h3 className="text-2xl font-bold mb-6 text-gray-800">{sentenceTargetWord || currentQuestion.targetWord}</h3>
 
               <div className="rounded-2xl overflow-hidden bg-gray-100 mb-4 min-h-64 flex items-center justify-center">
                 {isHintLoading ? (
                   <p className="text-sm text-gray-500">이미지를 불러오는 중입니다.</p>
                 ) : (
-                  <img src={hintImageUrl} alt={currentQuestion.targetWord} className="w-full h-64 object-cover" />
+                  <img
+                    src={hintImageUrl}
+                    alt={sentenceTargetWord || currentQuestion.targetWord}
+                    className="w-full h-64 object-cover"
+                  />
                 )}
               </div>
 

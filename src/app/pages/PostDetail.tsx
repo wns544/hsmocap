@@ -3,12 +3,14 @@ import { Link, useNavigate, useParams } from "react-router";
 import {
   Bookmark,
   ChevronLeft,
+  ChevronRight,
   MessageCircle,
   MoreVertical,
   Pencil,
   Send,
   Share2,
   ThumbsUp,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -48,7 +50,33 @@ export default function PostDetail() {
   const [bookmarked, setBookmarked] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const isPostOwner = !!user && !!post && user.uid === post.userId;
+  const imageCount = post?.imageUrls.length ?? 0;
+  const selectedImageUrl =
+    selectedImageIndex !== null && post ? post.imageUrls[selectedImageIndex] : undefined;
+
+  const openImageViewer = (index: number) => {
+    setSelectedImageIndex(index);
+  };
+
+  const closeImageViewer = () => {
+    setSelectedImageIndex(null);
+  };
+
+  const showPreviousImage = () => {
+    setSelectedImageIndex((current) => {
+      if (current === null || imageCount === 0) return current;
+      return (current - 1 + imageCount) % imageCount;
+    });
+  };
+
+  const showNextImage = () => {
+    setSelectedImageIndex((current) => {
+      if (current === null || imageCount === 0) return current;
+      return (current + 1) % imageCount;
+    });
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -410,21 +438,45 @@ export default function PostDetail() {
           <div className="mb-6 whitespace-pre-wrap text-base leading-relaxed">{post.body}</div>
 
           {post.imageUrls.length > 0 && (
-            <div
-              className={`mb-6 grid gap-2 ${
-                post.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"
-              }`}
-            >
+            <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
               {post.imageUrls.slice(0, 5).map((imageUrl, index) => (
-                <ImageWithFallback
+                <button
                   key={imageUrl}
+                  type="button"
+                  onClick={() => openImageViewer(index)}
+                  className="h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                  aria-label={`첨부 이미지 ${index + 1} 크게 보기`}
+                >
+                <ImageWithFallback
                   src={imageUrl}
                   alt={`${post.title} 첨부 이미지 ${index + 1}`}
-                  className={`w-full rounded-2xl object-cover ${
-                    post.imageUrls.length === 1 || index === 0 ? "h-64" : "h-36"
-                  }`}
+                  className="h-full w-full object-cover transition-transform hover:scale-[1.03]"
                 />
+                </button>
               ))}
+              {false && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {post.imageUrls.slice(1, 5).map((imageUrl, index) => {
+                    const imageIndex = index + 1;
+
+                    return (
+                      <button
+                        key={imageUrl}
+                        type="button"
+                        onClick={() => openImageViewer(imageIndex)}
+                        className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        aria-label={`첨부 이미지 ${imageIndex + 1} 크게 보기`}
+                      >
+                        <ImageWithFallback
+                          src={imageUrl}
+                          alt={`${post.title} 첨부 이미지 ${imageIndex + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -588,6 +640,67 @@ export default function PostDetail() {
           </div>
         </div>
       </div>
+
+      {selectedImageUrl && selectedImageIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="첨부 이미지 크게 보기"
+          onClick={closeImageViewer}
+        >
+          <button
+            type="button"
+            onClick={closeImageViewer}
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
+            aria-label="이미지 닫기"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {imageCount > 1 && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                showPreviousImage();
+              }}
+              className="absolute left-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
+              aria-label="이전 이미지 보기"
+            >
+              <ChevronLeft className="h-7 w-7" />
+            </button>
+          )}
+
+          <ImageWithFallback
+            src={selectedImageUrl}
+            alt={`${post.title} 첨부 이미지 ${selectedImageIndex + 1}`}
+            className="max-h-[86vh] max-w-[92vw] rounded-2xl object-contain"
+            onClick={(event) => event.stopPropagation()}
+            style={{ touchAction: "pinch-zoom" }}
+          />
+
+          {imageCount > 1 && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                showNextImage();
+              }}
+              className="absolute right-4 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
+              aria-label="다음 이미지 보기"
+            >
+              <ChevronRight className="h-7 w-7" />
+            </button>
+          )}
+
+          {imageCount > 1 && (
+            <div className="absolute bottom-5 rounded-full bg-white/15 px-3 py-1 text-sm text-white backdrop-blur">
+              {selectedImageIndex + 1} / {imageCount}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

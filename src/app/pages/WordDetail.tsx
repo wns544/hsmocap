@@ -9,6 +9,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { isFavoriteWord, toggleFavoriteWord } from "../lib/favoriteWords";
 import { getWordById, type WordDetailData, words } from "../lib/words";
 
+const REVIEW_QUEUE_STORAGE_KEY = "review-queue-word-ids";
+
 interface WordLocationState {
   word?: {
     id: string | number;
@@ -152,6 +154,18 @@ export default function WordDetail() {
     }
   };
 
+  const handleStartReviewQuiz = () => {
+    if (!word) {
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(REVIEW_QUEUE_STORAGE_KEY, JSON.stringify([word.word]));
+    }
+
+    navigate("/app/sentence-quiz?mode=review");
+  };
+
   if (!word) {
     return (
       <div className="min-h-screen bg-background px-6 py-10">
@@ -262,7 +276,10 @@ export default function WordDetail() {
         </Tabs>
 
         <div className="mt-6 space-y-3">
-          <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl">
+          <Button
+            className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl"
+            onClick={handleStartReviewQuiz}
+          >
             퀴즈로 복습하기
           </Button>
           <Button variant="outline" className="w-full h-14 rounded-xl" onClick={handleToggleFavorite}>

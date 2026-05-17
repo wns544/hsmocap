@@ -6,3 +6,4 @@ dist/
 .env.*
 .vite/
 .firebase/
+functions/.secret.local
