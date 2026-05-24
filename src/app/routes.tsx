@@ -18,6 +18,7 @@ import CreatePost from "./pages/CreatePost";
 import Feedback from "./pages/Feedback";
 import HelpCenter from "./pages/HelpCenter";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import AdminDashboard from "./pages/AdminDashboard";
 import PostDetail from "./pages/PostDetail";
 import ScreensOverview from "./pages/ScreensOverview";
 import FlashcardStudy from "./pages/FlashcardStudy";
@@ -26,7 +27,7 @@ import SentenceQuiz from "./pages/SentenceQuiz";
 import FlashcardFavorites from "./pages/FlashcardFavorites";
 import SentenceFavorites from "./pages/SentenceFavorites";
 import Layout from "./components/Layout";
-import { RedirectIfAuthenticated, RequireAuth } from "./components/AuthGuard";
+import { RedirectIfAuthenticated, RequireAuth, RequireAdminAccess } from "./components/AuthGuard";
 
 export const router = createBrowserRouter([
   {
@@ -112,6 +113,18 @@ export const router = createBrowserRouter([
           {
             path: "settings/privacy",
             element: <PrivacyPolicy />,
+          },
+          {
+            path: "developer",
+            element: <Navigate to="/app/admin" replace />,
+          },
+          {
+            path: "admin",
+            element: (
+              <RequireAdminAccess>
+                <AdminDashboard />
+              </RequireAdminAccess>
+            ),
           },
           {
             path: "profile",

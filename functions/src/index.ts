@@ -1,13 +1,14 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
-import { defineSecret } from "firebase-functions/params";
+import { defineSecret, defineString } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
+import { getAuth, type DecodedIdToken } from "firebase-admin/auth";
 import Groq from "groq-sdk";
 
 const groqApiKey = defineSecret("GROQ_API_KEY");
 const pexelsApiKey = defineSecret("PEXELS_API_KEY");
+const adminBootstrapUids = defineString("ADMIN_BOOTSTRAP_UIDS", { default: "" });
 const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
@@ -65,6 +66,36 @@ type ImageHintScenePlan = {
 
 type IncrementPostViewRequest = {
   postId: string;
+};
+
+type SetAdminClaimRequest = {
+  targetUid: string;
+  admin: boolean;
+};
+
+type AdminDeleteCommunityPostRequest = {
+  postId: string;
+};
+
+type AdminUpsertWordRequest = {
+  wordId?: string;
+  word: string;
+  meaning: string;
+  level: string;
+  mastery?: number;
+};
+
+type AdminDeleteWordRequest = {
+  wordId: string;
+};
+
+type AdminDeleteCommunityCommentRequest = {
+  postId: string;
+  commentId: string;
+};
+
+type AdminResetUserDataRequest = {
+  uid: string;
 };
 
 const SYSTEM_PROMPT = [
@@ -341,6 +372,88 @@ const createCorsHeaders = (origin?: string | null) => ({
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   Vary: "Origin",
 });
+
+const parseCsv = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const verifyBearerToken = async (authorization?: string) => {
+  if (!authorization?.startsWith("Bearer ")) {
+    return null;
+  }
+
+  try {
+    return await getAuth().verifyIdToken(authorization.slice("Bearer ".length));
+  } catch {
+    return null;
+  }
+};
+
+const hasBootstrapAdminAccess = (uid: string) => parseCsv(adminBootstrapUids.value()).includes(uid);
+
+const hasAdminAccess = (decodedToken: DecodedIdToken) =>
+  decodedToken.admin === true || hasBootstrapAdminAccess(decodedToken.uid);
+
+const deleteCommunityPostAsAdmin = async (postId: string) => {
+  const batch = firestore.batch();
+
+  const [commentsSnapshot, likesSnapshot] = await Promise.all([
+    firestore.collection(`posts/${postId}/comments`).get(),
+    firestore.collection(`posts/${postId}/likes`).get(),
+  ]);
+
+  commentsSnapshot.docs.forEach((item) => {
+    batch.delete(item.ref);
+  });
+
+  likesSnapshot.docs.forEach((item) => {
+    batch.delete(item.ref);
+  });
+
+  batch.delete(firestore.doc(`posts/${postId}`));
+  await batch.commit();
+};
+
+const deleteCollectionDocuments = async (path: string) => {
+  const snapshot = await firestore.collection(path).get();
+  if (snapshot.empty) return 0;
+
+  let deletedCount = 0;
+  const chunks = [];
+  for (let index = 0; index < snapshot.docs.length; index += 450) {
+    chunks.push(snapshot.docs.slice(index, index + 450));
+  }
+
+  for (const chunk of chunks) {
+    const batch = firestore.batch();
+    chunk.forEach((item) => {
+      batch.delete(item.ref);
+      deletedCount += 1;
+    });
+    await batch.commit();
+  }
+
+  return deletedCount;
+};
+
+const writeAdminLog = async (
+  adminUid: string,
+  action: string,
+  targetType: string,
+  targetId: string,
+  details: Record<string, unknown> = {},
+) => {
+  await firestore.collection("adminLogs").add({
+    adminUid,
+    action,
+    targetType,
+    targetId,
+    details,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+};
 
 type PexelsPhoto = {
   id?: number;
@@ -1333,6 +1446,469 @@ export const imageHintSearchHttp = onRequest(
     } catch (error) {
       console.error("imageHintSearchHttp failed:", error);
       response.status(404).json({ error: "No image found." });
+    }
+  },
+);
+
+export const setAdminClaimHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    const origin = request.headers.origin;
+    const corsHeaders = createCorsHeaders(origin);
+
+    try {
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const decodedToken = await verifyBearerToken(request.headers.authorization);
+      if (!decodedToken) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      if (!hasAdminAccess(decodedToken)) {
+        response.status(403).set(corsHeaders).json({ error: "Admin access is required." });
+        return;
+      }
+
+      const data = request.body as Partial<SetAdminClaimRequest>;
+      const targetUid = typeof data.targetUid === "string" ? data.targetUid.trim() : "";
+      const shouldBeAdmin = data.admin === true;
+
+      if (!targetUid) {
+        response.status(400).set(corsHeaders).json({ error: "targetUid is required." });
+        return;
+      }
+
+      const targetUser = await getAuth().getUser(targetUid);
+      await getAuth().setCustomUserClaims(targetUid, {
+        ...targetUser.customClaims,
+        admin: shouldBeAdmin,
+      });
+      await writeAdminLog(decodedToken.uid, shouldBeAdmin ? "grant_admin" : "revoke_admin", "user", targetUid, {
+        previousAdmin: targetUser.customClaims?.admin === true,
+        nextAdmin: shouldBeAdmin,
+      });
+
+      response.status(200).set(corsHeaders).json({
+        ok: true,
+        targetUid,
+        admin: shouldBeAdmin,
+      });
+    } catch (error) {
+      console.error("setAdminClaimHttp failed:", error);
+      response.status(500).set(corsHeaders).json({ error: "Admin claim update failed." });
+    }
+  },
+);
+
+export const adminDeleteCommunityPostHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    const origin = request.headers.origin;
+    const corsHeaders = createCorsHeaders(origin);
+
+    try {
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const decodedToken = await verifyBearerToken(request.headers.authorization);
+      if (!decodedToken) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      if (!hasAdminAccess(decodedToken)) {
+        response.status(403).set(corsHeaders).json({ error: "Admin access is required." });
+        return;
+      }
+
+      const data = request.body as Partial<AdminDeleteCommunityPostRequest>;
+      const postId = typeof data.postId === "string" ? data.postId.trim() : "";
+      if (!postId) {
+        response.status(400).set(corsHeaders).json({ error: "postId is required." });
+        return;
+      }
+
+      await deleteCommunityPostAsAdmin(postId);
+      await writeAdminLog(decodedToken.uid, "delete_post", "post", postId);
+
+      response.status(200).set(corsHeaders).json({
+        ok: true,
+        postId,
+      });
+    } catch (error) {
+      console.error("adminDeleteCommunityPostHttp failed:", error);
+      response.status(500).set(corsHeaders).json({ error: "Admin post delete failed." });
+    }
+  },
+);
+
+export const adminUpsertWordHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    const origin = request.headers.origin;
+    const corsHeaders = createCorsHeaders(origin);
+
+    try {
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const decodedToken = await verifyBearerToken(request.headers.authorization);
+      if (!decodedToken) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      if (!hasAdminAccess(decodedToken)) {
+        response.status(403).set(corsHeaders).json({ error: "Admin access is required." });
+        return;
+      }
+
+      const data = request.body as Partial<AdminUpsertWordRequest>;
+      const word = typeof data.word === "string" ? data.word.trim() : "";
+      const meaning = typeof data.meaning === "string" ? data.meaning.trim() : "";
+      const level = typeof data.level === "string" ? data.level.trim() : "";
+      const mastery = typeof data.mastery === "number" && Number.isFinite(data.mastery) ? data.mastery : 0;
+      const wordId = typeof data.wordId === "string" && data.wordId.trim() ? data.wordId.trim() : "";
+
+      if (!word || !meaning || !level) {
+        response.status(400).set(corsHeaders).json({ error: "word, meaning, and level are required." });
+        return;
+      }
+
+      const wordRef = wordId ? firestore.doc(`words/${wordId}`) : firestore.collection("words").doc();
+      const snapshot = await wordRef.get();
+      await wordRef.set(
+        {
+          word,
+          meaning,
+          level,
+          mastery: Math.max(0, Math.min(100, mastery)),
+          updatedAt: FieldValue.serverTimestamp(),
+          ...(snapshot.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
+        },
+        { merge: true },
+      );
+
+      await writeAdminLog(decodedToken.uid, snapshot.exists ? "update_word" : "create_word", "word", wordRef.id, {
+        word,
+        level,
+      });
+
+      response.status(200).set(corsHeaders).json({
+        ok: true,
+        wordId: wordRef.id,
+      });
+    } catch (error) {
+      console.error("adminUpsertWordHttp failed:", error);
+      response.status(500).set(corsHeaders).json({ error: "Admin word upsert failed." });
+    }
+  },
+);
+
+export const adminDeleteWordHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    const origin = request.headers.origin;
+    const corsHeaders = createCorsHeaders(origin);
+
+    try {
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const decodedToken = await verifyBearerToken(request.headers.authorization);
+      if (!decodedToken) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      if (!hasAdminAccess(decodedToken)) {
+        response.status(403).set(corsHeaders).json({ error: "Admin access is required." });
+        return;
+      }
+
+      const data = request.body as Partial<AdminDeleteWordRequest>;
+      const wordId = typeof data.wordId === "string" ? data.wordId.trim() : "";
+      if (!wordId) {
+        response.status(400).set(corsHeaders).json({ error: "wordId is required." });
+        return;
+      }
+
+      await firestore.doc(`words/${wordId}`).delete();
+      await writeAdminLog(decodedToken.uid, "delete_word", "word", wordId);
+
+      response.status(200).set(corsHeaders).json({
+        ok: true,
+        wordId,
+      });
+    } catch (error) {
+      console.error("adminDeleteWordHttp failed:", error);
+      response.status(500).set(corsHeaders).json({ error: "Admin word delete failed." });
+    }
+  },
+);
+
+export const adminDeleteCommunityCommentHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    const origin = request.headers.origin;
+    const corsHeaders = createCorsHeaders(origin);
+
+    try {
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const decodedToken = await verifyBearerToken(request.headers.authorization);
+      if (!decodedToken) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      if (!hasAdminAccess(decodedToken)) {
+        response.status(403).set(corsHeaders).json({ error: "Admin access is required." });
+        return;
+      }
+
+      const data = request.body as Partial<AdminDeleteCommunityCommentRequest>;
+      const postId = typeof data.postId === "string" ? data.postId.trim() : "";
+      const commentId = typeof data.commentId === "string" ? data.commentId.trim() : "";
+      if (!postId || !commentId) {
+        response.status(400).set(corsHeaders).json({ error: "postId and commentId are required." });
+        return;
+      }
+
+      await firestore.doc(`posts/${postId}/comments/${commentId}`).delete();
+      await writeAdminLog(decodedToken.uid, "delete_comment", "comment", commentId, { postId });
+
+      response.status(200).set(corsHeaders).json({
+        ok: true,
+        postId,
+        commentId,
+      });
+    } catch (error) {
+      console.error("adminDeleteCommunityCommentHttp failed:", error);
+      response.status(500).set(corsHeaders).json({ error: "Admin comment delete failed." });
+    }
+  },
+);
+
+export const adminListUsersHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    const origin = request.headers.origin;
+    const corsHeaders = createCorsHeaders(origin);
+
+    try {
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const decodedToken = await verifyBearerToken(request.headers.authorization);
+      if (!decodedToken) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      if (!hasAdminAccess(decodedToken)) {
+        response.status(403).set(corsHeaders).json({ error: "Admin access is required." });
+        return;
+      }
+
+      const result = await getAuth().listUsers(50);
+      response.status(200).set(corsHeaders).json({
+        ok: true,
+        users: result.users.map((item) => ({
+          uid: item.uid,
+          displayName: item.displayName ?? "",
+          email: item.email ?? "",
+          providerId: item.providerData[0]?.providerId ?? (item.providerData.length > 0 ? "unknown" : "anonymous"),
+          disabled: item.disabled,
+          admin: item.customClaims?.admin === true,
+          creationTime: item.metadata.creationTime,
+          lastSignInTime: item.metadata.lastSignInTime,
+        })),
+      });
+    } catch (error) {
+      console.error("adminListUsersHttp failed:", error);
+      response.status(500).set(corsHeaders).json({ error: "Admin user list failed." });
+    }
+  },
+);
+
+export const adminResetUserStudyDataHttp = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 60,
+    memory: "256MiB",
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    const origin = request.headers.origin;
+    const corsHeaders = createCorsHeaders(origin);
+
+    try {
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const decodedToken = await verifyBearerToken(request.headers.authorization);
+      if (!decodedToken) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      if (!hasAdminAccess(decodedToken)) {
+        response.status(403).set(corsHeaders).json({ error: "Admin access is required." });
+        return;
+      }
+
+      const data = request.body as Partial<AdminResetUserDataRequest>;
+      const uid = typeof data.uid === "string" ? data.uid.trim() : "";
+      if (!uid) {
+        response.status(400).set(corsHeaders).json({ error: "uid is required." });
+        return;
+      }
+
+      const [wordProgresses, favoriteWords, legacyFavorites, postBookmarks] = await Promise.all([
+        deleteCollectionDocuments(`users/${uid}/wordProgresses`),
+        deleteCollectionDocuments(`users/${uid}/favoriteWords`),
+        deleteCollectionDocuments(`users/${uid}/favorites_words`),
+        deleteCollectionDocuments(`users/${uid}/postBookmarks`),
+      ]);
+
+      await writeAdminLog(decodedToken.uid, "reset_user_study_data", "user", uid, {
+        wordProgresses,
+        favoriteWords,
+        legacyFavorites,
+        postBookmarks,
+      });
+
+      response.status(200).set(corsHeaders).json({
+        ok: true,
+        uid,
+        deleted: {
+          wordProgresses,
+          favoriteWords,
+          legacyFavorites,
+          postBookmarks,
+        },
+      });
+    } catch (error) {
+      console.error("adminResetUserStudyDataHttp failed:", error);
+      response.status(500).set(corsHeaders).json({ error: "Admin user reset failed." });
     }
   },
 );

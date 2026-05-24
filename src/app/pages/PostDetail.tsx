@@ -4,19 +4,30 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
+  Copy,
   MessageCircle,
   MoreVertical,
   Pencil,
   Send,
   Share2,
+  ShieldAlert,
   ThumbsUp,
+  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Badge } from "../components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { Textarea } from "../components/ui/textarea";
 import { useAuth } from "../contexts/AuthContext";
+import { adminDeleteCommunityComment, adminDeleteCommunityPost } from "../lib/admin";
 import {
   createPostComment,
   deleteCommunityPost,
@@ -38,7 +49,7 @@ import { resolveProfileName } from "../lib/profileName";
 export default function PostDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const postId = id ?? "";
 
   const [post, setPost] = useState<CommunityPostSummary | null>(null);
@@ -76,6 +87,47 @@ export default function PostDetail() {
       if (current === null || imageCount === 0) return current;
       return (current + 1) % imageCount;
     });
+  };
+
+  const getPostUrl = () => {
+    if (typeof window === "undefined") {
+      return `/app/community/${postId}`;
+    }
+
+    return `${window.location.origin}/app/community/${postId}`;
+  };
+
+  const copyText = async (value: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(message);
+    } catch {
+      toast.error("클립보드 복사에 실패했습니다.");
+    }
+  };
+
+  const handleSharePost = async () => {
+    if (!post) return;
+
+    const shareUrl = getPostUrl();
+    const shareData = {
+      title: post.title,
+      text: post.body.slice(0, 80),
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    await copyText(shareUrl, "게시글 링크를 복사했습니다.");
   };
 
   useEffect(() => {
@@ -276,6 +328,26 @@ export default function PostDetail() {
     }
   };
 
+  const handleAdminDeletePost = async () => {
+    if (!post || !isAdmin) {
+      toast.error("관리자 권한이 필요합니다.");
+      return;
+    }
+
+    if (!window.confirm(`"${post.title}" 게시글을 관리자 권한으로 삭제할까요? 댓글과 좋아요도 함께 정리됩니다.`)) {
+      return;
+    }
+
+    try {
+      await adminDeleteCommunityPost(post.id);
+      toast.success("관리자 권한으로 게시글을 삭제했습니다.");
+      navigate("/app/community");
+    } catch (error) {
+      console.error("관리자 게시글 삭제에 실패했습니다.", error);
+      toast.error("관리자 게시글 삭제에 실패했습니다.");
+    }
+  };
+
   const handleDeleteComment = async (commentId: string, commentUserId: string) => {
     if (!user || user.uid !== commentUserId) {
       toast.error("본인 댓글만 삭제할 수 있습니다.");
@@ -302,6 +374,35 @@ export default function PostDetail() {
     } catch (error) {
       console.error("댓글 삭제에 실패했습니다.", error);
       toast.error("댓글 삭제에 실패했습니다.");
+    }
+  };
+
+  const handleAdminDeleteComment = async (commentId: string, authorName: string) => {
+    if (!isAdmin) {
+      toast.error("관리자 권한이 필요합니다.");
+      return;
+    }
+
+    if (!window.confirm(`${authorName}님의 댓글을 관리자 권한으로 삭제할까요?`)) {
+      return;
+    }
+
+    try {
+      await adminDeleteCommunityComment(postId, commentId);
+      const nextComments = await listPostComments(postId);
+      setComments(nextComments);
+      setPost((current) =>
+        current
+          ? {
+              ...current,
+              commentCount: nextComments.length,
+            }
+          : current,
+      );
+      toast.success("관리자 권한으로 댓글을 삭제했습니다.");
+    } catch (error) {
+      console.error("관리자 댓글 삭제에 실패했습니다.", error);
+      toast.error("관리자 댓글 삭제에 실패했습니다.");
     }
   };
 
@@ -386,12 +487,69 @@ export default function PostDetail() {
           <ChevronLeft className="h-6 w-6" />
         </button>
         <div className="flex items-center gap-2">
-          <button className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted">
+          <button
+            type="button"
+            onClick={() => void handleSharePost()}
+            className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted"
+            aria-label="게시글 공유"
+          >
             <Share2 className="h-5 w-5" />
           </button>
-          <button className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted">
-            <MoreVertical className="h-5 w-5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                aria-label="게시글 메뉴"
+              >
+                <MoreVertical className="h-5 w-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onSelect={() => void copyText(getPostUrl(), "게시글 링크를 복사했습니다.")}>
+                <Copy className="h-4 w-4" />
+                링크 복사
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void handleSharePost()}>
+                <Share2 className="h-4 w-4" />
+                공유하기
+              </DropdownMenuItem>
+
+              {isPostOwner && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => navigate(`/app/community/${post.id}/edit`)}>
+                    <Pencil className="h-4 w-4" />
+                    게시글 수정
+                  </DropdownMenuItem>
+                  <DropdownMenuItem variant="destructive" onSelect={() => void handleDeletePost()}>
+                    <Trash2 className="h-4 w-4" />
+                    게시글 삭제
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => void copyText(post.id, "게시글 ID를 복사했습니다.")}>
+                    <Copy className="h-4 w-4" />
+                    게시글 ID 복사
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => void copyText(post.userId, "작성자 UID를 복사했습니다.")}>
+                    <Copy className="h-4 w-4" />
+                    작성자 UID 복사
+                  </DropdownMenuItem>
+                  {!isPostOwner && (
+                    <DropdownMenuItem variant="destructive" onSelect={() => void handleAdminDeletePost()}>
+                      <ShieldAlert className="h-4 w-4" />
+                      관리자 삭제
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -559,6 +717,15 @@ export default function PostDetail() {
                             삭제
                           </button>
                         </>
+                      )}
+                      {isAdmin && user?.uid !== item.userId && (
+                        <button
+                          type="button"
+                          onClick={() => void handleAdminDeleteComment(item.id, item.authorSnapshot.name)}
+                          className="text-xs text-destructive hover:underline"
+                        >
+                          관리 삭제
+                        </button>
                       )}
                     </div>
                     {editingCommentId === item.id ? (

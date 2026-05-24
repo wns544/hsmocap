@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { ChevronRight, HelpCircle, LogOut, MessageSquare, Shield, User } from "lucide-react";
+import { ChevronRight, Code2, HelpCircle, LogOut, MessageSquare, Shield, User } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -20,11 +20,16 @@ const settingsGroups = [
       { label: "개인정보 보호", icon: Shield, path: "/app/settings/privacy", value: undefined },
     ],
   },
+  {
+    title: "관리",
+    items: [{ label: "관리자 대시보드", icon: Code2, path: "/app/admin", value: "Admin" }],
+  },
 ] as const;
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
+  const visibleSettingsGroups = settingsGroups.filter((group) => group.title !== "관리" || isAdmin);
 
   const handleLogout = async () => {
     try {
@@ -44,7 +49,7 @@ export default function Settings() {
       </div>
 
       <div className="px-6 mt-6">
-        {settingsGroups.map((group, groupIndex) => (
+        {visibleSettingsGroups.map((group, groupIndex) => (
           <div key={groupIndex} className="mb-6">
             <h3 className="text-sm text-muted-foreground mb-3 px-1">{group.title}</h3>
             <div className="bg-white rounded-2xl border border-border overflow-hidden">

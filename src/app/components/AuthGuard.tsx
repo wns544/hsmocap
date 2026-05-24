@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
+import type { ReactNode } from "react";
 
 function AuthLoading() {
   return (
@@ -36,4 +37,23 @@ export function RedirectIfAuthenticated() {
   }
 
   return <Outlet />;
+}
+
+export function RequireAdminAccess({ children }: { children: ReactNode }) {
+  const { user, loading, isAdmin } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <AuthLoading />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/app/home" replace />;
+  }
+
+  return <>{children}</>;
 }

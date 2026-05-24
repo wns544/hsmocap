@@ -14,6 +14,10 @@ service cloud.firestore {
       return isSignedIn() && !isAnonymous();
     }
 
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
@@ -31,22 +35,24 @@ service cloud.firestore {
     // Shared word list
     match /words/{wordId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isRegisteredUser();
+      allow create, update, delete: if isAdmin();
     }
 
     // Per-user private data
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
 
       match /{document=**} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId);
       }
     }
 
     // Community categories are shared read-only seed data for now.
     match /boardCategories/{categoryId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     // Community posts
@@ -55,7 +61,10 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn()
-        && resource.data.userId == request.auth.uid;
+        && (
+          resource.data.userId == request.auth.uid
+          || isAdmin()
+        );
 
       // Comments under a post
       match /comments/{commentId} {
@@ -68,6 +77,7 @@ service cloud.firestore {
           && (
             resource.data.userId == request.auth.uid
             || isPostOwner(postId)
+            || isAdmin()
           );
       }
 
@@ -77,8 +87,14 @@ service cloud.firestore {
         allow create: if isOwner(userId)
           && request.resource.data.userId == request.auth.uid;
         allow update: if false;
-        allow delete: if isOwner(userId) || isPostOwner(postId);
+        allow delete: if isOwner(userId) || isPostOwner(postId) || isAdmin();
       }
+    }
+
+    // Admin audit log. Clients may read it only with admin claim; writes are server-side only.
+    match /adminLogs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     // Default deny

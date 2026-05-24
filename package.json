@@ -6,8 +6,10 @@
   "scripts": {
     "build": "vite build",
     "deploy": "npm run build && npx firebase-tools deploy",
+    "deploy:admin": "npm run build && npm --prefix functions run build && firebase deploy --only functions,firestore:rules,hosting",
     "dev": "vite",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:admin": "npm run build && npm --prefix functions run build"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

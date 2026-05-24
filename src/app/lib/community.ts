@@ -260,25 +260,40 @@ function asDate(value: Timestamp | Date | string | null | undefined): Date | nul
   return null;
 }
 
+function stringValue(value: unknown, fallback = ""): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function numberValue(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeImageUrls(data: DocumentData): string[] {
+  if (Array.isArray(data.imageUrls)) {
+    return data.imageUrls.filter((value: unknown): value is string => typeof value === "string" && value.trim() !== "");
+  }
+
+  const imageUrl = stringValue(data.imageUrl);
+  return imageUrl ? [imageUrl] : [];
+}
+
 function toCommunityPostSummary(id: string, data: DocumentData): CommunityPostSummary {
   return {
     id,
-    categoryId: String(data.categoryId ?? ""),
-    categoryName: String(data.categoryName ?? "미분류"),
-    userId: String(data.userId ?? ""),
+    categoryId: stringValue(data.categoryId, normalizeCategoryId(stringValue(data.category, "free"))),
+    categoryName: stringValue(data.categoryName, stringValue(data.category, "미분류")),
+    userId: stringValue(data.userId, stringValue(data.authorId)),
     authorSnapshot: {
-      name: String(data.authorSnapshot?.name ?? "익명"),
+      name: stringValue(data.authorSnapshot?.name, stringValue(data.authorName, "익명")),
     },
     title: String(data.title ?? ""),
-    body: String(data.body ?? ""),
-    likeCount: Number(data.likeCount ?? 0),
-    commentCount: Number(data.commentCount ?? 0),
-    viewCount: Number(data.viewCount ?? 0),
+    body: stringValue(data.body, stringValue(data.content)),
+    likeCount: numberValue(data.likeCount, numberValue(data.likes)),
+    commentCount: numberValue(data.commentCount, numberValue(data.comments)),
+    viewCount: numberValue(data.viewCount, numberValue(data.views)),
     createdAt: asDate(data.createdAt),
     updatedAt: asDate(data.updatedAt),
-    imageUrls: Array.isArray(data.imageUrls)
-      ? data.imageUrls.filter((value: unknown): value is string => typeof value === "string")
-      : [],
+    imageUrls: normalizeImageUrls(data),
   };
 }
 
