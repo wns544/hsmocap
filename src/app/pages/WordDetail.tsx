@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, BookOpen, Check, Star, Volume2 } from "lucide-react";
+import { ArrowLeft, Check, Star, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -28,7 +28,7 @@ function createFallbackDetail(source: NonNullable<WordLocationState["word"]>): W
   return {
     id: Number.isNaN(numericId) ? -1 : numericId,
     word: source.word,
-    meaning: source.meaning || "뜻 정보가 준비되지 않았습니다.",
+    meaning: source.meaning || "단어 상세 정보가 아직 등록되지 않았습니다.",
     level: source.level || "전체",
     mastery: source.mastery ?? 0,
     isFavorite: source.isFavorite ?? false,
@@ -208,22 +208,9 @@ export default function WordDetail() {
       </div>
 
       <div className="px-6 mt-6">
-        <div className="bg-white rounded-2xl p-5 border border-border mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <span>학습 진행도</span>
-            </div>
-            <span className="text-primary">{word.mastery}%</span>
-          </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full" style={{ width: `${word.mastery}%` }} />
-          </div>
-        </div>
-
         <Tabs defaultValue="meaning" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="meaning">뜻</TabsTrigger>
+            <TabsTrigger value="meaning">의미</TabsTrigger>
             <TabsTrigger value="examples">예문</TabsTrigger>
             <TabsTrigger value="related">관련 단어</TabsTrigger>
           </TabsList>

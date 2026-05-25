@@ -87,13 +87,78 @@ interface CommonsCandidate {
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const IRREGULAR_SURFACE_VARIANTS: Record<string, string[]> = {
+  be: ["am", "is", "are", "was", "were", "been", "being"],
+  become: ["became", "become"],
+  begin: ["began", "begun", "beginning"],
+  break: ["broke", "broken"],
+  bring: ["brought"],
+  buy: ["bought"],
+  catch: ["caught"],
+  choose: ["chose", "chosen"],
+  come: ["came", "coming"],
+  do: ["did", "done", "doing"],
+  drink: ["drank", "drunk"],
+  drive: ["drove", "driven", "driving"],
+  draw: ["drew", "drawn", "drawing"],
+  eat: ["ate", "eaten", "eating"],
+  fall: ["fell", "fallen", "falling"],
+  feel: ["felt"],
+  find: ["found"],
+  fly: ["flew", "flown", "flying"],
+  forget: ["forgot", "forgotten"],
+  get: ["got", "gotten", "getting"],
+  give: ["gave", "given", "giving"],
+  go: ["went", "gone", "going"],
+  grow: ["grew", "grown", "growing"],
+  have: ["had", "having"],
+  hear: ["heard"],
+  keep: ["kept"],
+  know: ["knew", "known", "knowing"],
+  leave: ["left", "leaving"],
+  make: ["made", "making"],
+  meet: ["met", "meeting"],
+  pay: ["paid", "paying"],
+  read: ["read", "reading"],
+  ride: ["rode", "ridden", "riding"],
+  run: ["ran", "running"],
+  say: ["said", "saying"],
+  see: ["saw", "seen", "seeing"],
+  send: ["sent", "sending"],
+  sing: ["sang", "sung", "singing"],
+  sit: ["sat", "sitting"],
+  speak: ["spoke", "spoken", "speaking"],
+  swim: ["swam", "swum", "swimming"],
+  take: ["took", "taken", "taking"],
+  teach: ["taught", "teaching"],
+  tell: ["told", "telling"],
+  think: ["thought", "thinking"],
+  wear: ["wore", "worn", "wearing"],
+  win: ["won", "winning"],
+  write: ["wrote", "written", "writing"],
+};
+
 const buildEnglishSurfaceVariants = (targetWord: string) => {
   const lower = targetWord.toLowerCase().trim();
   if (!lower) {
     return [];
   }
 
+  if (lower.includes(" ")) {
+    const [head, ...tailParts] = lower.split(/\s+/);
+    const tail = tailParts.join(" ");
+    const headVariants = buildEnglishSurfaceVariants(head);
+    return Array.from(
+      new Set(
+        [lower, ...headVariants.map((variant) => `${variant} ${tail}`.trim())].filter(Boolean),
+      ),
+    );
+  }
+
   const variants = new Set<string>([lower]);
+  for (const irregularVariant of IRREGULAR_SURFACE_VARIANTS[lower] ?? []) {
+    variants.add(irregularVariant);
+  }
 
   variants.add(`${lower}s`);
   variants.add(`${lower}es`);
@@ -1168,7 +1233,7 @@ export default function SentenceQuiz() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {!isCompleted ? (
         <>
-          <div className="bg-white/80 backdrop-blur-sm px-6 py-4 flex items-center justify-between">
+          <div className="bg-white/80 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => navigate("/app/home")} className="rounded-full">
               <ChevronLeft className="w-5 h-5" />
             </Button>
@@ -1194,7 +1259,7 @@ export default function SentenceQuiz() {
             </Button>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-start px-6 pt-16 pb-4">
+          <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-6 pt-3 sm:pt-4 pb-3 sm:pb-4">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentQuestion.id}
@@ -1204,30 +1269,30 @@ export default function SentenceQuiz() {
                 className="w-full max-w-lg"
               >
                 {reviewMode && (
-                  <div className="mb-4 text-center text-sm font-medium text-orange-600">
+                  <div className="mb-3 text-center text-sm font-medium text-orange-600">
                     복습 {completedCount + 1}/{totalQuestions}
                   </div>
                 )}
-                <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
-                  <div className="mb-8">{renderHighlightedSentence()}</div>
-                  <div className="mb-6">{renderKoreanSentence()}</div>
+                <div className="bg-white rounded-[1.5rem] sm:rounded-3xl shadow-2xl p-5 sm:p-8 mb-3 sm:mb-4">
+                  <div className="mb-4 sm:mb-6">{renderHighlightedSentence()}</div>
+                  <div className="mb-2 sm:mb-4">{renderKoreanSentence()}</div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-2 sm:mb-3">
                   <button
                     onClick={handleDontKnow}
-                    className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-gray-400 to-gray-500 text-white shadow-lg hover:shadow-xl transition-shadow"
+                    className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-[1.25rem] sm:rounded-3xl bg-gradient-to-br from-gray-400 to-gray-500 text-white shadow-lg hover:shadow-xl transition-shadow"
                   >
-                    <BookOpen className="w-6 h-6" />
-                    <span className="text-sm font-semibold">모르겠음</span>
+                    <BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="text-xs sm:text-sm font-semibold">모르겠음</span>
                   </button>
 
                   <button
                     onClick={handlePronunciation}
-                    className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-shadow"
+                    className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-[1.25rem] sm:rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-shadow"
                   >
-                    <Volume2 className="w-6 h-6" />
-                    <span className="text-sm font-semibold">발음듣기</span>
+                    <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="text-xs sm:text-sm font-semibold">발음듣기</span>
                   </button>
 
                   <button
@@ -1235,10 +1300,10 @@ export default function SentenceQuiz() {
                       void handleSubmit();
                     }}
                     disabled={isSubmitting}
-                    className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-shadow disabled:opacity-60"
+                    className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-[1.25rem] sm:rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-shadow disabled:opacity-60"
                   >
-                    <Play className="w-6 h-6" />
-                    <span className="text-sm font-semibold">{isSubmitting ? "채점중" : "정답제출"}</span>
+                    <Play className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="text-xs sm:text-sm font-semibold">{isSubmitting ? "채점중" : "정답제출"}</span>
                   </button>
                 </div>
 
@@ -1246,7 +1311,7 @@ export default function SentenceQuiz() {
                   onClick={() => {
                     void handleImageHint();
                   }}
-                  className="text-xs text-gray-400 hover:text-purple-500 transition-colors mb-4 flex items-center gap-1 mx-auto"
+                  className="text-[11px] sm:text-xs text-gray-400 hover:text-purple-500 transition-colors mb-2 sm:mb-3 flex items-center gap-1 mx-auto"
                 >
                   <ImageIcon className="w-3 h-3" />
                   <span>이미지 힌트</span>
@@ -1254,7 +1319,7 @@ export default function SentenceQuiz() {
 
                 {showFeedback && (
                   <div
-                    className={`mb-4 p-4 rounded-3xl ${
+                    className={`mb-2 sm:mb-3 p-3 sm:p-4 rounded-[1.25rem] sm:rounded-3xl ${
                       showFeedback.isCorrect
                         ? "bg-green-100 text-green-800"
                         : showFeedback.tone === "close"
@@ -1274,14 +1339,14 @@ export default function SentenceQuiz() {
                   </div>
                 )}
 
-                <div className="bg-gray-200 rounded-3xl p-4 mb-4">
+                <div className="bg-gray-200 rounded-[1.25rem] sm:rounded-3xl p-3 sm:p-4 mb-1 sm:mb-2">
                   {koreanKeyboard.map((row, rowIndex) => (
-                    <div key={rowIndex} className="flex justify-center gap-1 mb-2">
+                    <div key={rowIndex} className="flex justify-center gap-1 mb-1.5 sm:mb-2">
                       {row.map((key) => (
                         <button
                           key={key}
                           onClick={() => handleKeyPress(key)}
-                          className="bg-white text-gray-800 font-medium px-3 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors min-w-[32px] text-base"
+                          className="bg-white text-gray-800 font-medium px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors min-w-[30px] sm:min-w-[32px] text-sm sm:text-base"
                         >
                           {key}
                         </button>
@@ -1291,13 +1356,13 @@ export default function SentenceQuiz() {
                   <div className="flex justify-center gap-1">
                     <button
                       onClick={() => handleKeyPress("backspace")}
-                      className="bg-white text-gray-800 font-medium px-4 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex items-center justify-center"
+                      className="bg-white text-gray-800 font-medium px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex items-center justify-center"
                     >
-                      <Delete className="w-5 h-5" />
+                      <Delete className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                     <button
                       onClick={() => handleKeyPress("space")}
-                      className="bg-white text-gray-800 font-medium px-12 py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex-1 max-w-[200px]"
+                      className="bg-white text-gray-800 font-medium px-8 sm:px-12 py-2.5 sm:py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex-1 max-w-[180px] sm:max-w-[200px] text-sm sm:text-base"
                     >
                       스페이스
                     </button>
