@@ -614,7 +614,7 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="text-xl mb-1">피드백 관리</h2>
-                  <p className="text-sm text-muted-foreground">설정 탭에서 접수된 사용자 피드백입니다. 중요 피드백은 이메일 알림 대상입니다.</p>
+                  <p className="text-sm text-muted-foreground">설정 탭에서 접수된 사용자 피드백입니다. 중요 피드백은 목록에서 강조됩니다.</p>
                 </div>
                 <Inbox className="w-5 h-5 text-muted-foreground" />
               </div>
@@ -636,11 +636,6 @@ export default function AdminDashboard() {
                             <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
                               {feedback.status}
                             </span>
-                            {feedback.emailStatus && (
-                              <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-                                email: {feedback.emailStatus}
-                              </span>
-                            )}
                           </div>
                           <div className="font-medium">{feedback.title}</div>
                           <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{feedback.body}</p>

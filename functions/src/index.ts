@@ -8,10 +8,7 @@ import Groq from "groq-sdk";
 
 const groqApiKey = defineSecret("GROQ_API_KEY");
 const pexelsApiKey = defineSecret("PEXELS_API_KEY");
-const resendApiKey = defineSecret("RESEND_API_KEY");
 const adminBootstrapUids = defineString("ADMIN_BOOTSTRAP_UIDS", { default: "" });
-const feedbackAlertTo = defineString("FEEDBACK_ALERT_TO", { default: "" });
-const feedbackAlertFrom = defineString("FEEDBACK_ALERT_FROM", { default: "Wordy <onboarding@resend.dev>" });
 const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
@@ -99,10 +96,6 @@ type AdminDeleteCommunityCommentRequest = {
 
 type AdminResetUserDataRequest = {
   uid: string;
-};
-
-type FeedbackCreatedData = {
-  isImportant?: boolean;
 };
 
 const SYSTEM_PROMPT = [
@@ -460,14 +453,6 @@ const writeAdminLog = async (
     details,
     createdAt: FieldValue.serverTimestamp(),
   });
-};
-
-const readResendApiKey = () => {
-  try {
-    return resendApiKey.value().trim();
-  } catch {
-    return "";
-  }
 };
 
 type PexelsPhoto = {
@@ -1924,81 +1909,6 @@ export const adminResetUserStudyDataHttp = onRequest(
     } catch (error) {
       console.error("adminResetUserStudyDataHttp failed:", error);
       response.status(500).set(corsHeaders).json({ error: "Admin user reset failed." });
-    }
-  },
-);
-
-export const sendImportantFeedbackEmail = onDocumentCreated(
-  {
-    document: "feedbacks/{feedbackId}",
-    region: "asia-northeast3",
-    timeoutSeconds: 30,
-    memory: "256MiB",
-    secrets: [resendApiKey],
-  },
-  async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) return;
-
-    const feedback = snapshot.data() as FeedbackCreatedData;
-    if (feedback.isImportant !== true) return;
-
-    const apiKey = readResendApiKey();
-    const to = feedbackAlertTo.value().trim();
-    const from = feedbackAlertFrom.value().trim();
-
-    if (!apiKey || !to || !from) {
-      await snapshot.ref.set(
-        {
-          emailStatus: "skipped_missing_config",
-          emailUpdatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
-      return;
-    }
-
-    try {
-      const result = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from,
-          to,
-          subject: "[Wordy] 중요 피드백이 접수되었습니다",
-          html: [
-            "<h2>Wordy 중요 피드백이 접수되었습니다.</h2>",
-            "<p>사용자 개인정보와 피드백 본문은 이메일에 포함하지 않았습니다.</p>",
-            "<p>관리자 대시보드의 피드백 탭에서 내용을 확인하세요.</p>",
-            '<p><a href="https://hsmocap-d907e.web.app/app/admin">관리자 대시보드 열기</a></p>',
-          ].join(""),
-        }),
-      });
-
-      if (!result.ok) {
-        const errorText = await result.text().catch(() => "");
-        throw new Error(errorText || `Resend failed with ${result.status}`);
-      }
-
-      await snapshot.ref.set(
-        {
-          emailStatus: "sent",
-          emailUpdatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
-    } catch (error) {
-      console.error("sendImportantFeedbackEmail failed:", error);
-      await snapshot.ref.set(
-        {
-          emailStatus: "failed",
-          emailUpdatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
     }
   },
 );

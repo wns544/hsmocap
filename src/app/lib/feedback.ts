@@ -25,7 +25,6 @@ export async function createFeedback(input: CreateFeedbackInput): Promise<string
     body: input.body,
     isImportant: input.isImportant,
     status: "open",
-    emailStatus: input.isImportant ? "pending" : "not_required",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

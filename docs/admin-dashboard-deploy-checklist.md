@@ -30,8 +30,6 @@ functions/.env.hsmocap-d907e
 
 ```env
 ADMIN_BOOTSTRAP_UIDS=xezvVnR7d2YmSXTqSatGzUBLGxI3
-FEEDBACK_ALERT_TO=hsmocap@gmail.com
-FEEDBACK_ALERT_FROM=Wordy <onboarding@resend.dev>
 ```
 
 2. 로컬 프론트 접근 허용 파일이 있는지 확인한다.
@@ -83,25 +81,8 @@ npm run deploy:admin
 - 사용자 목록 조회
 - 사용자 학습 데이터 초기화
 - 피드백 접수/상태 변경
-- 중요 피드백 이메일 알림 상태 확인
+- 중요 피드백 강조 표시
 - 감사 로그 기록
-
-## 중요 피드백 이메일 알림
-
-중요 피드백 이메일은 `sendImportantFeedbackEmail` Cloud Function이 처리한다.
-
-- 트리거: `feedbacks/{feedbackId}` 문서 생성
-- 조건: `isImportant == true`
-- 이메일 내용: 개인정보 보호를 위해 피드백 본문, 사용자 이메일, UID를 포함하지 않는다.
-- 실제 내용 확인 위치: 관리자 대시보드의 `피드백` 탭
-
-배포 전에 Resend API 키를 Firebase Secret으로 등록해야 한다.
-
-```bash
-firebase functions:secrets:set RESEND_API_KEY
-```
-
-비밀값이 없거나 `FEEDBACK_ALERT_TO`가 비어 있으면 이메일은 발송되지 않고, 해당 피드백 문서의 `emailStatus`가 `skipped_missing_config`로 기록된다.
 
 ## 보안 원칙
 

@@ -56,7 +56,6 @@ export interface AdminFeedbackRecord {
   body: string;
   isImportant: boolean;
   status: FeedbackStatus;
-  emailStatus: string;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
@@ -172,7 +171,6 @@ function toAdminFeedbackRecord(id: string, data: DocumentData): AdminFeedbackRec
     body: typeof data.body === "string" ? data.body : "",
     isImportant: data.isImportant === true,
     status: toFeedbackStatus(data.status),
-    emailStatus: typeof data.emailStatus === "string" ? data.emailStatus : "",
     createdAt: asDate(data.createdAt),
     updatedAt: asDate(data.updatedAt),
   };
