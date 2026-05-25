@@ -1,4 +1,15 @@
-import { collection, getDocs, limit, orderBy, query, type DocumentData, type Timestamp } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  type DocumentData,
+  type Timestamp,
+} from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 const FUNCTIONS_BASE_URL = "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net";
@@ -30,6 +41,24 @@ export interface AdminUserSummary {
   admin: boolean;
   creationTime: string;
   lastSignInTime: string;
+}
+
+export type FeedbackStatus = "open" | "reviewing" | "resolved";
+
+export interface AdminFeedbackRecord {
+  id: string;
+  userId: string;
+  authorName: string;
+  authorEmail: string;
+  categoryId: string;
+  categoryName: string;
+  title: string;
+  body: string;
+  isImportant: boolean;
+  status: FeedbackStatus;
+  emailStatus: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 function asDate(value: Timestamp | Date | string | null | undefined): Date | null {
@@ -107,6 +136,10 @@ export async function adminResetUserStudyData(uid: string) {
   });
 }
 
+function toFeedbackStatus(value: unknown): FeedbackStatus {
+  return value === "reviewing" || value === "resolved" ? value : "open";
+}
+
 function toAdminLogRecord(id: string, data: DocumentData): AdminLogRecord {
   return {
     id,
@@ -122,4 +155,37 @@ function toAdminLogRecord(id: string, data: DocumentData): AdminLogRecord {
 export async function listAdminLogs(maxItems = 30): Promise<AdminLogRecord[]> {
   const snapshot = await getDocs(query(collection(db, "adminLogs"), orderBy("createdAt", "desc"), limit(maxItems)));
   return snapshot.docs.map((item) => toAdminLogRecord(item.id, item.data()));
+}
+
+function toAdminFeedbackRecord(id: string, data: DocumentData): AdminFeedbackRecord {
+  const authorSnapshot =
+    typeof data.authorSnapshot === "object" && data.authorSnapshot ? data.authorSnapshot : {};
+
+  return {
+    id,
+    userId: typeof data.userId === "string" ? data.userId : "",
+    authorName: typeof authorSnapshot.name === "string" ? authorSnapshot.name : "",
+    authorEmail: typeof authorSnapshot.email === "string" ? authorSnapshot.email : "",
+    categoryId: typeof data.categoryId === "string" ? data.categoryId : "",
+    categoryName: typeof data.categoryName === "string" ? data.categoryName : "",
+    title: typeof data.title === "string" ? data.title : "",
+    body: typeof data.body === "string" ? data.body : "",
+    isImportant: data.isImportant === true,
+    status: toFeedbackStatus(data.status),
+    emailStatus: typeof data.emailStatus === "string" ? data.emailStatus : "",
+    createdAt: asDate(data.createdAt),
+    updatedAt: asDate(data.updatedAt),
+  };
+}
+
+export async function listAdminFeedbacks(maxItems = 50): Promise<AdminFeedbackRecord[]> {
+  const snapshot = await getDocs(query(collection(db, "feedbacks"), orderBy("createdAt", "desc"), limit(maxItems)));
+  return snapshot.docs.map((item) => toAdminFeedbackRecord(item.id, item.data()));
+}
+
+export async function updateAdminFeedbackStatus(feedbackId: string, status: FeedbackStatus): Promise<void> {
+  await updateDoc(doc(db, "feedbacks", feedbackId), {
+    status,
+    updatedAt: serverTimestamp(),
+  });
 }

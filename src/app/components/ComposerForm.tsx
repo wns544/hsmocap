@@ -19,12 +19,17 @@ interface ComposerFormProps {
   initialContent?: string;
   initialCategory?: ComposerCategoryOption;
   initialImageUrls?: string[];
+  importantOption?: {
+    label: string;
+    description?: string;
+  };
   onSubmit?: (input: {
     title: string;
     content: string;
     category: ComposerCategoryOption;
     imageFiles: File[];
     existingImageUrls: string[];
+    isImportant: boolean;
   }) => Promise<void>;
 }
 
@@ -52,6 +57,7 @@ export default function ComposerForm({
   initialContent = "",
   initialCategory,
   initialImageUrls = [],
+  importantOption,
   onSubmit,
 }: ComposerFormProps) {
   const navigate = useNavigate();
@@ -62,6 +68,7 @@ export default function ComposerForm({
   );
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [selectedImages, setSelectedImages] = useState<ComposerImageItem[]>([]);
+  const [isImportant, setIsImportant] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -114,6 +121,7 @@ export default function ComposerForm({
         category: selectedCategory,
         imageFiles: selectedImages.flatMap((image) => (image.file ? [image.file] : [])),
         existingImageUrls: selectedImages.flatMap((image) => (image.existingUrl ? [image.existingUrl] : [])),
+        isImportant,
       });
       navigate(successPath);
     } finally {
@@ -242,6 +250,23 @@ export default function ComposerForm({
             disabled={selectedImages.length >= MAX_IMAGE_COUNT}
           />
         </label>
+
+        {importantOption && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-white p-4">
+            <input
+              type="checkbox"
+              checked={isImportant}
+              onChange={(event) => setIsImportant(event.target.checked)}
+              className="mt-1 h-4 w-4 accent-primary"
+            />
+            <span className="flex-1">
+              <span className="block text-sm font-medium">{importantOption.label}</span>
+              {importantOption.description && (
+                <span className="mt-1 block text-xs text-muted-foreground">{importantOption.description}</span>
+              )}
+            </span>
+          </label>
+        )}
 
         {selectedImages.length > 0 && (
           <div className="grid grid-cols-3 gap-2">

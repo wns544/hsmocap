@@ -9,6 +9,7 @@ import {
   Database,
   FileClock,
   Heart,
+  Inbox,
   MessageSquare,
   RefreshCw,
   Save,
@@ -31,10 +32,14 @@ import {
   adminListUsers,
   adminResetUserStudyData,
   adminUpsertWord,
+  listAdminFeedbacks,
   listAdminLogs,
   setAdminClaim,
   type AdminLogRecord,
+  type AdminFeedbackRecord,
   type AdminUserSummary,
+  type FeedbackStatus,
+  updateAdminFeedbackStatus,
 } from "../lib/admin";
 import {
   formatCommunityTimestamp,
@@ -56,6 +61,7 @@ interface DashboardState {
   favorites: FavoriteWordItem[];
   logs: AdminLogRecord[];
   users: AdminUserSummary[];
+  feedbacks: AdminFeedbackRecord[];
 }
 
 interface WordFormState {
@@ -75,6 +81,7 @@ const emptyDashboardState: DashboardState = {
   favorites: [],
   logs: [],
   users: [],
+  feedbacks: [],
 };
 
 const emptyWordForm: WordFormState = {
@@ -152,7 +159,7 @@ export default function AdminDashboard() {
     setErrorMessage("");
 
     try {
-      const [words, posts, categories, progresses, reviewQueueIds, favorites, logs] = await Promise.all([
+      const [words, posts, categories, progresses, reviewQueueIds, favorites, logs, feedbacks] = await Promise.all([
         listWordLibraryItems(),
         listCommunityPosts(),
         listBoardCategories(),
@@ -160,11 +167,12 @@ export default function AdminDashboard() {
         listReviewQueueWordIds(user.uid),
         listFavoriteWords(user.uid),
         isAdmin ? listAdminLogs().catch(() => []) : Promise.resolve([]),
+        isAdmin ? listAdminFeedbacks().catch(() => []) : Promise.resolve([]),
       ]);
 
       const users = isAdmin ? await adminListUsers().catch(() => []) : [];
 
-      setData({ words, posts, categories, progresses, reviewQueueIds, favorites, logs, users });
+      setData({ words, posts, categories, progresses, reviewQueueIds, favorites, logs, users, feedbacks });
       setLastLoadedAt(new Date());
     } catch (error) {
       console.error("관리자 대시보드 데이터를 불러오지 못했습니다.", error);
@@ -250,18 +258,25 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleUpdateFeedbackStatus = (feedbackId: string, status: FeedbackStatus) =>
+    runAdminAction("피드백 상태를 변경했습니다.", async () => {
+      await updateAdminFeedbackStatus(feedbackId, status);
+    });
+
   const summary = useMemo(() => {
     const studiedWords = data.progresses.filter((progress) => progress.totalAnswerCount > 0);
     const masteredWords = data.progresses.filter((progress) => progress.status === "MASTERED");
     const totalAnswers = data.progresses.reduce((sum, progress) => sum + progress.totalAnswerCount, 0);
     const correctAnswers = data.progresses.reduce((sum, progress) => sum + progress.correctAnswerCount, 0);
     const totalViews = data.posts.reduce((sum, post) => sum + post.viewCount, 0);
+    const openFeedbacks = data.feedbacks.filter((feedback) => feedback.status !== "resolved").length;
 
     return {
       studiedWords: studiedWords.length,
       masteredWords: masteredWords.length,
       answerAccuracy: totalAnswers > 0 ? (correctAnswers / totalAnswers) * 100 : 0,
       totalViews,
+      openFeedbacks,
     };
   }, [data]);
 
@@ -292,7 +307,7 @@ export default function AdminDashboard() {
   const metricCards = [
     { label: "단어 라이브러리", value: data.words.length, helper: `${levelRows.length}개 레벨`, icon: BookOpen },
     { label: "게시글", value: data.posts.length, helper: `조회 ${summary.totalViews}회`, icon: MessageSquare },
-    { label: "내 학습 기록", value: summary.studiedWords, helper: `정답률 ${formatPercent(summary.answerAccuracy)}`, icon: Target },
+    { label: "피드백", value: data.feedbacks.length, helper: `미처리 ${summary.openFeedbacks}건`, icon: Inbox },
     { label: "복습 대기", value: data.reviewQueueIds.length, helper: `마스터 ${summary.masteredWords}개`, icon: Activity },
   ];
 
@@ -380,6 +395,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="overview">개요</TabsTrigger>
             <TabsTrigger value="words">단어 관리</TabsTrigger>
             <TabsTrigger value="community">커뮤니티</TabsTrigger>
+            <TabsTrigger value="feedbacks">피드백</TabsTrigger>
             <TabsTrigger value="users">권한</TabsTrigger>
             <TabsTrigger value="logs">감사 로그</TabsTrigger>
           </TabsList>
@@ -589,6 +605,80 @@ export default function AdminDashboard() {
                   <Trash2 className="w-4 h-4 mr-2" />
                   댓글 삭제
                 </Button>
+              </div>
+            </section>
+          </TabsContent>
+
+          <TabsContent value="feedbacks">
+            <section className="bg-white border border-border rounded-lg p-5">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-xl mb-1">피드백 관리</h2>
+                  <p className="text-sm text-muted-foreground">설정 탭에서 접수된 사용자 피드백입니다. 중요 피드백은 이메일 알림 대상입니다.</p>
+                </div>
+                <Inbox className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="space-y-3">
+                {data.feedbacks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">접수된 피드백이 없습니다.</p>
+                ) : (
+                  data.feedbacks.map((feedback) => (
+                    <div key={feedback.id} className="rounded-lg border border-border p-4">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                              {feedback.categoryName || feedback.categoryId}
+                            </span>
+                            {feedback.isImportant && (
+                              <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs text-red-600">중요</span>
+                            )}
+                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                              {feedback.status}
+                            </span>
+                            {feedback.emailStatus && (
+                              <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                                email: {feedback.emailStatus}
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-medium">{feedback.title}</div>
+                          <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{feedback.body}</p>
+                          <div className="mt-3 text-xs text-muted-foreground break-all">
+                            {feedback.authorName || "사용자"} · {feedback.authorEmail || "이메일 없음"} · UID {feedback.userId}
+                            · {formatDateTime(feedback.createdAt)}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 lg:justify-end">
+                          <Button
+                            variant={feedback.status === "open" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleUpdateFeedbackStatus(feedback.id, "open")}
+                            disabled={working}
+                          >
+                            접수
+                          </Button>
+                          <Button
+                            variant={feedback.status === "reviewing" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleUpdateFeedbackStatus(feedback.id, "reviewing")}
+                            disabled={working}
+                          >
+                            확인중
+                          </Button>
+                          <Button
+                            variant={feedback.status === "resolved" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleUpdateFeedbackStatus(feedback.id, "resolved")}
+                            disabled={working}
+                          >
+                            처리완료
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
           </TabsContent>
