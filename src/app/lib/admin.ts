@@ -54,6 +54,7 @@ export interface AdminFeedbackRecord {
   categoryName: string;
   title: string;
   body: string;
+  imageUrls: string[];
   isImportant: boolean;
   status: FeedbackStatus;
   createdAt: Date | null;
@@ -169,6 +170,9 @@ function toAdminFeedbackRecord(id: string, data: DocumentData): AdminFeedbackRec
     categoryName: typeof data.categoryName === "string" ? data.categoryName : "",
     title: typeof data.title === "string" ? data.title : "",
     body: typeof data.body === "string" ? data.body : "",
+    imageUrls: Array.isArray(data.imageUrls)
+      ? data.imageUrls.filter((value: unknown): value is string => typeof value === "string" && value.trim() !== "")
+      : [],
     isImportant: data.isImportant === true,
     status: toFeedbackStatus(data.status),
     createdAt: asDate(data.createdAt),

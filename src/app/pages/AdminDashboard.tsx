@@ -639,6 +639,25 @@ export default function AdminDashboard() {
                           </div>
                           <div className="font-medium">{feedback.title}</div>
                           <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{feedback.body}</p>
+                          {feedback.imageUrls.length > 0 && (
+                            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                              {feedback.imageUrls.map((imageUrl, index) => (
+                                <a
+                                  key={imageUrl}
+                                  href={imageUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="group block overflow-hidden rounded-lg border border-border bg-muted"
+                                >
+                                  <img
+                                    src={imageUrl}
+                                    alt={`피드백 첨부 이미지 ${index + 1}`}
+                                    className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          )}
                           <div className="mt-3 text-xs text-muted-foreground break-all">
                             {feedback.authorName || "사용자"} · {feedback.authorEmail || "이메일 없음"} · UID {feedback.userId}
                             · {formatDateTime(feedback.createdAt)}

@@ -1,5 +1,6 @@
 import ComposerForm from "../components/ComposerForm";
 import { useAuth } from "../contexts/AuthContext";
+import { uploadFeedbackImages } from "../lib/communityImages";
 import { createFeedback } from "../lib/feedback";
 import { resolveProfileName } from "../lib/profileName";
 
@@ -26,9 +27,10 @@ export default function Feedback() {
         label: "중요 피드백",
         description: "앱 사용을 막는 문제이거나 빠른 확인이 필요한 내용이면 선택하세요.",
       }}
-      onSubmit={async ({ title, content, category, isImportant }) => {
+      onSubmit={async ({ title, content, category, imageFiles, isImportant }) => {
         if (!user) throw new Error("Missing user");
         const authorName = await resolveProfileName(user.uid, user.displayName || user.email || "사용자");
+        const imageUrls = await uploadFeedbackImages(user.uid, imageFiles);
         await createFeedback({
           userId: user.uid,
           authorName,
@@ -38,6 +40,7 @@ export default function Feedback() {
           title,
           body: content,
           isImportant,
+          imageUrls,
         });
       }}
     />

@@ -10,6 +10,7 @@ export interface CreateFeedbackInput {
   title: string;
   body: string;
   isImportant: boolean;
+  imageUrls?: string[];
 }
 
 export async function createFeedback(input: CreateFeedbackInput): Promise<string> {
@@ -24,6 +25,7 @@ export async function createFeedback(input: CreateFeedbackInput): Promise<string
     title: input.title,
     body: input.body,
     isImportant: input.isImportant,
+    imageUrls: input.imageUrls ?? [],
     status: "open",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
