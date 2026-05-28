@@ -27,6 +27,7 @@ export interface CommunityPost {
   };
   title: string;
   content: string;
+  categoryId?: string;
   category: string;
   likes: number;
   comments: number;
@@ -108,87 +109,164 @@ export interface UpdateCommunityCommentInput {
 const SAVED_COMMUNITY_POSTS_KEY = "wordy.savedCommunityPosts";
 const INCREMENT_POST_VIEW_URL =
   "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/incrementPostViewHttp";
+const SHOULD_USE_LOCAL_COMMUNITY_SAMPLES = import.meta.env.DEV;
 
 const sampleCategories: BoardCategory[] = [
-  { id: "free", name: "자유", description: "자유롭게 학습 경험을 나누는 공간" },
-  { id: "question", name: "질문", description: "학습 질문과 답변" },
-  { id: "review", name: "후기", description: "앱 사용 후기와 학습 후기" },
+  { id: "study-tip", name: "학습팁", description: "암기법, 복습 루틴, 앱 활용법을 공유하는 공간" },
+  { id: "word-compare", name: "단어비교", description: "비슷한 뜻의 단어를 예문과 함께 비교하는 공간" },
+  { id: "sentence-practice", name: "문장학습", description: "문장 빈칸, 예문, 실제 사용 맥락을 다루는 공간" },
+  { id: "exam-prep", name: "시험준비", description: "TOEIC, 내신, 수능, 회화 시험 준비 전략을 나누는 공간" },
+  { id: "resources", name: "자료공유", description: "단어 묶음, 추천 리스트, 복습 세트를 공유하는 공간" },
+  { id: "question", name: "질문", description: "단어 뜻, 예문 해석, 학습 루틴을 질문하는 공간" },
+  { id: "review", name: "후기", description: "실제 학습 경험과 앱 사용 후기를 공유하는 공간" },
 ];
 
 export const communityPosts: CommunityPost[] = [
   {
     id: 1,
-    author: { name: "영어고수", avatar: "📘", level: "레벨 15" },
-    title: "영어 단어 복기 루틴 공유합니다",
+    author: { name: "단어코치", avatar: "📘", level: "레벨 15" },
+    title: "오답 단어는 1일, 3일, 7일 간격으로 다시 보면 오래 갑니다",
     content:
-      "아침에 학습한 단어를 저녁에 다시 보면서 예문까지 한 번 더 확인하는 방식으로 정리하고 있어요. 반복 노출이 생각보다 큰 도움이 되더라고요.",
+      "단어를 한 번 틀렸다고 바로 오래 외워지는 것은 아닙니다. 저는 오답으로 저장된 단어를 오늘, 3일 뒤, 7일 뒤에 다시 보는 방식으로 정리했습니다.\n\n첫날에는 뜻을 빠르게 확인하고, 3일 뒤에는 예문을 읽고, 7일 뒤에는 문장 퀴즈로 확인하면 기억이 훨씬 안정적으로 남았습니다.",
+    categoryId: "study-tip",
     category: "학습팁",
-    likes: 247,
-    comments: 32,
-    views: 1240,
+    likes: 42,
+    comments: 2,
+    views: 318,
     isHot: true,
-    timestamp: "2시간 전",
+    timestamp: "1일 전",
   },
   {
     id: 2,
-    author: { name: "단어마스터", avatar: "🎯", level: "레벨 12" },
-    title: "토익 고득점을 위한 필수 단어 리스트",
+    author: { name: "이해완료", avatar: "🎯", level: "레벨 12" },
+    title: "achieve, accomplish, complete는 이렇게 구분하면 쉽습니다",
     content:
-      "시험 직전에 자주 헷갈리는 단어들을 따로 묶어서 봤더니 복습 효율이 많이 올라갔습니다. 우선순위 단어 정리가 핵심이었어요.",
-    category: "시험준비",
-    likes: 189,
-    comments: 24,
-    views: 892,
+      "achieve는 목표나 성과를 얻는 느낌이 강하고, accomplish는 계획한 일을 해냈다는 느낌이 있습니다. complete는 어떤 작업이나 과정을 끝냈다는 뜻에 더 가깝습니다.\n\n예를 들어 'achieve a goal', 'accomplish a mission', 'complete the form'처럼 같이 쓰이는 명사를 함께 외우면 헷갈림이 줄어듭니다.",
+    categoryId: "word-compare",
+    category: "단어비교",
+    likes: 57,
+    comments: 2,
+    views: 441,
     isHot: true,
-    timestamp: "5시간 전",
+    timestamp: "2일 전",
   },
   {
     id: 3,
-    author: { name: "영어러버", avatar: "📝", level: "레벨 8" },
-    title: "어원으로 단어 외우기보다 예문이 더 쉬웠어요",
+    author: { name: "문장러버", avatar: "📝", level: "레벨 8" },
+    title: "단어 뜻만 외우기보다 문장 빈칸으로 확인하면 실수가 줄어요",
     content:
-      "예문을 자주 보고 직접 빈칸을 채워보는 방식이 저한테는 더 잘 맞았습니다. 문맥으로 기억하는 게 오래 가네요.",
-    category: "학습팁",
-    likes: 156,
-    comments: 18,
-    views: 654,
-    isHot: false,
-    timestamp: "1일 전",
+      "benefit을 '이익'이라고만 외우면 실제 문장에서 바로 떠올리기 어렵습니다. 'Exercise has many health benefits.'처럼 문장 전체를 같이 보면 단어가 쓰이는 위치와 의미가 함께 기억됩니다.\n\n즐겨찾기한 단어는 문장 학습으로 한 번 더 확인하면 단순 암기에서 실제 사용으로 넘어가기 좋습니다.",
+    categoryId: "sentence-practice",
+    category: "문장학습",
+    likes: 49,
+    comments: 2,
+    views: 390,
+    isHot: true,
+    timestamp: "3일 전",
   },
   {
     id: 4,
-    author: { name: "초보학습자", avatar: "🌱", level: "레벨 3" },
-    title: "영어 공부 시작할 때 가장 막막했던 것",
+    author: { name: "토익집중", avatar: "🧭", level: "레벨 10" },
+    title: "TOEIC 직전에는 빈출 동사와 명사 조합부터 다시 보세요",
     content:
-      "처음에는 무엇부터 외워야 할지 막막했는데, 하루 목표 단어를 정하고 복습 주기를 지키는 것만으로도 훨씬 안정감이 생겼어요.",
-    category: "후기",
-    likes: 92,
-    comments: 15,
-    views: 421,
+      "시험 전날에는 새로운 단어를 많이 넣기보다 이미 본 단어 중 자주 나오는 조합을 확인하는 것이 효율적입니다.\n\n예를 들어 submit an application, attend a seminar, extend a deadline처럼 동사와 명사를 묶어서 보면 Part 5와 Part 7에서 읽는 속도가 빨라집니다.",
+    categoryId: "exam-prep",
+    category: "시험준비",
+    likes: 36,
+    comments: 1,
+    views: 276,
     isHot: false,
-    timestamp: "1일 전",
-    hasImage: true,
-    imageUrl:
-      "https://images.unsplash.com/photo-1652173410636-4be431f4a2de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbmdsaXNoJTIwdm9jYWJ1bGFyeSUyMHN0dWR5JTIwbm90ZWJvb2t8ZW58MXx8fHwxNzc0ODA2OTU3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    timestamp: "4일 전",
   },
   {
     id: 5,
-    author: { name: "유학준비", avatar: "✈️", level: "레벨 18" },
-    title: "실생활에서 자주 듣는 영어 표현 모음",
+    author: { name: "자료정리러", avatar: "🗂", level: "레벨 9" },
+    title: "감정 형용사 12개는 원인과 감정으로 나눠서 외우면 편합니다",
     content:
-      "짧은 표현을 자주 반복해서 듣고 말해보는 방식이 도움이 됐어요. 길게 외우기보다 자주 노출되는 표현부터 익히는 걸 추천합니다.",
-    category: "표현",
-    likes: 312,
-    comments: 41,
-    views: 1567,
+      "bored와 boring처럼 -ed, -ing가 붙은 형용사는 기준을 잡으면 훨씬 쉽습니다. -ed는 사람이 느끼는 감정, -ing는 그 감정을 일으키는 원인에 가깝습니다.\n\ninterested/interesting, excited/exciting, confused/confusing을 한 묶음으로 저장해두고 예문을 비교해보세요.",
+    categoryId: "resources",
+    category: "자료공유",
+    likes: 31,
+    comments: 1,
+    views: 254,
+    isHot: false,
+    timestamp: "5일 전",
+  },
+  {
+    id: 6,
+    author: { name: "중급탈출", avatar: "🌱", level: "레벨 7" },
+    title: "중급에서 고급 단어로 넘어갈 때 어떤 루틴이 좋을까요?",
+    content:
+      "초급 단어는 빠르게 넘어가는데, 고급 단어는 뜻이 비슷한 단어가 많아서 자주 헷갈립니다.\n\n즐겨찾기와 복습하기를 같이 쓰는 추천 루틴이 있을까요? 특히 유의어가 많은 단어를 오래 기억하는 방법이 궁금합니다.",
+    categoryId: "question",
+    category: "질문",
+    likes: 18,
+    comments: 2,
+    views: 167,
+    isHot: false,
+    timestamp: "6일 전",
+  },
+  {
+    id: 7,
+    author: { name: "매일20개", avatar: "✅", level: "레벨 11" },
+    title: "하루 20개 목표를 작게 잡으니 꾸준히 하게 됩니다",
+    content:
+      "처음부터 많은 단어를 외우려고 하면 금방 지치는데, 하루 목표를 20개로 잡고 홈에서 진행률을 보니까 부담이 줄었습니다.\n\n최근 학습 단어와 과거 기록이 같이 보이는 것도 동기부여가 됐습니다. 목표를 작게 잡는 편이 오히려 오래 가네요.",
+    categoryId: "review",
+    category: "후기",
+    likes: 27,
+    comments: 1,
+    views: 205,
+    isHot: false,
+    timestamp: "7일 전",
+  },
+  {
+    id: 8,
+    author: { name: "문법정리러", avatar: "📎", level: "레벨 13" },
+    title: "affect와 effect는 품사부터 나눠서 보면 덜 헷갈립니다",
+    content:
+      "affect는 주로 동사로 '영향을 미치다'라는 뜻이고, effect는 주로 명사로 '영향, 결과'라는 뜻입니다.\n\nThe weather affects sales. / The effect was immediate.처럼 문장 안 역할을 먼저 보면 뜻보다 빠르게 구분할 수 있습니다.",
+    categoryId: "word-compare",
+    category: "단어비교",
+    likes: 44,
+    comments: 1,
+    views: 332,
+    isHot: false,
+    timestamp: "8일 전",
+  },
+  {
+    id: 9,
+    author: { name: "즐겨찾기매니저", avatar: "⭐", level: "레벨 14" },
+    title: "즐겨찾기는 모든 단어가 아니라 다시 볼 단어만 넣는 게 좋습니다",
+    content:
+      "즐겨찾기에 단어를 너무 많이 넣으면 다시 보기 어려워집니다. 저는 뜻을 봐도 바로 떠오르지 않는 단어, 비슷한 단어와 자주 헷갈리는 단어, 실제 문장에서 써보고 싶은 단어만 저장합니다.\n\n이 기준을 쓰면 즐겨찾기가 단순 보관함이 아니라 개인 복습 리스트가 됩니다.",
+    categoryId: "study-tip",
+    category: "학습팁",
+    likes: 53,
+    comments: 1,
+    views: 421,
     isHot: true,
-    timestamp: "12시간 전",
+    timestamp: "9일 전",
+  },
+  {
+    id: 10,
+    author: { name: "회화준비", avatar: "🎙", level: "레벨 6" },
+    title: "말하기 시험 준비는 쉬운 단어를 빠르게 꺼내는 연습이 먼저입니다",
+    content:
+      "말하기 시험에서는 어려운 단어를 많이 아는 것보다 쉬운 단어를 빠르게 꺼내는 능력이 더 중요할 때가 많습니다.\n\nimportant, useful, convenient 같은 기본 단어를 예문으로 여러 번 말해보면 답변이 끊기는 시간이 줄어듭니다. 즐겨찾기 단어를 문장 학습으로 돌려보는 방식도 효과적입니다.",
+    categoryId: "exam-prep",
+    category: "시험준비",
+    likes: 29,
+    comments: 1,
+    views: 214,
+    isHot: false,
+    timestamp: "10일 전",
   },
 ];
 
 const samplePostSummaries: CommunityPostSummary[] = communityPosts.map((post) => ({
   id: String(post.id),
-  categoryId: normalizeCategoryId(post.category),
+  categoryId: post.categoryId ?? normalizeCategoryId(post.category),
   categoryName: post.category,
   userId: `sample-user-${post.id}`,
   authorSnapshot: {
@@ -210,8 +288,8 @@ const sampleCommentsByPostId: Record<string, CommunityCommentSummary[]> = {
       id: "1-1",
       postId: "1",
       userId: "sample-comment-user-1",
-      authorSnapshot: { name: "매일영어" },
-      content: "복습 루틴을 이렇게 구체적으로 정리해주셔서 바로 따라 해보고 싶어요.",
+      authorSnapshot: { name: "매일20개" },
+      content: "복습 주기가 구체적이라 바로 따라 하기 좋네요. 오답 단어에 먼저 적용해보겠습니다.",
       createdAt: null,
       updatedAt: null,
     },
@@ -219,8 +297,8 @@ const sampleCommentsByPostId: Record<string, CommunityCommentSummary[]> = {
       id: "1-2",
       postId: "1",
       userId: "sample-comment-user-2",
-      authorSnapshot: { name: "초보학습자" },
-      content: "짧게 자주 보는 방식이 저한테도 잘 맞을 것 같아요. 감사합니다.",
+      authorSnapshot: { name: "문장러버" },
+      content: "7일 차에 문장 퀴즈로 확인하는 방식이 특히 좋은 것 같아요.",
       createdAt: null,
       updatedAt: null,
     },
@@ -231,7 +309,16 @@ const sampleCommentsByPostId: Record<string, CommunityCommentSummary[]> = {
       postId: "2",
       userId: "sample-comment-user-3",
       authorSnapshot: { name: "토익집중" },
-      content: "시험 직전에 단어를 이렇게 묶어서 보면 확실히 정리가 잘 되더라고요.",
+      content: "collocation으로 묶어서 보니까 차이가 훨씬 선명해지네요.",
+      createdAt: null,
+      updatedAt: null,
+    },
+    {
+      id: "2-2",
+      postId: "2",
+      userId: "sample-comment-user-4",
+      authorSnapshot: { name: "단어메이트" },
+      content: "complete the form 예문은 시험 지문에서도 자주 보이는 표현이라 유용합니다.",
       createdAt: null,
       updatedAt: null,
     },
@@ -316,6 +403,10 @@ function toCommunityCommentSummary(
 }
 
 export async function listBoardCategories(): Promise<BoardCategory[]> {
+  if (SHOULD_USE_LOCAL_COMMUNITY_SAMPLES) {
+    return sampleCategories;
+  }
+
   try {
     const snapshot = await getDocs(query(collection(db, "boardCategories"), limit(20)));
     const categories = snapshot.docs.map((doc) => ({
@@ -336,6 +427,12 @@ export async function listBoardCategories(): Promise<BoardCategory[]> {
 }
 
 export async function listCommunityPosts(categoryId?: string): Promise<CommunityPostSummary[]> {
+  if (SHOULD_USE_LOCAL_COMMUNITY_SAMPLES) {
+    return samplePostSummaries.filter((post) =>
+      categoryId && categoryId !== "all" ? post.categoryId === categoryId : true,
+    );
+  }
+
   try {
     const postsRef = collection(db, "posts");
     const postQuery =
@@ -498,6 +595,10 @@ export async function deletePostComment(postId: string, commentId: string): Prom
 export async function getCommunityPostDetail(
   postId: string,
 ): Promise<CommunityPostSummary | null> {
+  if (SHOULD_USE_LOCAL_COMMUNITY_SAMPLES) {
+    return samplePostSummaries.find((post) => post.id === postId) ?? null;
+  }
+
   try {
     const snapshot = await getDoc(doc(db, "posts", postId));
     if (snapshot.exists()) {
@@ -531,6 +632,10 @@ export async function incrementPostView(postId: string): Promise<void> {
 }
 
 export async function listPostComments(postId: string): Promise<CommunityCommentSummary[]> {
+  if (SHOULD_USE_LOCAL_COMMUNITY_SAMPLES) {
+    return sampleCommentsByPostId[postId] ?? [];
+  }
+
   try {
     const commentsRef = collection(db, "posts", postId, "comments");
     const snapshot = await getDocs(query(commentsRef, limit(50)));
