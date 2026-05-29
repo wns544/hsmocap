@@ -54,6 +54,7 @@ interface FeedbackData {
   tone?: "success" | "close" | "error";
   message: string;
   hint?: string;
+  submittedAnswer?: string;
 }
 
 interface GradeWordAnswerResponse {
@@ -79,6 +80,75 @@ const IMAGE_HINT_URL =
   "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/imageHintSearchHttp";
 
 const ALL_LEVEL = "전체";
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const buildTargetWordPattern = (targetWord: string) =>
+  escapeRegExp(targetWord.trim()).replace(/\s+/g, "\\s+");
+
+const containsHangul = (value: string) => /[가-힣]/.test(value);
+
+const normalizeAnswerForComparison = (value: string) =>
+  value
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[.,!?'"`~]/g, "")
+    .toLowerCase();
+
+// Local fallback only: used when the server/LLM grader is unavailable.
+// Keep this list small; sentence-aware semantic grading belongs on the server.
+const fallbackSemanticEquivalenceGroups = [
+  ["우연히찾았다", "우연히찾아냈다", "우연히발견했다", "우연히발견하였다", "우연히마주쳤다", "우연히보게됐다", "찾았다", "찾아냈다", "발견했다", "발견하였다"],
+  ["그만두었다", "그만뒀다", "그만두다", "사임했다", "사임하였다", "사임하다", "물러났다", "물러나다", "퇴임했다", "퇴임하였다", "퇴임하다", "자리에서물러났다", "직을내려놓았다"],
+  ["손에들었다", "손에들고있었다", "손에쥐었다", "들고있었다", "들고있다", "잡았다", "잡고있었다", "잡고있다", "쥐었다", "쥐고있었다", "쥐고있다"],
+  ["고르세요", "골라라", "골라", "고르다", "고른다", "선택하세요", "선택해", "선택하다", "선택한다", "택하세요", "택해", "택하다"],
+  ["돌려주다", "돌려준다", "돌려줘", "돌려주세요", "돌려주십시오", "되돌려주다", "되돌려줘", "되돌려주세요", "반납하다", "반납한다", "반납해", "반납해주세요", "반납하십시오", "반환하다", "반환한다", "반환해", "반환해주세요"],
+] as const;
+
+const buildSemanticVariants = (value: string) => {
+  const variants = new Set([value]);
+
+  for (const group of fallbackSemanticEquivalenceGroups) {
+    const sources = [...group].sort((left, right) => right.length - left.length);
+    for (const source of sources) {
+      if (!value.includes(source)) {
+        continue;
+      }
+
+      for (const replacement of group) {
+        variants.add(value.replaceAll(source, replacement));
+      }
+      break;
+    }
+  }
+
+  return Array.from(variants);
+};
+
+const hasSemanticAnswerMatch = (userAnswer: string, answers: string[]) => {
+  const userVariants = buildSemanticVariants(normalizeAnswerForComparison(userAnswer));
+
+  return answers.some((answer) => {
+    const answerVariants = buildSemanticVariants(normalizeAnswerForComparison(answer));
+    return userVariants.some((variant) => answerVariants.includes(variant));
+  });
+};
+
+const extractMeaningAnswerCandidates = (wordMeaning: string) =>
+  wordMeaning
+    .replace(/[()]/g, ",")
+    .split(/[,;/]+/g)
+    .map((answer) => answer.trim().replace(/\s+/g, " "))
+    .filter((answer) => answer.length >= 2 && containsHangul(answer));
+
+const buildAnswerCandidates = (correctAnswer: string, question: QuizQuestion) =>
+  Array.from(
+    new Set(
+      [correctAnswer, ...question.acceptableAnswers, ...extractMeaningAnswerCandidates(question.wordMeaning)]
+        .map((answer) => answer.trim().replace(/\s+/g, " "))
+        .filter(Boolean),
+    ),
+  );
 
 const fallbackQuizQuestions: QuizQuestion[] = [
   {
@@ -204,7 +274,33 @@ const createLocalFeedback = (
   const trimmedUser = userAnswer.trim();
   const trimmedCorrect = correctAnswer.trim();
 
-  if (question.acceptableAnswers.includes(trimmedUser)) {
+  if (trimmedUser.length === 0) {
+    return {
+      isCorrect: false,
+      tone: "error",
+      message: "답을 입력해 주세요.",
+      hint: `'${question.targetWord}'의 의미는 '${question.wordMeaning}'입니다.`,
+      submittedAnswer: trimmedUser,
+    };
+  }
+
+  if (!containsHangul(trimmedUser)) {
+    return {
+      isCorrect: false,
+      tone: "error",
+      message: "한국어 뜻을 입력해 주세요.",
+      hint: `'${question.targetWord}'의 의미는 '${question.wordMeaning}'이고, 정답은 '${trimmedCorrect}'입니다.`,
+      submittedAnswer: trimmedUser,
+    };
+  }
+
+  const answerCandidates = buildAnswerCandidates(trimmedCorrect, question);
+  const normalizedUserAnswer = normalizeAnswerForComparison(trimmedUser);
+  const normalizedExactMatch = answerCandidates.find(
+    (answer) => normalizeAnswerForComparison(answer) === normalizedUserAnswer,
+  );
+
+  if (normalizedExactMatch) {
     return {
       isCorrect: true,
       tone: "success",
@@ -212,22 +308,24 @@ const createLocalFeedback = (
     };
   }
 
-  if (trimmedUser.length === 0) {
+  if (hasSemanticAnswerMatch(trimmedUser, answerCandidates)) {
     return {
-      isCorrect: false,
-      tone: "error",
-      message: "답을 입력해 주세요.",
-      hint: `'${question.targetWord}'의 의미는 '${question.wordMeaning}'입니다.`,
+      isCorrect: true,
+      tone: "success",
+      message: `정답입니다. '${question.targetWord}'는 이 문장에서 '${trimmedCorrect}'로 쓰입니다.`,
     };
   }
 
-  const similarity = calculateSimilarity(trimmedUser, trimmedCorrect);
-  if (similarity > 0.7) {
+  const similarity = Math.max(
+    ...answerCandidates.map((answer) => calculateSimilarity(trimmedUser, answer)),
+  );
+  if (similarity >= 0.78) {
     return {
       isCorrect: false,
       tone: "close",
       message: "거의 맞았어요.",
       hint: `더 자연스러운 정답은 '${trimmedCorrect}'입니다.`,
+      submittedAnswer: trimmedUser,
     };
   }
 
@@ -236,10 +334,11 @@ const createLocalFeedback = (
     tone: "error",
     message: "다시 생각해 보세요.",
     hint: `'${question.targetWord}'의 의미는 '${question.wordMeaning}'이고, 정답은 '${trimmedCorrect}'입니다.`,
+    submittedAnswer: trimmedUser,
   };
 };
 
-const mapServerFeedback = (feedback: GradeWordAnswerResponse): FeedbackData => ({
+const mapServerFeedback = (feedback: GradeWordAnswerResponse, submittedAnswer: string): FeedbackData => ({
   isCorrect: feedback.verdict === "correct" || feedback.verdict === "correct_but_unnatural",
   tone:
     feedback.verdict === "close"
@@ -249,6 +348,10 @@ const mapServerFeedback = (feedback: GradeWordAnswerResponse): FeedbackData => (
         : "error",
   message: feedback.message,
   hint: feedback.hint,
+  submittedAnswer:
+    feedback.verdict === "correct" || feedback.verdict === "correct_but_unnatural"
+      ? undefined
+      : submittedAnswer,
 });
 
 export default function SentenceQuiz() {
@@ -556,12 +659,13 @@ export default function SentenceQuiz() {
       return null;
     }
 
-    const parts = currentQuestion.english.split(new RegExp(`(\\b${currentQuestion.targetWord}\\b)`, "gi"));
+    const targetPattern = buildTargetWordPattern(currentQuestion.targetWord);
+    const parts = currentQuestion.english.split(new RegExp(`(${targetPattern})`, "gi"));
 
     return (
       <p className="text-2xl leading-relaxed text-gray-800">
         {parts.map((part, index) =>
-          part.toLowerCase() === currentQuestion.targetWord.toLowerCase() ? (
+          part.trim().toLowerCase() === currentQuestion.targetWord.trim().toLowerCase() ? (
             <span key={`${part}-${index}`} className="bg-cyan-100 text-cyan-600 px-2 py-1 rounded-lg font-medium">
               {part}
             </span>
@@ -601,6 +705,7 @@ export default function SentenceQuiz() {
       tone: "error",
       message: "정답을 확인해 보세요.",
       hint: `'${currentQuestion.targetWord}'의 의미는 '${currentQuestion.wordMeaning}'입니다. 다음에는 꼭 기억해 보세요!`,
+      submittedAnswer: userInput.trim(),
     });
   };
 
@@ -744,7 +849,7 @@ export default function SentenceQuiz() {
       }
 
       const feedback = (await response.json()) as GradeWordAnswerResponse;
-      setShowFeedback(mapServerFeedback(feedback));
+      setShowFeedback(mapServerFeedback(feedback, trimmedInput));
 
       if (feedback.verdict === "correct" || feedback.verdict === "correct_but_unnatural") {
         applyCorrectResult();
@@ -922,6 +1027,11 @@ export default function SentenceQuiz() {
                       )}
                       <span className="text-sm font-semibold">{showFeedback.message}</span>
                     </div>
+                    {!showFeedback.isCorrect && showFeedback.submittedAnswer !== undefined && (
+                      <p className="mt-2 text-sm text-gray-700">
+                        내 답: {showFeedback.submittedAnswer || "(빈 답안)"}
+                      </p>
+                    )}
                     {showFeedback.hint && <p className="mt-2 text-sm text-gray-600">힌트: {showFeedback.hint}</p>}
                   </div>
                 )}

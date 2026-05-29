@@ -17,31 +17,28 @@ export type GradeWordAnswerResponse = {
 };
 
 export const SYSTEM_PROMPT = [
-  "You are a highly lenient and flexible Korean vocabulary grading assistant.",
-  "Judge the user's Korean answer for the highlighted English target word using the full English sentence, full Korean sentence, target word, and meaning.",
-  "CRITICAL INSTRUCTION: You must evaluate the CORE MEANING, not the exact wording.",
-  "Be generous. Mark isCorrect=true and verdict='correct' when the user's answer has substantially the same meaning as the expected Korean expression in the sentence, even if wording, spacing, nuance, register, particle choice, minor typo, or awkward expression differs.",
-  "Differences in tense, verb endings, politeness levels, or nuanced expressions MUST be completely ignored if they convey the same fundamental meaning.",
-  "For example, treat '~할 것이다', '~할 예정이다', '~하려고 한다', '~할게', and '~할거야' as perfectly equivalent.",
-  "Treat variations like '먹었다', '먹은 상태다', and '먹어버렸다' as completely equivalent when they preserve the sentence meaning.",
-  "Treat Korean typos, spacing mistakes, particle mistakes, ending differences, archaic wording, unusual wording, and understandable malformed expressions as correct when a Korean speaker can still understand the intended meaning.",
-  "Consider Korean cultural and linguistic context. If the user's interpretation would normally be understood as close enough in Korean usage, accept it.",
-  "Prefer semantic understanding over literal surface matching.",
-  "Treat synonyms, near-synonyms, polite/casual ending differences, particles, archaic wording, and small wording differences as correct when the sentence meaning is preserved.",
-  "Treat contextual synonyms as perfectly correct if they make natural sense in the Korean sentence.",
-  "Treat natural Korean paraphrases as correct when they preserve the sentence-level meaning, even if they are not dictionary-like translations.",
-  "Accept sentence-form rewrites, softer or stronger endings, and natural Korean rephrasings when the highlighted word plays the same role in context.",
-  "If the expected answer is phrase-like but the user gives a natural sentence expression with the same intent, prefer correct over close.",
-  "If the user's answer is slightly broader or slightly less literal but still clearly points to the same intended action or meaning in context, accept it.",
-  "Do NOT use verdict='correct_but_unnatural' or verdict='close' just because a different ending, particle, tense, politeness level, or synonym was used.",
-  "Use verdict='correct_but_unnatural' when the meaning is correct but the wording is noticeably less natural than the common answer.",
-  "Use verdict='close' ONLY when the core meaning is partially missing or skewed.",
-  "Use verdict='incorrect' ONLY when the meaning is entirely wrong in the sentence.",
-  "Use verdict='empty' only when the user answer is blank.",
-  "Return only one verdict token: correct, correct_but_unnatural, close, incorrect, or empty.",
+  "You are a Korean vocabulary grading assistant.",
+  "Grade the user's Korean answer for the highlighted English target word or phrase in context.",
+  "Core principle: be strict about the target's sentence meaning, but generous about Korean wording.",
+  "Do not grade by exact string match. Do not accept a response merely because it is topically related.",
+  "Step 1: Identify the sentence sense. Use the full English sentence, Korean sentence, object, surrounding words, target word or phrase, dictionary/context meaning, canonical answer, and reference acceptable answers.",
+  "If the target has multiple senses, choose the sense required by this sentence. Reject Korean answers for a different sense even when they are valid dictionary translations of the English word.",
+  "If the target is a phrasal verb or multi-word expression, grade the whole expression as one semantic unit.",
+  "Step 2: Compare the user's Korean answer with that sentence sense. Check whether the core meaning, role, direction, object, and sentence-level effect are preserved.",
+  "Step 3: Ignore surface differences when meaning is preserved. Do not penalize Korean particles, spacing, minor typos, verb endings, tense expression, honorifics, casual/polite register, declarative/imperative form, or natural paraphrase.",
+  "Step 4: Reject wrong sense or loose association. Answers should be close or incorrect when they use another sense, translate a surrounding word instead of the target, change the object or direction, change the target's part of speech or sentence role, give a mere topic word, or omit a core meaning element.",
+  "Verdict rules:",
+  "correct: the target's sentence meaning and role are preserved, and the Korean answer is natural or clearly understandable in the blank. It may differ from the canonical answer.",
+  "correct_but_unnatural: the core meaning is right, but the Korean wording is clearly awkward or less natural. The learner still understood the target.",
+  "close: part of the target meaning is present, but a core element is missing, the sense is slightly off, or the sentence meaning changes enough that it should not count as correct.",
+  "incorrect: different sense, opposite meaning, loose association, surrounding-word translation, the English target itself, or a response that substantially changes the sentence meaning.",
+  "empty: the user answer is blank.",
+  "Return exactly one verdict token: correct, correct_but_unnatural, close, incorrect, or empty.",
 ].join(" ");
 
 export const normalize = (value: string) => value.trim().replace(/\s+/g, " ");
+
+export const containsHangul = (value: string) => /[가-힣]/.test(value);
 
 const normalizeAnswerForComparison = (value: string) =>
   normalize(value)
@@ -49,22 +46,54 @@ const normalizeAnswerForComparison = (value: string) =>
     .replace(/\s+/g, "")
     .toLowerCase();
 
-const semanticEquivalenceGroups = [
+// Legacy safety net for fallback-only grading when the LLM is unavailable.
+// Do not expand this list to cover the full vocabulary set; the primary grader
+// should use the sentence-aware LLM prompt instead of hard-coded synonym groups.
+const fallbackSemanticEquivalenceGroups = [
   ["줄여야한다", "줄이다", "줄여", "줄이고", "감소시켜야한다", "감소해야한다", "감소시키다", "감소시켜", "감소하고"],
   ["장점", "이점", "이로운점", "메리트", "좋은점", "강점"],
   ["감정", "마음", "심경", "기분"],
   ["씻어", "씻어라", "씻으세요", "씻다", "닦아", "닦아라", "깨끗하게해", "깨끗이해"],
   ["나타났다", "나타나", "왔다", "와", "도착했다", "도착해", "출현했다", "모습을드러냈다"],
+  ["우연히찾았다", "우연히찾아냈다", "우연히발견했다", "우연히발견하였다", "우연히마주쳤다", "우연히보게됐다", "찾았다", "찾아냈다", "발견했다", "발견하였다"],
+  ["그만두었다", "그만뒀다", "그만두다", "사임했다", "사임하였다", "사임하다", "물러났다", "물러나다", "퇴임했다", "퇴임하였다", "퇴임하다", "자리에서물러났다", "직을내려놓았다"],
+  ["손에들었다", "손에들고있었다", "손에쥐었다", "들고있었다", "들고있다", "잡았다", "잡고있었다", "잡고있다", "쥐었다", "쥐고있었다", "쥐고있다"],
+  ["고르세요", "골라라", "골라", "고르다", "고른다", "선택하세요", "선택해", "선택하다", "선택한다", "택하세요", "택해", "택하다"],
+  ["돌려주다", "돌려준다", "돌려줘", "돌려주세요", "돌려주십시오", "되돌려주다", "되돌려줘", "되돌려주세요", "반납하다", "반납한다", "반납해", "반납해주세요", "반납하십시오", "반환하다", "반환한다", "반환해", "반환해주세요"],
   ["예상한다", "예상된다", "전망한다", "전망된다", "기대한다", "본다", "보인다", "내다본다"],
   ["계획하고있다", "계획중이다", "계획중", "계획하고있어", "준비하고있다", "준비하고있어", "준비중이다", "준비중"],
   ["일어났니", "일어났나", "일어났어", "일어났다", "발생했니", "발생했나", "발생했어", "발생했다", "있었니", "있었나", "있었어", "있었다"],
   ["버리지마", "버리지말아라", "버리면안돼", "버리면안된다", "버려서는안돼", "버려서는안된다", "폐기하지마", "폐기하면안돼"],
+  ["인수한다", "인수한", "인수하다", "인수해", "맡는다", "맡다", "맡아", "이어받는다", "이어받다", "이어받아", "넘겨받는다", "넘겨받다"],
+  ["이사했다", "이사하였다", "이사한다", "이사하다", "이사해", "이사했다가", "옮겼다", "옮기다", "옮겨갔다", "옮겨가다"],
+  ["분명하게해줘요", "분명하게해주시오", "분명하게하다", "분명히하다", "명확하게해줘요", "명확하게해주시오", "명확하게하다", "명확히하다", "확실하게하다", "확실히하다"],
+  ["성장했다", "성장하였다", "성장한다", "성장하다", "자랐다", "자라났다", "자라다", "자람", "컸다", "크다"],
+  ["예약", "예약한것", "예약한것이", "예약된것", "예약된것이", "예약했다", "예약하였다", "예약되어있다", "예약이있다", "진료예약", "병원예약"],
+  ["제약", "제약조건", "제약사항", "제약으로작용한다", "제약이된다", "제약이다", "제한", "제한사항", "제한조건", "한계", "걸림돌"],
+  ["마감", "마감기한", "마감일", "기한", "마감시한", "마감날짜", "마지막기한"],
+  ["초대했다", "초대하였다", "초대한다", "초대하다", "초대해", "초청했다", "초청하였다", "초청하다", "불렀다", "부르다"],
+  ["열어라", "열어요", "여세요", "열어주세요", "열다", "열어", "열고", "개봉해", "개봉하다", "개봉하세요"],
+  ["참았다", "참아냈다", "참는다", "참다", "참아", "억눌렀다", "억누르다", "억제했다", "억제하다", "자제했다", "자제하다"],
+  ["확인해", "확인해주세요", "확인부탁해", "확인부탁해요", "확인바랍니다", "확인하기바랍니다", "확인하다", "확실히하다"],
+  ["듣다", "들어라", "들어요", "들으세요", "듣기바랍니다", "들어주세요", "청취하다", "청취하세요", "귀기울이다"],
+  ["나눠줬다", "나누어줬다", "나눠주었다", "나누어주었다", "나눠준다", "나눠주다", "나누어주다", "배포했다", "배포하다", "제공했다", "제공하다", "공짜로나눠줬다", "무료로나눠줬다"],
+  ["요청했다", "요청하였다", "요청한다", "요청하다", "요청해", "부탁했다", "부탁하였다", "부탁하다", "신청했다", "신청하다", "요구했다", "요구하다"],
+  ["기틀", "틀", "체계", "구조", "프레임워크", "기반", "골격"],
+  ["부응했다", "부응하였다", "부응하다", "기대에부응했다", "기대에부응하였다", "기대에맞았다", "기대에맞게부응했다", "기대에미쳤다", "기대를충족했다", "기대를충족하였다"],
+  ["저축하고있어", "저축하고있다", "저축하다", "저축해", "돈을모으고있어", "돈을모으고있다", "돈을모으다", "돈을모아", "돈모아", "자금을모으고있어", "자금을모으고있다", "자금을모으다", "자금을모아", "모으고있어", "모으고있다", "모아"],
+  ["지원했다", "지원하였다", "지원한다", "지원하다", "지원해", "지원해볼", "지원해보다", "지원할", "신청했다", "신청하였다", "신청한다", "신청하다", "신청해", "신청해볼", "응모했다", "응모하다"],
+  ["유지했다", "유지하였다", "유지한다", "유지하다", "유지하기", "지속했다", "지속하였다", "지속한다", "지속하다", "지속하기", "계속하다", "계속하기", "이어가다", "이어가기"],
+  ["달려있다", "달려있어", "달렸다", "의존한다", "의존하다", "좌우된다", "좌우되다", "영향을받는다", "영향받는다", "영향을받다", "영향받다"],
+  ["걱정마", "걱정하지마", "걱정하지말아라", "걱정하지마세요", "걱정하지않다", "걱정안하다", "걱정하다", "염려하다", "염려하지마"],
+  ["치워", "치워라", "치우다", "치운다", "치웠다", "정리해", "정리해라", "정리하다", "정돈해", "정돈하다", "제자리에두다", "제자리에놓다"],
+  ["묻다", "물어봐", "물어보다", "물어봐라", "여쭤봐", "여쭤보다", "여쭈어봐", "여쭈어보다", "질문하다", "질문해"],
+  ["상기시켜줄래", "상기시켜줘", "상기시키다", "상기시켜", "알려줄래", "알려줘", "알려주다", "기억나게해줘", "기억나게하다", "리마인드해줘"],
 ] as const;
 
 const buildSemanticVariants = (value: string) => {
   const variants = new Set([value]);
 
-  for (const group of semanticEquivalenceGroups) {
+  for (const group of fallbackSemanticEquivalenceGroups) {
     const sources = [...group].sort((left, right) => right.length - left.length);
     for (const source of sources) {
       if (!value.includes(source)) {
@@ -162,29 +191,67 @@ export const findAcceptableMatch = (userAnswer: string, acceptableAnswers: strin
   });
 };
 
+const extractMeaningAnswerCandidates = (wordMeaning: string) =>
+  wordMeaning
+    .replace(/[()]/g, ",")
+    .split(/[,;/]+/g)
+    .map(normalize)
+    .filter((answer) => answer.length >= 2 && containsHangul(answer));
+
+export const buildAnswerCandidates = (
+  correctAnswer: string,
+  acceptableAnswers: string[],
+  wordMeaning: string,
+) =>
+  Array.from(
+    new Set(
+      [correctAnswer, ...acceptableAnswers, ...extractMeaningAnswerCandidates(wordMeaning)]
+        .map(normalize)
+        .filter(Boolean),
+    ),
+  );
+
 export const buildUserPrompt = (request: GradeWordAnswerRequest) =>
   [
     "Grade this answer.",
     `English sentence: ${request.english}`,
     `Korean sentence with blank target meaning: ${request.korean}`,
-    `Highlighted English target word: ${request.targetWord}`,
-    `Dictionary meaning of the target word: ${request.wordMeaning}`,
+    `Highlighted English target word or phrase: ${request.targetWord}`,
+    `Dictionary/context meaning of the target: ${request.wordMeaning}`,
     `Reference acceptable answers: ${request.acceptableAnswers.join(", ")}`,
     `Canonical answer: ${request.correctAnswer}`,
+    `Expanded Korean reference anchors: ${buildAnswerCandidates(request.correctAnswer, request.acceptableAnswers, request.wordMeaning).join(", ")}`,
     `User answer: ${request.userAnswer}`,
+    "",
+    "Follow this grading process:",
+    "1. Identify the target's sentence sense from the full sentence, object, and surrounding context.",
+    "2. Compare the user's Korean answer against that sentence sense, not against the English word in isolation.",
+    "3. Ignore surface differences if the core meaning, role, direction, and object are preserved.",
+    "4. Use close or incorrect when the answer is merely related, uses another sense, translates a surrounding word, changes the object/direction, or omits a core meaning element.",
+    "5. Return exactly one verdict token.",
+    "",
+    "Verdict boundaries:",
+    "- correct: same sentence meaning and role; natural or clearly understandable Korean.",
+    "- correct_but_unnatural: same core meaning, but the Korean is clearly awkward or less natural.",
+    "- close: partly right, but a core element is missing or the sentence meaning shifts enough that it should not count as correct.",
+    "- incorrect: wrong sense, opposite meaning, loose association, surrounding-word translation, English target itself, or substantial meaning change.",
+    "- empty: blank answer.",
+    "",
+    "Calibration examples:",
+    "- Sentence: Please return the book by Friday. Target: return. Sentence sense: give the book back / return a borrowed item. correct: 돌려주세요, 반납해주세요, 반환해주세요, 돌려줘. incorrect: 돌아오다, 귀국하다.",
+    "- Sentence: I went to school yesterday. Target: went. correct: 갔다, 갔어, 다녀왔다. incorrect: 가다 예정, 보내다.",
+    "- Sentence: We need to zero in on the cause. Target: zero in on. correct: 집중하다, 초점을 맞추다, 집중해야 한다. incorrect: 0, 영, 없애다.",
+    "- Sentence: The director stepped down. Target: stepped down. correct: 사임했다, 물러났다, 그만두었다. incorrect: 아래로 걸어갔다, 내려섰다.",
+    "- Sentence: He held the cup. Target: held. correct: 들었다, 잡았다, 쥐었다. close: 가지고 있었다. incorrect: 개최했다, 유지했다.",
+    "- Sentence: She has a beautiful voice. Target: beautiful. correct: 아름다운, 예쁜, 고운. close: 좋은. incorrect: 큰, 시끄러운.",
+    "- Sentence: I came across an old photo album. Target: came across. correct: 우연히 발견했다, 우연히 찾았다, 마주쳤다. incorrect: 건너왔다, 화가 났다.",
+    "",
     "Return only one verdict token from this list:",
     "correct",
     "correct_but_unnatural",
     "close",
     "incorrect",
     "empty",
-    "CRITICAL: If the user's answer has the same core meaning, you MUST return 'correct'.",
-    "If the user's answer means almost the same thing in this sentence, prefer correct over close.",
-    "If the user's answer means the same thing in this sentence, accept it as correct even if it is not listed in reference acceptable answers.",
-    "Minor Korean typos, spacing errors, awkward particles, and understandable malformed expressions should usually still be accepted.",
-    "Natural Korean sentence rewrites should also be accepted when the sentence meaning is preserved.",
-    "Do not penalize for natural Korean variations, verb ending differences, tense differences, politeness differences, particles, or slight nuance differences.",
-    "Accept broad contextual synonyms as correct if they fit the sentence naturally.",
   ].join("\n");
 
 const calculateSimilarity = (source: string, target: string): number => {
@@ -220,11 +287,59 @@ export const buildFallbackFeedback = (
   correctAnswer: string,
   targetWord: string,
   wordMeaning: string,
+  acceptableAnswers: string[] = [],
 ): GradeWordAnswerResponse => {
+  if (!userAnswer) {
+    return {
+      isCorrect: false,
+      verdict: "empty",
+      message: "답을 입력해주세요.",
+      hint: `'${targetWord}'는 '${wordMeaning}'라는 뜻입니다.`,
+    };
+  }
+
+  if (!containsHangul(userAnswer)) {
+    return {
+      isCorrect: false,
+      verdict: "incorrect",
+      message: "한국어 뜻을 입력해 주세요.",
+      hint: `'${targetWord}'는 '${wordMeaning}'를 의미합니다. 정답은 '${correctAnswer}'입니다.`,
+    };
+  }
+
+  const candidates = buildAnswerCandidates(correctAnswer, acceptableAnswers, wordMeaning);
+  const normalizedUserAnswer = normalizeAnswerForComparison(userAnswer);
+  const normalizedExactMatch = candidates.find(
+    (candidate) => normalizeAnswerForComparison(candidate) === normalizedUserAnswer,
+  );
+
+  if (normalizedExactMatch) {
+    return {
+      isCorrect: true,
+      verdict: "correct",
+      message: "정답입니다!",
+      matchedAnswer: normalizedExactMatch,
+    };
+  }
+
+  // This legacy synonym pass is intentionally fallback-only. It is a safety net
+  // for known wording variants when the LLM cannot make the contextual judgment.
+  const exactMatch = findAcceptableMatch(userAnswer, candidates);
+  if (exactMatch) {
+    return {
+      isCorrect: true,
+      verdict: "correct",
+      message: "정답입니다!",
+      matchedAnswer: exactMatch,
+    };
+  }
+
   const similarity = Math.max(
     ...buildComparisonVariants(userAnswer).flatMap((userVariant) =>
-      buildComparisonVariants(correctAnswer).map((correctVariant) =>
-        calculateSimilarity(userVariant, correctVariant),
+      candidates.flatMap((candidate) =>
+        buildComparisonVariants(candidate).map((candidateVariant) =>
+          calculateSimilarity(userVariant, candidateVariant),
+        ),
       ),
     ),
   );
@@ -238,7 +353,7 @@ export const buildFallbackFeedback = (
     };
   }
 
-  if (similarity >= 0.72) {
+  if (similarity >= 0.78) {
     return {
       isCorrect: true,
       verdict: "correct_but_unnatural",
@@ -304,19 +419,20 @@ export const buildFeedbackFromVerdict = (
 
 export const extractVerdict = (value: string): GradeWordAnswerResponse["verdict"] => {
   const lowered = value.trim().toLowerCase();
-  if (lowered.includes("correct_but_unnatural")) {
-    return "correct_but_unnatural";
+  const exactVerdicts: GradeWordAnswerResponse["verdict"][] = [
+    "correct",
+    "correct_but_unnatural",
+    "close",
+    "incorrect",
+    "empty",
+  ];
+
+  if (exactVerdicts.includes(lowered as GradeWordAnswerResponse["verdict"])) {
+    return lowered as GradeWordAnswerResponse["verdict"];
   }
-  if (lowered.includes("correct")) {
-    return "correct";
-  }
-  if (lowered.includes("close")) {
-    return "close";
-  }
-  if (lowered.includes("empty")) {
-    return "empty";
-  }
-  return "incorrect";
+
+  const verdictMatch = lowered.match(/\b(correct_but_unnatural|incorrect|correct|close|empty)\b/);
+  return verdictMatch ? (verdictMatch[1] as GradeWordAnswerResponse["verdict"]) : "incorrect";
 };
 
 export const normalizeRequest = (data: Partial<GradeWordAnswerRequest>) => {

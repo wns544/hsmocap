@@ -6,9 +6,10 @@ import Groq from "groq-sdk";
 import {
   buildFallbackFeedback,
   buildFeedbackFromVerdict,
+  buildAnswerCandidates,
   buildUserPrompt,
+  containsHangul,
   extractVerdict,
-  findAcceptableMatch,
   normalize,
   normalizeRequest,
   SYSTEM_PROMPT,
@@ -281,7 +282,7 @@ const callGroqVerdict = async (request: GradeWordAnswerRequest) => {
   const completion = await client.chat.completions.create({
     model: "openai/gpt-oss-20b",
     temperature: 0,
-    max_completion_tokens: 20,
+    max_completion_tokens: 80,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserPrompt(request) },
@@ -315,11 +316,20 @@ const gradeNormalizedRequest = async (request: NormalizedRequest): Promise<Grade
     };
   }
 
-  const exactMatch =
-    acceptableAnswers.find((answer) => answer === userAnswer) ??
-    findAcceptableMatch(userAnswer, acceptableAnswers);
-  if (exactMatch) {
-    return buildExactMatchResponse(targetWord, exactMatch);
+  const answerCandidates = buildAnswerCandidates(correctAnswer, acceptableAnswers, wordMeaning);
+
+  const exactAnswerMatch = answerCandidates.find((answer) => answer === userAnswer);
+  if (exactAnswerMatch) {
+    return buildExactMatchResponse(targetWord, exactAnswerMatch);
+  }
+
+  if (!containsHangul(userAnswer)) {
+    return {
+      isCorrect: false,
+      verdict: "incorrect",
+      message: "한국어 뜻을 입력해 주세요.",
+      hint: `'${targetWord}'는 '${wordMeaning}'를 의미합니다. 정답은 '${correctAnswer}'입니다.`,
+    };
   }
 
   const llmContent = await callGroqVerdict({
@@ -333,7 +343,7 @@ const gradeNormalizedRequest = async (request: NormalizedRequest): Promise<Grade
   });
 
   if (!llmContent) {
-    return buildFallbackFeedback(userAnswer, correctAnswer, targetWord, wordMeaning);
+    return buildFallbackFeedback(userAnswer, correctAnswer, targetWord, wordMeaning, acceptableAnswers);
   }
 
   const verdict = extractVerdict(llmContent);
@@ -392,6 +402,7 @@ export const gradeWordAnswerHttpV3 = onRequest(
               normalizedRequest.correctAnswer,
               normalizedRequest.targetWord,
               normalizedRequest.wordMeaning,
+              normalizedRequest.acceptableAnswers,
             ),
           );
         return;
