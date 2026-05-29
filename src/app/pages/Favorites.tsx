@@ -15,7 +15,12 @@ import {
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
-import { formatCommunityTimestamp, listBookmarkedPosts, type CommunityPostSummary } from "../lib/community";
+import {
+  formatCommunityTimestamp,
+  getCommunityCategoryStyle,
+  listBookmarkedPosts,
+  type CommunityPostSummary,
+} from "../lib/community";
 import { listFavoriteWords, type FavoriteWordItem } from "../lib/favoriteWords";
 
 function formatAddedDate(date: Date | null) {
@@ -291,31 +296,35 @@ export default function Favorites() {
               <EmptyState text="저장한 게시글이 없습니다." />
             ) : (
               <div className="space-y-3">
-                {postPreview.map((post) => (
-                  <Link key={post.id} to={`/app/community/${post.id}`} className="block">
-                    <div className="border-b border-border pb-3 last:border-0 last:pb-0">
-                      <div className="mb-2 flex items-center gap-2">
-                        <Badge variant="outline" className="border-primary/30 text-primary">
-                          {post.categoryName}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">{formatCommunityTimestamp(post.createdAt)}</span>
+                {postPreview.map((post) => {
+                  const categoryStyle = getCommunityCategoryStyle(post.categoryId, post.categoryName);
+
+                  return (
+                    <Link key={post.id} to={`/app/community/${post.id}`} className="block">
+                      <div className="border-b border-border pb-3 last:border-0 last:pb-0">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Badge variant="outline" className={categoryStyle.badgeClassName}>
+                            {post.categoryName}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{formatCommunityTimestamp(post.createdAt)}</span>
+                        </div>
+                        <h3 className="line-clamp-1 text-base">{post.title}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{post.body}</p>
+                        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>{post.authorSnapshot.name}</span>
+                          <span className="flex items-center gap-1">
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                            {post.likeCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            {post.commentCount}
+                          </span>
+                        </div>
                       </div>
-                      <h3 className="line-clamp-1 text-base">{post.title}</h3>
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{post.body}</p>
-                      <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>{post.authorSnapshot.name}</span>
-                        <span className="flex items-center gap-1">
-                          <ThumbsUp className="h-3.5 w-3.5" />
-                          {post.likeCount}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="h-3.5 w-3.5" />
-                          {post.commentCount}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </section>

@@ -111,6 +111,71 @@ const INCREMENT_POST_VIEW_URL =
   "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/incrementPostViewHttp";
 const SHOULD_USE_LOCAL_COMMUNITY_SAMPLES = import.meta.env.DEV;
 
+export interface CommunityCategoryStyle {
+  badgeClassName: string;
+  filterActiveClassName: string;
+  filterInactiveClassName: string;
+}
+
+const DEFAULT_COMMUNITY_CATEGORY_STYLE: CommunityCategoryStyle = {
+  badgeClassName: "border-slate-200 bg-slate-50 text-slate-700",
+  filterActiveClassName: "border border-slate-700 bg-slate-700 text-white shadow-sm shadow-slate-700/20",
+  filterInactiveClassName: "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100",
+};
+
+const COMMUNITY_CATEGORY_STYLES: Record<string, CommunityCategoryStyle> = {
+  "study-tip": {
+    badgeClassName: "border-amber-200 bg-amber-50 text-amber-700",
+    filterActiveClassName: "border border-amber-500 bg-amber-500 text-white shadow-sm shadow-amber-500/20",
+    filterInactiveClassName: "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100",
+  },
+  "word-compare": {
+    badgeClassName: "border-violet-200 bg-violet-50 text-violet-700",
+    filterActiveClassName: "border border-violet-500 bg-violet-500 text-white shadow-sm shadow-violet-500/20",
+    filterInactiveClassName: "border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100",
+  },
+  "sentence-practice": {
+    badgeClassName: "border-sky-200 bg-sky-50 text-sky-700",
+    filterActiveClassName: "border border-sky-500 bg-sky-500 text-white shadow-sm shadow-sky-500/20",
+    filterInactiveClassName: "border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100",
+  },
+  "exam-prep": {
+    badgeClassName: "border-rose-200 bg-rose-50 text-rose-700",
+    filterActiveClassName: "border border-rose-500 bg-rose-500 text-white shadow-sm shadow-rose-500/20",
+    filterInactiveClassName: "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100",
+  },
+  resources: {
+    badgeClassName: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    filterActiveClassName: "border border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-500/20",
+    filterInactiveClassName: "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+  },
+  question: {
+    badgeClassName: "border-blue-200 bg-blue-50 text-blue-700",
+    filterActiveClassName: "border border-blue-500 bg-blue-500 text-white shadow-sm shadow-blue-500/20",
+    filterInactiveClassName: "border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100",
+  },
+  review: {
+    badgeClassName: "border-orange-200 bg-orange-50 text-orange-700",
+    filterActiveClassName: "border border-orange-500 bg-orange-500 text-white shadow-sm shadow-orange-500/20",
+    filterInactiveClassName: "border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100",
+  },
+};
+
+function normalizeCommunityCategoryKey(value?: string) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+export function getCommunityCategoryStyle(categoryId?: string, categoryName?: string) {
+  const categoryIdKey = normalizeCommunityCategoryKey(categoryId);
+  const categoryNameKey = normalizeCommunityCategoryKey(categoryName);
+
+  return (
+    COMMUNITY_CATEGORY_STYLES[categoryIdKey] ??
+    COMMUNITY_CATEGORY_STYLES[categoryNameKey] ??
+    DEFAULT_COMMUNITY_CATEGORY_STYLE
+  );
+}
+
 const sampleCategories: BoardCategory[] = [
   { id: "study-tip", name: "학습팁", description: "암기법, 복습 루틴, 앱 활용법을 공유하는 공간" },
   { id: "word-compare", name: "단어비교", description: "비슷한 뜻의 단어를 예문과 함께 비교하는 공간" },

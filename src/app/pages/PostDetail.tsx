@@ -33,6 +33,7 @@ import {
   deleteCommunityPost,
   deletePostComment,
   formatCommunityTimestamp,
+  getCommunityCategoryStyle,
   getCommunityPostDetail,
   incrementPostView,
   isPostBookmarkedByUser,
@@ -480,6 +481,8 @@ export default function PostDetail() {
     );
   }
 
+  const categoryStyle = getCommunityCategoryStyle(post.categoryId, post.categoryName);
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-white px-6 py-4">
@@ -555,7 +558,7 @@ export default function PostDetail() {
 
       <div className="flex-1 overflow-y-auto pb-8">
         <div className="border-b-8 border-muted bg-white p-6">
-          <Badge variant="outline" className="mb-4 border-primary/30 text-primary">
+          <Badge variant="outline" className={`mb-4 ${categoryStyle.badgeClassName}`}>
             {post.categoryName}
           </Badge>
 
