@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
-  AuthError,
+  type AuthError,
   createUserWithEmailAndPassword,
   getRedirectResult,
   signInWithEmailAndPassword,
@@ -31,20 +31,20 @@ function getAuthErrorMessage(
     case "auth/invalid-email":
       return "이메일 형식이 올바르지 않습니다.";
     case "auth/user-not-found":
-      return "가입되지 않은 이메일입니다. 먼저 회원가입을 해주세요.";
+      return "가입되지 않은 이메일입니다. 먼저 회원가입을 진행해 주세요.";
     case "auth/wrong-password":
     case "auth/invalid-credential":
       return mode === "login"
         ? "이메일 또는 비밀번호가 올바르지 않습니다."
         : "인증 정보가 올바르지 않습니다.";
     case "auth/weak-password":
-      return "비밀번호가 너무 짧습니다. 6자 이상으로 입력해 주세요.";
+      return "비밀번호가 너무 짧습니다. 6자 이상 입력해 주세요.";
     case "auth/popup-closed-by-user":
       return "Google 로그인 창이 닫혔습니다. 다시 시도해 주세요.";
     case "auth/cancelled-popup-request":
       return "Google 로그인 요청이 취소되었습니다. 다시 시도해 주세요.";
     case "auth/popup-blocked":
-      return "브라우저가 팝업을 차단했습니다. 팝업 허용 후 다시 시도해 주세요.";
+      return "브라우저가 팝업을 차단했습니다. 팝업을 허용한 뒤 다시 시도해 주세요.";
     case "auth/admin-restricted-operation":
       return "현재 프로젝트 설정에서 허용되지 않은 로그인 방식입니다.";
     case "auth/operation-not-allowed":
@@ -82,7 +82,7 @@ function isUnauthorizedDomainError(error: unknown) {
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInAsGuest } = useAuth();
+  const { signInAsGuest, signInForLocalTest, isLocalTestAuthEnabled } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -105,7 +105,7 @@ export default function Login() {
           return;
         }
 
-        console.error("Google redirect 로그인 에러:", error);
+        console.error("Google redirect login failed:", error);
         toast.error(getAuthErrorMessage(error, "google"));
       });
 
@@ -123,14 +123,14 @@ export default function Login() {
       navigate(redirectPath, { replace: true });
       return;
     } catch (error) {
-      console.error("Google 로그인 에러:", error);
+      console.error("Google login failed:", error);
 
       if (isRedirectFallbackError(error)) {
         try {
           await signInWithRedirect(auth, googleProvider);
           return;
         } catch (redirectError) {
-          console.error("Google redirect 로그인 에러:", redirectError);
+          console.error("Google redirect login failed:", redirectError);
           toast.error(getAuthErrorMessage(redirectError, "google"));
           setLoading(false);
           return;
@@ -162,7 +162,7 @@ export default function Login() {
       toast.success("이메일 로그인이 완료되었습니다.");
       navigate(redirectPath, { replace: true });
     } catch (error) {
-      console.error("이메일 로그인 에러:", error);
+      console.error("Email login failed:", error);
       toast.error(getAuthErrorMessage(error, "login"));
       setLoading(false);
     }
@@ -180,7 +180,7 @@ export default function Login() {
       toast.success("회원가입이 완료되었습니다.");
       navigate(redirectPath, { replace: true });
     } catch (error) {
-      console.error("이메일 회원가입 에러:", error);
+      console.error("Email signup failed:", error);
       toast.error(getAuthErrorMessage(error, "signup"));
       setLoading(false);
     }
@@ -193,8 +193,22 @@ export default function Login() {
       toast.success("게스트 로그인이 완료되었습니다.");
       navigate(redirectPath, { replace: true });
     } catch (error) {
-      console.error("게스트 로그인 에러:", error);
+      console.error("Guest login failed:", error);
       toast.error(getAuthErrorMessage(error, "guest"));
+      setLoading(false);
+    }
+  };
+
+  const handleLocalTestLogin = async (role: "user" | "admin") => {
+    setLoading(true);
+
+    try {
+      await signInForLocalTest(role);
+      toast.success(role === "admin" ? "로컬 관리자 계정으로 진입했습니다." : "로컬 테스트 유저로 진입했습니다.");
+      navigate(redirectPath, { replace: true });
+    } catch (error) {
+      console.error("Local test login failed:", error);
+      toast.error("로컬 테스트 로그인에 실패했습니다.");
       setLoading(false);
     }
   };
@@ -208,9 +222,7 @@ export default function Login() {
               <Mail className="w-10 h-10 text-white" strokeWidth={2.5} />
             </div>
             <h1 className="text-3xl mb-2">워디</h1>
-            <p className="text-muted-foreground text-center">
-              간편하게 로그인하고 학습을 시작하세요
-            </p>
+            <p className="text-muted-foreground text-center">간편하게 로그인하고 학습을 시작하세요</p>
           </div>
 
           <div className="space-y-3 mb-6">
@@ -265,11 +277,7 @@ export default function Login() {
               disabled={loading}
               className="w-full h-14 border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl flex items-center justify-center gap-3 shadow-sm"
             >
-              <img
-                src={GOOGLE_CHROME_LOGO_SRC}
-                alt=""
-                className="h-5 w-5 object-contain"
-              />
+              <img src={GOOGLE_CHROME_LOGO_SRC} alt="" className="h-5 w-5 object-contain" />
               <span>Google로 계속하기</span>
             </Button>
 
@@ -283,13 +291,42 @@ export default function Login() {
             </Button>
           </div>
 
+          {isLocalTestAuthEnabled ? (
+            <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-medium text-emerald-900">로컬 테스트 빠른 로그인</p>
+              <p className="mt-1 text-xs text-emerald-800">
+                개발 서버에서만 보이는 테스트 전용 로그인입니다. 일반 유저와 관리자 플로우를 바로 검증할 수 있습니다.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={() => void handleLocalTestLogin("user")}
+                  className="border-emerald-300 bg-white text-emerald-900 hover:bg-emerald-100"
+                >
+                  로컬 일반 유저
+                </Button>
+                <Button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void handleLocalTestLogin("admin")}
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                >
+                  로컬 관리자
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
             <p className="text-xs text-yellow-800 text-center">
-              Firebase 설정이 필요합니다. <br />
+              Firebase 설정이 필요합니다.
+              <br />
               <code className="text-xs bg-yellow-100 px-2 py-1 rounded mt-1 inline-block">
                 /src/app/lib/firebase.ts
-              </code>{" "}
-              파일과 <br />
+              </code>
+              <br />
               Firebase Authentication 제공업체 설정을 확인해 주세요.
             </p>
           </div>

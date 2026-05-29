@@ -11,6 +11,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { listFeedbacksForAdmin, updateFeedbackStatus } from "./feedback";
 
 const FUNCTIONS_BASE_URL = "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net";
 
@@ -181,13 +182,24 @@ function toAdminFeedbackRecord(id: string, data: DocumentData): AdminFeedbackRec
 }
 
 export async function listAdminFeedbacks(maxItems = 50): Promise<AdminFeedbackRecord[]> {
-  const snapshot = await getDocs(query(collection(db, "feedbacks"), orderBy("createdAt", "desc"), limit(maxItems)));
-  return snapshot.docs.map((item) => toAdminFeedbackRecord(item.id, item.data()));
+  const feedbacks = await listFeedbacksForAdmin(maxItems);
+  return feedbacks.map((feedback) => ({
+    id: feedback.id,
+    userId: feedback.userId,
+    authorName: feedback.authorName,
+    authorEmail: feedback.authorEmail,
+    categoryId: feedback.categoryId,
+    categoryName: feedback.categoryName,
+    title: feedback.title,
+    body: feedback.body,
+    imageUrls: feedback.imageUrls,
+    isImportant: feedback.isImportant,
+    status: feedback.status,
+    createdAt: feedback.createdAt,
+    updatedAt: feedback.updatedAt,
+  }));
 }
 
 export async function updateAdminFeedbackStatus(feedbackId: string, status: FeedbackStatus): Promise<void> {
-  await updateDoc(doc(db, "feedbacks", feedbackId), {
-    status,
-    updatedAt: serverTimestamp(),
-  });
+  await updateFeedbackStatus(feedbackId, status);
 }

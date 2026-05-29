@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { X, RotateCcw, CheckCircle, XCircle, Trophy, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp, RotateCcw, CheckCircle, XCircle, Trophy, Star } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence, PanInfo } from "motion/react";
 import { shuffleArray } from "../lib/random";
@@ -182,8 +182,8 @@ export default function FlashcardStudy() {
         </div>
 
         <div className="px-6 py-3 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/app/words")} className="rounded-full">
-            <X className="w-5 h-5" />
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="rounded-full">
+            <ChevronLeft className="w-5 h-5" />
           </Button>
           <div className="text-center flex-1">
             <p className="text-sm text-muted-foreground">Shorts 학습</p>
@@ -247,15 +247,15 @@ export default function FlashcardStudy() {
               </div>
             </motion.div>
           ) : currentCard ? (
-            <div className="w-full max-w-md relative">
+            <div className="w-full max-w-md relative py-20 sm:py-24">
               <motion.div
-                className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center"
+                className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center whitespace-nowrap"
                 animate={{ opacity: isFlipped ? 1 : 0.3 }}
               >
                 <div className="bg-green-100 rounded-full p-3 mb-2">
                   <ChevronUp className="w-6 h-6 text-green-500" />
                 </div>
-                <p className="text-xs text-green-500">위로 밀면 알고 있는 단어</p>
+                <p className="text-sm font-medium text-green-500">알고있어요</p>
               </motion.div>
 
               <motion.div
@@ -325,16 +325,16 @@ export default function FlashcardStudy() {
               </motion.div>
 
               <motion.div
-                className="absolute -bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center"
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center whitespace-nowrap"
                 animate={{ opacity: isFlipped ? 1 : 0.3 }}
               >
-                <p className="text-xs text-red-500 mb-2">아래로 밀면 다시 볼 단어</p>
+                <p className="text-sm font-medium text-red-500 mb-2">잘 모르겠어요</p>
                 <div className="bg-red-100 rounded-full p-3">
                   <ChevronDown className="w-6 h-6 text-red-500" />
                 </div>
               </motion.div>
 
-              <div className="absolute -bottom-32 left-0 right-0 flex justify-center gap-6 text-sm text-muted-foreground">
+              <div className="absolute -bottom-10 left-0 right-0 flex justify-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
                   <span>정답: {correctCount}</span>
@@ -352,7 +352,7 @@ export default function FlashcardStudy() {
       {!isComplete && (
         <div className="bg-white border-t border-border px-6 py-4">
           <p className="text-xs text-center text-muted-foreground">
-            카드를 뒤집어 뜻을 확인한 뒤, 위로 밀면 완료 처리되고 아래로 밀면 다시 출제됩니다.
+            카드를 뒤집어 뜻을 확인한 뒤, 위로 밀면 알고있어요, 아래로 밀면 잘 모르겠어요로 기록됩니다.
           </p>
         </div>
       )}

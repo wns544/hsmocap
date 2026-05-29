@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronDown, Hash, Image, Smile, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, Hash, Image, Smile, X } from "lucide-react";
 import { validateCommunityPostImages } from "../lib/communityImages";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -170,8 +170,12 @@ export default function ComposerForm({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <div className="flex items-center justify-between border-b border-border bg-white px-6 py-4">
-        <button onClick={() => navigate(-1)}>
-          <X className="h-6 w-6" />
+        <button
+          onClick={() => navigate(-1)}
+          className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted"
+          aria-label="뒤로가기"
+        >
+          <ChevronLeft className="h-6 w-6" />
         </button>
         <h1 className="text-lg">{headerTitle}</h1>
         <Button

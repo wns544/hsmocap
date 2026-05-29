@@ -313,7 +313,7 @@ export default function SentenceFavorites() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/app/favorites")}
+              onClick={() => navigate(-1)}
               className="rounded-full"
             >
               <ChevronLeft className="w-5 h-5" />

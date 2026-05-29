@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { X, RotateCcw, CheckCircle, XCircle, Trophy } from "lucide-react";
+import { ChevronLeft, RotateCcw, CheckCircle, XCircle, Trophy } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -215,10 +215,10 @@ export default function SentenceStudy() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/app/home")}
+            onClick={() => navigate(-1)}
             className="rounded-full"
           >
-            <X className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5" />
           </Button>
           <div className="text-center flex-1">
             <p className="text-sm text-muted-foreground">문장 속 단어 학습</p>

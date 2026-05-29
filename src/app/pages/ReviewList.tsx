@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { Calendar, ChevronRight, PlayCircle, RotateCcw } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, PlayCircle, RotateCcw } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../contexts/AuthContext";
@@ -158,6 +158,13 @@ export default function ReviewList() {
   return (
     <div className="min-h-screen bg-background pb-6">
       <div className="rounded-b-3xl bg-primary px-6 pb-8 pt-12 text-white">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
+          aria-label="뒤로가기"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
         <h1 className="mb-2 text-3xl">복습하기</h1>
         <p className="text-white/80">
           {selectedLevel && selectedLevel !== ALL_LEVEL

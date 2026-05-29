@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   Activity,
   AlertTriangle,
   BarChart3,
   BookOpen,
+  ChevronLeft,
   CheckCircle2,
   Database,
   FileClock,
@@ -49,6 +50,7 @@ import {
   type CommunityPostSummary,
 } from "../lib/community";
 import { listFavoriteWords, type FavoriteWordItem } from "../lib/favoriteWords";
+import { subscribeRecentUserProfiles, type UserProfileSummary } from "../lib/userProfiles";
 import { listWordLibraryItems, type WordLibraryItem } from "../lib/wordLibrary";
 import { listReviewQueueWordIds, listWordProgresses, type WordProgressRecord } from "../lib/wordProgresses";
 
@@ -136,8 +138,10 @@ function getWeakProgresses(progresses: WordProgressRecord[]) {
 }
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const { user, isAdmin, refreshAuthClaims } = useAuth();
   const [data, setData] = useState<DashboardState>(emptyDashboardState);
+  const [recentProfiles, setRecentProfiles] = useState<UserProfileSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -185,6 +189,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     void loadDashboard();
   }, [user, isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setRecentProfiles([]);
+      return;
+    }
+
+    return subscribeRecentUserProfiles(setRecentProfiles);
+  }, [isAdmin]);
 
   const runAdminAction = async (message: string, action: () => Promise<void>) => {
     setWorking(true);
@@ -337,6 +350,13 @@ export default function AdminDashboard() {
       <div className="bg-white border-b border-border px-5 sm:px-8 pt-10 pb-6">
         <div className="max-w-6xl mx-auto flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
+            <button
+              onClick={() => navigate(-1)}
+              className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 hover:bg-muted"
+              aria-label="뒤로가기"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
             <div className="flex items-center gap-2 text-sm text-primary mb-2">
               <Database className="w-4 h-4" />
               <span>Wordy Admin Console</span>
@@ -389,6 +409,36 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
+
+        <section className="bg-white border border-border rounded-lg p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-xl mb-1">최근 로그인 / 활동</h2>
+              <p className="text-sm text-muted-foreground">로그인 직후와 활동 중 상태가 바로 반영됩니다.</p>
+            </div>
+            <Users className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div className="space-y-3">
+            {recentProfiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">아직 기록된 최근 로그인 정보가 없습니다.</p>
+            ) : (
+              recentProfiles.map((profile) => (
+                <div key={profile.uid} className="rounded-lg border border-border p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="font-medium">{profile.displayName}</div>
+                      <div className="text-sm text-muted-foreground break-all">{profile.email || "이메일 없음"}</div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <div>최근 활동 {formatDateTime(profile.lastSeenAt)}</div>
+                      <div>최근 로그인 {formatDateTime(profile.lastLoginAt)}</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
 
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="w-full justify-start overflow-x-auto rounded-lg">

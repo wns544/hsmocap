@@ -167,12 +167,6 @@ export default function Favorites() {
                           <Badge variant="secondary" className="text-xs">
                             {item.level}
                           </Badge>
-                          <div className="flex items-center gap-2 flex-1">
-                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${item.mastery}%` }} />
-                            </div>
-                            <span className="text-xs text-muted-foreground">{item.mastery}%</span>
-                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">{formatAddedDate(item.addedAt)}</p>
                       </div>

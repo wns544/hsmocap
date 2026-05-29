@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import Community from "./pages/Community";
 import CreatePost from "./pages/CreatePost";
 import Feedback from "./pages/Feedback";
+import FeedbackStatus from "./pages/FeedbackStatus";
 import HelpCenter from "./pages/HelpCenter";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -105,6 +106,10 @@ export const router = createBrowserRouter([
           {
             path: "settings/feedback",
             element: <Feedback />,
+          },
+          {
+            path: "settings/feedback/history",
+            element: <FeedbackStatus />,
           },
           {
             path: "settings/help",

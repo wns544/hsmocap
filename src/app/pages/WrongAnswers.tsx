@@ -1,9 +1,10 @@
-import { Link } from "react-router";
-import { AlertCircle, ChevronRight, Trash2, PlayCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+import { AlertCircle, ChevronLeft, ChevronRight, Trash2, PlayCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 
 export default function WrongAnswers() {
+  const navigate = useNavigate();
   const wrongAnswers = [
     {
       id: 1,
@@ -50,6 +51,13 @@ export default function WrongAnswers() {
     <div className="min-h-screen bg-background pb-6">
       {/* Header */}
       <div className="bg-destructive text-white px-6 pt-12 pb-8 rounded-b-3xl">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
+          aria-label="뒤로가기"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
             <AlertCircle className="w-6 h-6" strokeWidth={2.5} />

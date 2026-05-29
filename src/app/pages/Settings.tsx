@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router";
 import { ChevronRight, Code2, HelpCircle, LogOut, MessageSquare, Shield, User } from "lucide-react";
 import { toast } from "sonner";
+
 import { useAuth } from "../contexts/AuthContext";
 
 const settingsGroups = [
@@ -17,6 +18,7 @@ const settingsGroups = [
     items: [
       { label: "도움말", icon: HelpCircle, path: "/app/settings/help", value: undefined },
       { label: "피드백 보내기", icon: MessageSquare, path: "/app/settings/feedback", value: undefined },
+      { label: "내 피드백 현황", icon: MessageSquare, path: "/app/settings/feedback/history", value: undefined },
       { label: "개인정보 보호", icon: Shield, path: "/app/settings/privacy", value: undefined },
     ],
   },
@@ -34,7 +36,7 @@ export default function Settings() {
   const handleLogout = async () => {
     try {
       await signOut();
-      toast.success("로그아웃되었습니다.");
+      toast.success("로그아웃했습니다.");
       navigate("/login");
     } catch {
       toast.error("로그아웃에 실패했습니다.");
@@ -45,7 +47,7 @@ export default function Settings() {
     <div className="min-h-screen bg-background pb-6">
       <div className="bg-white border-b border-border px-6 pt-12 pb-6">
         <h1 className="text-3xl mb-2">설정</h1>
-        <p className="text-muted-foreground">앱 환경을 원하는 방식으로 조정해보세요.</p>
+        <p className="text-muted-foreground">환경과 지원 경로를 관리해 보세요.</p>
       </div>
 
       <div className="px-6 mt-6">
@@ -95,7 +97,7 @@ export default function Settings() {
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>Wordy 2026</p>
-          <p className="mt-1">즐겁게 단어를 학습해보세요.</p>
+          <p className="mt-1">즐겁게 영어를 학습해 보세요.</p>
         </div>
       </div>
     </div>

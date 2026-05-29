@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { X, RotateCcw, CheckCircle, XCircle, Trophy, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { ChevronLeft, RotateCcw, CheckCircle, XCircle, Trophy, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence, PanInfo } from "motion/react";
 
@@ -75,7 +75,7 @@ export default function FlashcardFavorites() {
 
   // 카드 뒤집기
   const handleFlip = () => {
-    setIsFlipped(!isFlipped);
+    setIsFlipped((prev) => !prev);
   };
 
   // 다시 시작
@@ -213,10 +213,10 @@ export default function FlashcardFavorites() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/app/favorites")}
+          onClick={() => navigate(-1)}
           className="rounded-full"
         >
-          <X className="w-5 h-5" />
+          <ChevronLeft className="w-5 h-5" />
         </Button>
 
         <div className="flex items-center gap-3 flex-1 mx-4">
@@ -286,7 +286,7 @@ export default function FlashcardFavorites() {
                 }}
                 transition={{ duration: 0.5 }}
                 onClick={handleFlip}
-                className="w-full h-full cursor-pointer relative preserve-3d"
+                className="w-full h-full cursor-pointer relative"
                 style={{ transformStyle: "preserve-3d" }}
               >
                 {/* Front Side */}
@@ -294,7 +294,7 @@ export default function FlashcardFavorites() {
                   className="absolute inset-0 backface-hidden"
                   style={{
                     backfaceVisibility: "hidden",
-                    transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                    transform: "rotateY(0deg)",
                   }}
                 >
                   <div className="w-full h-full bg-white rounded-3xl shadow-2xl p-8 flex flex-col items-center justify-center border border-border relative">
@@ -327,7 +327,7 @@ export default function FlashcardFavorites() {
                   className="absolute inset-0 backface-hidden"
                   style={{
                     backfaceVisibility: "hidden",
-                    transform: isFlipped ? "rotateY(0deg)" : "rotateY(180deg)",
+                    transform: "rotateY(180deg)",
                   }}
                 >
                   <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-amber-500 rounded-3xl shadow-2xl p-8 flex flex-col items-center justify-center text-white relative">
