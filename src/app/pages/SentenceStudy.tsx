@@ -215,7 +215,7 @@ export default function SentenceStudy() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/app/words")}
             className="rounded-full"
           >
             <ChevronLeft className="w-5 h-5" />

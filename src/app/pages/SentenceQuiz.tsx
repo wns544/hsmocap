@@ -207,7 +207,7 @@ const resolveSentenceTargetWord = (english: string, targetWord: string) => {
 
 const GRADE_WORD_ANSWER_URL =
   import.meta.env.VITE_GRADE_WORD_ANSWER_URL ??
-  "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/gradeWordAnswerHttp";
+  "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/gradeWordAnswerHttpV3";
 
 const IMAGE_HINT_URL =
   import.meta.env.VITE_IMAGE_HINT_URL ??
@@ -1224,7 +1224,12 @@ export default function SentenceQuiz() {
       {!isCompleted ? (
         <>
           <div className="bg-white/80 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="rounded-full">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(reviewMode ? "/app/review" : "/app/words")}
+              className="rounded-full"
+            >
               <ChevronLeft className="w-5 h-5" />
             </Button>
 

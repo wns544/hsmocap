@@ -60,7 +60,7 @@ export default function ShortAnswerQuiz() {
       <div className="bg-white border-b border-border px-6 pt-12 pb-4">
         <div className="flex items-center justify-between mb-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/app/quiz")}
             className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center"
           >
             <ArrowLeft className="w-5 h-5" />

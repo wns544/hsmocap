@@ -159,7 +159,7 @@ export default function ReviewList() {
     <div className="min-h-screen bg-background pb-6">
       <div className="rounded-b-3xl bg-primary px-6 pb-8 pt-12 text-white">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/words")}
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
           aria-label="뒤로가기"
         >

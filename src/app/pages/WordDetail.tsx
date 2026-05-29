@@ -180,7 +180,7 @@ export default function WordDetail() {
     <div className="min-h-screen bg-background pb-6">
       <div className="bg-primary text-white px-6 pt-12 pb-6 rounded-b-3xl">
         <div className="flex items-center justify-between mb-8">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+          <button onClick={() => navigate("/app/words")} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <button

@@ -5,6 +5,18 @@ import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getAuth, type DecodedIdToken } from "firebase-admin/auth";
 import Groq from "groq-sdk";
+import {
+  buildAnswerCandidates as buildV3AnswerCandidates,
+  buildFallbackFeedback as buildV3FallbackFeedback,
+  buildFeedbackFromVerdict as buildV3FeedbackFromVerdict,
+  buildUserPrompt as buildV3UserPrompt,
+  containsHangul as containsV3Hangul,
+  extractVerdict as extractV3Verdict,
+  normalizeRequest as normalizeV3Request,
+  SYSTEM_PROMPT as V3_SYSTEM_PROMPT,
+  type GradeWordAnswerRequest as GradeWordAnswerV3Request,
+  type GradeWordAnswerResponse as GradeWordAnswerV3Response,
+} from "./wordGraderCore.js";
 
 const groqApiKey = defineSecret("GROQ_API_KEY");
 const pexelsApiKey = defineSecret("PEXELS_API_KEY");
@@ -12,6 +24,8 @@ const adminBootstrapUids = defineString("ADMIN_BOOTSTRAP_UIDS", { default: "" })
 const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://localhost:5177",
+  "http://127.0.0.1:5177",
   "https://hsmocap-d907e.web.app",
   "https://hsmocap-d907e.firebaseapp.com",
 ]);
@@ -1352,6 +1366,161 @@ export const gradeWordAnswerHttp = onRequest(
           fallbackWordMeaning,
         ),
       );
+    }
+  },
+);
+
+type NormalizedV3Request = ReturnType<typeof normalizeV3Request>;
+
+const buildV3ExactMatchResponse = (
+  targetWord: string,
+  matchedAnswer: string,
+): GradeWordAnswerV3Response => ({
+  isCorrect: true,
+  verdict: "correct",
+  message: `정답입니다! '${targetWord}'를 이 문맥에서 '${matchedAnswer}'로 표현할 수 있습니다.`,
+  matchedAnswer,
+});
+
+const callV3GroqVerdict = async (request: GradeWordAnswerV3Request) => {
+  const client = new Groq({ apiKey: groqApiKey.value() });
+  const completion = await client.chat.completions.create({
+    model: "openai/gpt-oss-20b",
+    temperature: 0,
+    max_completion_tokens: 80,
+    messages: [
+      { role: "system", content: V3_SYSTEM_PROMPT },
+      { role: "user", content: buildV3UserPrompt(request) },
+    ],
+  });
+
+  return completion.choices[0]?.message?.content;
+};
+
+const gradeV3NormalizedRequest = async (
+  request: NormalizedV3Request,
+): Promise<GradeWordAnswerV3Response> => {
+  const {
+    english,
+    korean,
+    targetWord,
+    wordMeaning,
+    acceptableAnswers,
+    correctAnswer,
+    userAnswer,
+  } = request;
+
+  if (!english || !korean || !targetWord || !wordMeaning || !correctAnswer || acceptableAnswers.length === 0) {
+    throw new Error("Quiz context is incomplete.");
+  }
+
+  if (!userAnswer) {
+    return {
+      isCorrect: false,
+      verdict: "empty",
+      message: "답을 입력해주세요.",
+      hint: `'${targetWord}'는 '${wordMeaning}'라는 뜻입니다.`,
+    };
+  }
+
+  const answerCandidates = buildV3AnswerCandidates(correctAnswer, acceptableAnswers, wordMeaning);
+  const exactAnswerMatch = answerCandidates.find((answer) => answer === userAnswer);
+  if (exactAnswerMatch) {
+    return buildV3ExactMatchResponse(targetWord, exactAnswerMatch);
+  }
+
+  if (!containsV3Hangul(userAnswer)) {
+    return {
+      isCorrect: false,
+      verdict: "incorrect",
+      message: "한국어 뜻을 입력해 주세요.",
+      hint: `'${targetWord}'는 '${wordMeaning}'를 의미합니다. 정답은 '${correctAnswer}'입니다.`,
+    };
+  }
+
+  const llmContent = await callV3GroqVerdict({
+    english,
+    korean,
+    targetWord,
+    wordMeaning,
+    acceptableAnswers,
+    correctAnswer,
+    userAnswer,
+  });
+
+  if (!llmContent) {
+    return buildV3FallbackFeedback(userAnswer, correctAnswer, targetWord, wordMeaning, acceptableAnswers);
+  }
+
+  const verdict = extractV3Verdict(llmContent);
+  return buildV3FeedbackFromVerdict(verdict, targetWord, wordMeaning, correctAnswer);
+};
+
+export const gradeWordAnswerHttpV3 = onRequest(
+  {
+    region: "asia-northeast3",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [groqApiKey],
+    cors: true,
+  },
+  async (request, response): Promise<void> => {
+    const origin = request.headers.origin;
+    const corsHeaders = createCorsHeaders(origin);
+    let normalizedRequest: NormalizedV3Request | null = null;
+
+    try {
+      if (request.method === "OPTIONS") {
+        response.status(204).set(corsHeaders).send("");
+        return;
+      }
+
+      if (request.method !== "POST") {
+        response.status(405).set(corsHeaders).json({ error: "Method not allowed." });
+        return;
+      }
+
+      if (!isAllowedOrigin(origin)) {
+        response.status(403).set(corsHeaders).json({ error: "Origin is not allowed." });
+        return;
+      }
+
+      const authHeader = request.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        response.status(401).set(corsHeaders).json({ error: "Authentication is required." });
+        return;
+      }
+
+      try {
+        await getAuth().verifyIdToken(authHeader.slice("Bearer ".length));
+      } catch {
+        response.status(401).set(corsHeaders).json({ error: "Invalid auth token." });
+        return;
+      }
+
+      normalizedRequest = normalizeV3Request(request.body as Partial<GradeWordAnswerV3Request>);
+      const feedback = await gradeV3NormalizedRequest(normalizedRequest);
+      response.status(200).set(corsHeaders).json(feedback);
+    } catch (error) {
+      console.error("gradeWordAnswerHttpV3 failed:", error);
+
+      if (normalizedRequest) {
+        response
+          .status(200)
+          .set(corsHeaders)
+          .json(
+            buildV3FallbackFeedback(
+              normalizedRequest.userAnswer,
+              normalizedRequest.correctAnswer,
+              normalizedRequest.targetWord,
+              normalizedRequest.wordMeaning,
+              normalizedRequest.acceptableAnswers,
+            ),
+          );
+        return;
+      }
+
+      response.status(500).set(corsHeaders).json({ error: "Failed to grade answer." });
     }
   },
 );

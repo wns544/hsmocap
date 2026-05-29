@@ -19,7 +19,7 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-slate-50">
       <div className="bg-slate-950 px-6 pt-12 pb-8 text-white">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/settings")}
           className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/90 transition-colors hover:bg-white/10"
         >
           <ChevronLeft className="h-4 w-4" />

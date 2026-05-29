@@ -52,7 +52,7 @@ export default function WrongAnswers() {
       {/* Header */}
       <div className="bg-destructive text-white px-6 pt-12 pb-8 rounded-b-3xl">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/review")}
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
           aria-label="뒤로가기"
         >

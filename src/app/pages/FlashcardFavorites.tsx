@@ -213,7 +213,7 @@ export default function FlashcardFavorites() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/favorites")}
           className="rounded-full"
         >
           <ChevronLeft className="w-5 h-5" />

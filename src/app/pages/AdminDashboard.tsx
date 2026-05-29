@@ -351,7 +351,7 @@ export default function AdminDashboard() {
         <div className="max-w-6xl mx-auto flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/app/settings")}
               className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 hover:bg-muted"
               aria-label="뒤로가기"
             >

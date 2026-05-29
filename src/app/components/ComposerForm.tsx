@@ -171,7 +171,7 @@ export default function ComposerForm({
     <div className="flex min-h-screen flex-col bg-background">
       <div className="flex items-center justify-between border-b border-border bg-white px-6 py-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/community")}
           className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted"
           aria-label="뒤로가기"
         >

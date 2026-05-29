@@ -61,7 +61,7 @@ export default function FeedbackStatus() {
     <div className="min-h-screen bg-background pb-6">
       <div className="bg-white border-b border-border px-6 pt-12 pb-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/settings/feedback")}
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-muted/40"
         >
           <ArrowLeft className="h-5 w-5" />

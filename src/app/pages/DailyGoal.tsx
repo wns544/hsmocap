@@ -33,7 +33,7 @@ export default function DailyGoal() {
     <div className="min-h-screen bg-background pb-6">
       <div className="bg-white border-b border-border px-6 pt-12 pb-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/settings")}
           className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-muted/40 hover:bg-muted"
           aria-label="뒤로가기"
         >
@@ -71,7 +71,7 @@ export default function DailyGoal() {
           );
         })}
 
-        <Button onClick={() => navigate(-1)} className="mt-6 h-14 w-full rounded-xl">
+        <Button onClick={() => navigate("/app/settings")} className="mt-6 h-14 w-full rounded-xl">
           저장하고 돌아가기
         </Button>
       </div>

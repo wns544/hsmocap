@@ -182,7 +182,7 @@ export default function FlashcardStudy() {
         </div>
 
         <div className="px-6 py-3 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="rounded-full">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/app/words")} className="rounded-full">
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <div className="text-center flex-1">

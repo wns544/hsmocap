@@ -457,7 +457,7 @@ export default function PostDetail() {
     return (
       <div className="min-h-screen bg-background">
         <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-white px-6 py-4">
-          <button onClick={() => navigate(-1)}>
+          <button onClick={() => navigate("/app/community")}>
             <ChevronLeft className="h-6 w-6" />
           </button>
           <div className="text-sm text-muted-foreground">게시글을 불러오는 중입니다.</div>
@@ -471,7 +471,7 @@ export default function PostDetail() {
     return (
       <div className="min-h-screen bg-background">
         <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-white px-6 py-4">
-          <button onClick={() => navigate(-1)}>
+          <button onClick={() => navigate("/app/community")}>
             <ChevronLeft className="h-6 w-6" />
           </button>
           <div className="text-sm text-muted-foreground">게시글을 찾을 수 없습니다.</div>
@@ -486,7 +486,7 @@ export default function PostDetail() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-white px-6 py-4">
-        <button onClick={() => navigate(-1)}>
+        <button onClick={() => navigate("/app/community")}>
           <ChevronLeft className="h-6 w-6" />
         </button>
         <div className="flex items-center gap-2">

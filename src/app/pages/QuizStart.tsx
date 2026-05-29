@@ -37,7 +37,7 @@ export default function QuizStart() {
       {/* Header */}
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/home")}
           className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
