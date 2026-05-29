@@ -1,10 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, Bookmark, ChevronRight, MessageCircle, Search, Star, ThumbsUp, Zap } from "lucide-react";
+import {
+  BookOpen,
+  Bookmark,
+  ChevronRight,
+  FolderOpen,
+  Grid2X2,
+  MessageCircle,
+  Search,
+  Star,
+  ThumbsUp,
+  Zap,
+} from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
-import { formatCommunityTimestamp, listBookmarkedPosts, type CommunityPostSummary } from "../lib/community";
+import {
+  formatCommunityTimestamp,
+  getCommunityCategoryStyle,
+  listBookmarkedPosts,
+  type CommunityPostSummary,
+} from "../lib/community";
 import { listFavoriteWords, type FavoriteWordItem } from "../lib/favoriteWords";
 
 function formatAddedDate(date: Date | null) {
@@ -15,6 +31,22 @@ function formatAddedDate(date: Date | null) {
     month: "long",
     day: "numeric",
   })} 추가`;
+}
+
+function getWordSearchText(item: FavoriteWordItem) {
+  return `${item.word} ${item.meaning} ${item.level}`.toLowerCase();
+}
+
+function getPostSearchText(post: CommunityPostSummary) {
+  return `${post.title} ${post.body} ${post.authorSnapshot.name} ${post.categoryName}`.toLowerCase();
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+      {text}
+    </div>
+  );
 }
 
 export default function Favorites() {
@@ -60,182 +92,268 @@ export default function Favorites() {
     };
   }, [user]);
 
-  const filteredFavorites = favoriteWords.filter(
-    (item) =>
-      item.word.toLowerCase().includes(searchQuery.toLowerCase()) || item.meaning.includes(searchQuery),
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
+  const filteredFavoriteWords = useMemo(() => {
+    if (!normalizedSearch) return favoriteWords;
+    return favoriteWords.filter((item) => getWordSearchText(item).includes(normalizedSearch));
+  }, [favoriteWords, normalizedSearch]);
+
+  const filteredSavedPosts = useMemo(() => {
+    if (!normalizedSearch) return savedPosts;
+    return savedPosts.filter((post) => getPostSearchText(post).includes(normalizedSearch));
+  }, [normalizedSearch, savedPosts]);
+
+  const reviewPriorityWords = useMemo(
+    () =>
+      filteredFavoriteWords
+        .filter((item) => item.mastery < 70)
+        .sort((left, right) => left.mastery - right.mastery),
+    [filteredFavoriteWords],
   );
+
+  const wordPreview = filteredFavoriteWords.slice(0, 3);
+  const sentencePreview = filteredFavoriteWords.slice(0, 3);
+  const postPreview = filteredSavedPosts.slice(0, 2);
+  const collectionItems = [
+    {
+      title: "플래시카드",
+      description: `${favoriteWords.length}개`,
+      icon: Zap,
+      to: "/app/flashcard-favorites",
+    },
+    {
+      title: "문장학습",
+      description: `${favoriteWords.length}개`,
+      icon: BookOpen,
+      to: "/app/sentence-favorites",
+    },
+    {
+      title: "복습우선",
+      description: `${reviewPriorityWords.length}개`,
+      icon: Star,
+      to: "/app/review",
+    },
+    {
+      title: "게시글",
+      description: `${savedPosts.length}개`,
+      icon: Bookmark,
+      to: "/app/community",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background pb-6">
-      <div className="bg-yellow-500 text-white px-6 pt-12 pb-8 rounded-b-3xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-            <Star className="w-6 h-6 fill-white" strokeWidth={2.5} />
+      <div className="bg-yellow-500 px-6 pb-8 pt-12 text-white">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
+            <Star className="h-6 w-6 fill-white" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-3xl mb-1">즐겨찾기</h1>
-            <p className="text-white/80">자주 보는 단어와 저장한 게시글을 모아보세요</p>
+            <h1 className="mb-1 text-3xl">즐겨찾기</h1>
+            <p className="text-white/80">단어, 문장, 게시글, 컬렉션을 한눈에 모아보세요</p>
           </div>
         </div>
 
-        <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl mb-1">{favoriteWords.length}</div>
-              <div className="text-sm text-white/80">즐겨찾기한 단어</div>
-            </div>
-            <div>
-              <div className="text-2xl mb-1">{savedPosts.length}</div>
-              <div className="text-sm text-white/80">저장한 게시글</div>
-            </div>
+        <div className="mt-6 grid grid-cols-4 gap-2 rounded-2xl bg-white/10 p-3 text-center backdrop-blur-sm">
+          <div>
+            <div className="text-xl">{favoriteWords.length}</div>
+            <div className="text-xs text-white/80">단어</div>
+          </div>
+          <div>
+            <div className="text-xl">{favoriteWords.length}</div>
+            <div className="text-xs text-white/80">문장</div>
+          </div>
+          <div>
+            <div className="text-xl">{savedPosts.length}</div>
+            <div className="text-xs text-white/80">게시글</div>
+          </div>
+          <div>
+            <div className="text-xl">{collectionItems.length}</div>
+            <div className="text-xs text-white/80">컬렉션</div>
           </div>
         </div>
       </div>
 
-      <div className="px-6 mt-6">
-        {favoriteWords.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <Link to="/app/flashcard-favorites">
-              <div className="bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-2xl p-5 active:scale-[0.98] transition-transform shadow-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <Zap className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-semibold">플래시카드</h3>
-                </div>
-                <p className="text-sm text-white/80">즐겨찾기 단어 학습</p>
-              </div>
-            </Link>
-
-            <Link to="/app/sentence-favorites">
-              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-2xl p-5 active:scale-[0.98] transition-transform shadow-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <BookOpen className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-semibold">문장 학습</h3>
-                </div>
-                <p className="text-sm text-white/80">문장으로 익히기</p>
-              </div>
-            </Link>
-          </div>
-        )}
-
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+      <div className="px-6 pt-6">
+        <div className="relative mb-5">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
             placeholder="즐겨찾기에서 검색..."
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="pl-12 h-12 rounded-xl bg-white border-border"
+            className="h-12 rounded-xl border-border bg-white pl-12"
           />
         </div>
 
-        {filteredFavorites.length === 0 ? (
-          <div className="text-center py-12">
-            <Star className="w-16 h-16 text-muted mx-auto mb-4" />
-            <h3 className="text-xl mb-2">
-              {isLoadingWords ? "즐겨찾기를 불러오는 중입니다" : "즐겨찾기가 비어 있습니다"}
-            </h3>
-            <p className="text-muted-foreground">
-              {searchQuery ? "검색 결과가 없습니다" : "단어 상세 화면에서 별표를 눌러 추가해보세요"}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground">{filteredFavorites.length}개의 단어</p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <section className="rounded-2xl border border-border bg-white p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <Star className="h-5 w-5 fill-current" />
+                </div>
+                <div>
+                  <h2 className="text-lg">단어</h2>
+                  <p className="text-xs text-muted-foreground">{filteredFavoriteWords.length}개</p>
+                </div>
+              </div>
+              <Link to="/app/flashcard-favorites" className="text-primary">
+                <ChevronRight className="h-5 w-5" />
+              </Link>
             </div>
 
-            <div className="space-y-3">
-              {filteredFavorites.map((item) => (
-                <Link
-                  key={item.id}
-                  to={`/app/words/${encodeURIComponent(item.id)}?word=${encodeURIComponent(item.word)}`}
-                  state={{ word: { ...item, isFavorite: true } }}
-                >
-                  <div className="bg-white rounded-2xl p-5 border border-border active:scale-[0.98] transition-transform">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
-                          <h3 className="text-lg">{item.word}</h3>
+            {wordPreview.length === 0 ? (
+              <EmptyState text={isLoadingWords ? "불러오는 중입니다." : "저장한 단어가 없습니다."} />
+            ) : (
+              <div className="space-y-3">
+                {wordPreview.map((item) => (
+                  <Link
+                    key={item.id}
+                    to={`/app/words/${encodeURIComponent(item.id)}?word=${encodeURIComponent(item.word)}`}
+                    state={{ word: { ...item, isFavorite: true } }}
+                    className="block"
+                  >
+                    <div className="border-b border-border pb-3 last:border-0 last:pb-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-base">{item.word}</div>
+                          <div className="truncate text-sm text-muted-foreground">{item.meaning}</div>
                         </div>
-                        <p className="text-muted-foreground mb-3">{item.meaning}</p>
-                        <div className="flex items-center gap-3">
-                          <Badge variant="secondary" className="text-xs">
-                            {item.level}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">{formatAddedDate(item.addedAt)}</p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground ml-2 flex-shrink-0" />
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
-
-        <div className="mt-8 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Bookmark className="w-5 h-5 text-primary fill-primary/20" />
-            <h3 className="text-xl">게시글</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">커뮤니티에서 저장한 게시글만 모아서 볼 수 있어요.</p>
-        </div>
-
-        {savedPosts.length === 0 ? (
-          <div className="bg-white rounded-2xl p-5 border border-border text-sm text-muted-foreground">
-            아직 저장한 게시글이 없습니다.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {savedPosts.map((post) => (
-              <Link key={post.id} to={`/app/community/${post.id}`}>
-                <div className="bg-white rounded-2xl p-5 border border-border active:scale-[0.98] transition-transform">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-primary border-primary/30">
-                          {post.categoryName}
+                        <Badge variant="secondary" className="shrink-0 text-xs">
+                          {item.level}
                         </Badge>
                       </div>
-                      <h4 className="text-base mb-2">{post.title}</h4>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.body}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>{post.authorSnapshot.name}</span>
-                        <div className="flex items-center gap-1">
-                          <ThumbsUp className="w-3.5 h-3.5" />
-                          <span>{post.likeCount}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>{post.commentCount}</span>
-                        </div>
-                        <span>{formatCommunityTimestamp(post.createdAt)}</span>
-                      </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
 
-        {favoriteWords.length > 0 && (
-          <div className="mt-6 bg-accent rounded-2xl p-5 border border-border">
-            <h3 className="mb-3">즐겨찾기 활용 팁</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>자주 헷갈리는 단어를 즐겨찾기에 추가하세요</li>
-              <li>중요한 단어는 매일 한 번씩 다시 복습해보세요</li>
-              <li>저장한 게시글도 함께 보며 학습 감각을 유지해보세요</li>
-            </ul>
-          </div>
-        )}
+          <section className="rounded-2xl border border-border bg-white p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg">문장</h2>
+                  <p className="text-xs text-muted-foreground">{sentencePreview.length}개 후보</p>
+                </div>
+              </div>
+              <Link to="/app/sentence-favorites" className="text-primary">
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+            </div>
+
+            {sentencePreview.length === 0 ? (
+              <EmptyState text="문장 학습 후보가 없습니다." />
+            ) : (
+              <div className="space-y-3">
+                {sentencePreview.map((item) => (
+                  <Link key={item.id} to="/app/sentence-favorites" className="block">
+                    <div className="border-b border-border pb-3 last:border-0 last:pb-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-base">{item.word}</div>
+                          <div className="truncate text-sm text-muted-foreground">{item.meaning}</div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">{formatAddedDate(item.addedAt)}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-border bg-white p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                  <Bookmark className="h-5 w-5 fill-current" />
+                </div>
+                <div>
+                  <h2 className="text-lg">게시글</h2>
+                  <p className="text-xs text-muted-foreground">{filteredSavedPosts.length}개</p>
+                </div>
+              </div>
+              <Link to="/app/community" className="text-primary">
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+            </div>
+
+            {postPreview.length === 0 ? (
+              <EmptyState text="저장한 게시글이 없습니다." />
+            ) : (
+              <div className="space-y-3">
+                {postPreview.map((post) => {
+                  const categoryStyle = getCommunityCategoryStyle(post.categoryId, post.categoryName);
+
+                  return (
+                    <Link key={post.id} to={`/app/community/${post.id}`} className="block">
+                      <div className="border-b border-border pb-3 last:border-0 last:pb-0">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Badge variant="outline" className={categoryStyle.badgeClassName}>
+                            {post.categoryName}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{formatCommunityTimestamp(post.createdAt)}</span>
+                        </div>
+                        <h3 className="line-clamp-1 text-base">{post.title}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{post.body}</p>
+                        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>{post.authorSnapshot.name}</span>
+                          <span className="flex items-center gap-1">
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                            {post.likeCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            {post.commentCount}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-border bg-white p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                  <Grid2X2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg">컬렉션</h2>
+                  <p className="text-xs text-muted-foreground">{collectionItems.length}개</p>
+                </div>
+              </div>
+              <FolderOpen className="h-5 w-5 text-primary" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {collectionItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Link key={item.title} to={item.to} className="rounded-xl border border-border p-3 active:scale-[0.98]">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-primary">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="text-sm">{item.title}</div>
+                    <div className="text-xs text-muted-foreground">{item.description}</div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

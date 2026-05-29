@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import {
   formatCommunityTimestamp,
+  getCommunityCategoryStyle,
   listBoardCategories,
   listCommunityPosts,
   type BoardCategory,
@@ -114,20 +115,24 @@ export default function Community() {
               전체
             </button>
 
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => setSelectedCategoryId(category.id)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm transition-colors ${
-                  selectedCategoryId === category.id
-                    ? "bg-primary text-white"
-                    : "border border-border bg-white text-foreground"
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
+            {categories.map((category) => {
+              const categoryStyle = getCommunityCategoryStyle(category.id, category.name);
+
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => setSelectedCategoryId(category.id)}
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm transition-colors ${
+                    selectedCategoryId === category.id
+                      ? categoryStyle.filterActiveClassName
+                      : categoryStyle.filterInactiveClassName
+                  }`}
+                >
+                  {category.name}
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -152,6 +157,7 @@ export default function Community() {
             <div className="space-y-4">
               {filteredPosts.map((post) => {
                 const thumbnailUrl = post.imageUrls[0];
+                const categoryStyle = getCommunityCategoryStyle(post.categoryId, post.categoryName);
 
                 return (
                   <Link key={post.id} to={`/app/community/${post.id}`}>
@@ -160,7 +166,7 @@ export default function Community() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm">{post.authorSnapshot.name}</span>
-                            <Badge variant="outline" className="border-primary/20 text-primary">
+                            <Badge variant="outline" className={categoryStyle.badgeClassName}>
                               {post.categoryName}
                             </Badge>
                           </div>
