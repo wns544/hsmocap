@@ -95,6 +95,8 @@ export default function Profile() {
 
   const levelTheme = getProfileLevelTheme(progressSummary.level);
   const LevelIcon = levelTheme.icon;
+  const visibleStudyLevels = studyLevels.slice(0, 4);
+  const displayedStudyLevel = visibleStudyLevels.includes(selectedStudyLevel) ? selectedStudyLevel : visibleStudyLevels[0];
   const levelProgress = progressSummary.nextLevelXp > 0
     ? (progressSummary.currentLevelXp / progressSummary.nextLevelXp) * 100
     : 0;
@@ -137,6 +139,16 @@ export default function Profile() {
       setNameInput(resolvedNextName);
     });
   }, [user?.displayName, user?.email]);
+
+  useEffect(() => {
+    if (visibleStudyLevels.includes(selectedStudyLevel)) {
+      return;
+    }
+
+    const fallbackLevel = visibleStudyLevels[0];
+    setSelectedStudyLevel(fallbackLevel);
+    setStoredStudyLevel(fallbackLevel);
+  }, [selectedStudyLevel, visibleStudyLevels]);
 
   const handleLogout = async () => {
     try {
@@ -214,7 +226,7 @@ export default function Profile() {
               {progressSummary.currentLevelXp} / {progressSummary.nextLevelXp} XP
             </span>
           </div>
-          <Progress value={levelProgress} className="h-2 bg-white/20" />
+          <Progress value={levelProgress} className="h-2 bg-white/20 [&_[data-slot=progress-indicator]]:bg-[#D8C3A5]" />
           <p className="text-xs text-white/60 mt-2">
             {`레벨 ${progressSummary.level + 1}까지 ${progressSummary.xpToNextLevel}XP 남음`}
           </p>
@@ -243,11 +255,11 @@ export default function Profile() {
               </p>
             </div>
             <Badge variant="secondary" className="bg-primary/10 text-primary">
-              {selectedStudyLevel}
+              {displayedStudyLevel}
             </Badge>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {studyLevels.map((level) => (
+            {visibleStudyLevels.map((level) => (
               <Button
                 key={level}
                 type="button"

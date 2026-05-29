@@ -1,28 +1,39 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, RotateCcw, CheckCircle, XCircle, Trophy, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { motion, AnimatePresence, type PanInfo } from "motion/react";
 import { Button } from "../components/ui/button";
-import { motion, AnimatePresence, PanInfo } from "motion/react";
+import { useAuth } from "../contexts/AuthContext";
+import { listFavoriteWords, type FavoriteWordItem } from "../lib/favoriteWords";
+import { words as wordDetails } from "../lib/words";
 
 interface Card {
-  id: number;
+  id: string;
   word: string;
   meaning: string;
   example?: string;
-  isFavorite?: boolean;
 }
 
-// 즐겨찾기 단어들만
-const favoriteCards: Card[] = [
-  { id: 1, word: "Serendipity", meaning: "뜻밖의 행운", example: "Finding that book was pure serendipity.", isFavorite: true },
-  { id: 2, word: "Eloquent", meaning: "웅변의, 설득력 있는", example: "His speech was eloquent.", isFavorite: true },
-  { id: 3, word: "Compassion", meaning: "연민, 동정심", example: "He showed great compassion.", isFavorite: true },
-  { id: 4, word: "Harmonious", meaning: "조화로운", example: "They have a harmonious relationship.", isFavorite: true },
-  { id: 5, word: "Abundant", meaning: "풍부한", example: "The garden has abundant flowers.", isFavorite: true },
-];
+function shuffleCards(cards: Card[]) {
+  return [...cards].sort(() => Math.random() - 0.5);
+}
+
+function toFlashcard(word: FavoriteWordItem): Card {
+  const detail = wordDetails.find((item) => item.word.toLowerCase() === word.word.toLowerCase());
+
+  return {
+    id: word.id,
+    word: word.word,
+    meaning: word.meaning,
+    example: detail?.examples[0]?.en,
+  };
+}
 
 export default function FlashcardFavorites() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [favoriteCards, setFavoriteCards] = useState<Card[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [remainingCards, setRemainingCards] = useState<Card[]>([]);
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -30,97 +41,142 @@ export default function FlashcardFavorites() {
   const [wrongCount, setWrongCount] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [exitDirection, setExitDirection] = useState<"up" | "down" | null>(null);
-  const [favorites, setFavorites] = useState<Set<number>>(new Set(favoriteCards.map(c => c.id)));
 
-  // 카드 셔플 함수
-  const shuffleCards = (cards: Card[]) => {
-    return [...cards].sort(() => Math.random() - 0.5);
-  };
-
-  // 초기화
   useEffect(() => {
-    const shuffled = shuffleCards(favoriteCards);
-    setRemainingCards(shuffled);
-    setCurrentCard(shuffled[0]);
-  }, []);
+    let isMounted = true;
 
-  // 다음 카드로 이동
-  const handleNext = (direction: "up" | "down") => {
-    setExitDirection(direction);
-    
-    setTimeout(() => {
-      if (remainingCards.length > 1) {
-        const newRemaining = remainingCards.slice(1);
-        setRemainingCards(newRemaining);
-        setCurrentCard(newRemaining[0]);
-        setIsFlipped(false);
-        setExitDirection(null);
-      } else {
-        setIsComplete(true);
+    const loadFavoriteCards = async () => {
+      if (!user) {
+        if (!isMounted) return;
+        setFavoriteCards([]);
+        setRemainingCards([]);
+        setCurrentCard(null);
+        setIsLoading(false);
+        return;
       }
-    }, 300);
-  };
 
-  // 알아요 (위로 스와이프)
-  const handleKnow = () => {
-    setCorrectCount(correctCount + 1);
-    handleNext("up");
-  };
+      setIsLoading(true);
 
-  // 모르겠어요 (아래로 스와이프)
-  const handleDontKnow = () => {
-    setWrongCount(wrongCount + 1);
-    handleNext("down");
-  };
+      try {
+        const items = await listFavoriteWords(user.uid);
+        if (!isMounted) return;
 
-  // 카드 뒤집기
+        const cards = items.map(toFlashcard);
+        const shuffled = shuffleCards(cards);
+
+        setFavoriteCards(cards);
+        setRemainingCards(shuffled);
+        setCurrentCard(shuffled[0] ?? null);
+        setCorrectCount(0);
+        setWrongCount(0);
+        setIsComplete(false);
+        setIsFlipped(false);
+      } catch (error) {
+        console.error("즐겨찾기 플래시카드를 불러오지 못했습니다.", error);
+        if (!isMounted) return;
+        setFavoriteCards([]);
+        setRemainingCards([]);
+        setCurrentCard(null);
+      } finally {
+        if (!isMounted) return;
+        setIsLoading(false);
+      }
+    };
+
+    void loadFavoriteCards();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const totalCards = favoriteCards.length;
+  const completedCards = correctCount + wrongCount;
+  const progress = totalCards > 0 ? (completedCards / totalCards) * 100 : 0;
+  const hasCards = totalCards > 0;
+
   const handleFlip = () => {
     setIsFlipped((prev) => !prev);
   };
 
-  // 다시 시작
+  const handleNext = (direction: "up" | "down") => {
+    setExitDirection(direction);
+
+    window.setTimeout(() => {
+      if (remainingCards.length > 1) {
+        const newRemaining = remainingCards.slice(1);
+        setRemainingCards(newRemaining);
+        setCurrentCard(newRemaining[0] ?? null);
+        setIsFlipped(false);
+        setExitDirection(null);
+      } else {
+        setIsComplete(true);
+        setExitDirection(null);
+      }
+    }, 300);
+  };
+
+  const handleKnow = () => {
+    setCorrectCount((prev) => prev + 1);
+    handleNext("up");
+  };
+
+  const handleDontKnow = () => {
+    setWrongCount((prev) => prev + 1);
+    handleNext("down");
+  };
+
   const handleRestart = () => {
     const shuffled = shuffleCards(favoriteCards);
     setRemainingCards(shuffled);
-    setCurrentCard(shuffled[0]);
+    setCurrentCard(shuffled[0] ?? null);
     setCorrectCount(0);
     setWrongCount(0);
     setIsComplete(false);
     setIsFlipped(false);
+    setExitDirection(null);
   };
 
-  // 드래그 엔드 핸들러
-  const handleDragEnd = (event: any, info: PanInfo) => {
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 50;
-    
+
     if (info.offset.y < -threshold) {
-      // 위로 스와이프 - 알아요
       handleKnow();
     } else if (info.offset.y > threshold) {
-      // 아래로 스와이프 - 모르겠어요
       handleDontKnow();
     }
   };
 
-  // 즐겨찾기 토글
-  const toggleFavorite = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 카드 뒤집기 방지
-    if (!currentCard) return;
-    
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(currentCard.id)) {
-        newFavorites.delete(currentCard.id);
-      } else {
-        newFavorites.add(currentCard.id);
-      }
-      return newFavorites;
-    });
-  };
+  const statsSummary = useMemo(
+    () => (totalCards > 0 ? Math.round((correctCount / totalCards) * 100) : 0),
+    [correctCount, totalCards],
+  );
 
-  const totalCards = favoriteCards.length;
-  const completedCards = correctCount + wrongCount;
-  const progress = (completedCards / totalCards) * 100;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-lg text-gray-700 mb-2">즐겨찾기 단어를 불러오는 중입니다.</p>
+          <p className="text-sm text-gray-500">플래시카드 학습을 준비하고 있어요.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasCards) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="w-full max-w-md text-center bg-white rounded-3xl shadow-xl p-8 border border-border">
+          <Star className="w-14 h-14 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-2xl text-gray-800 mb-2">즐겨찾기 단어가 없습니다</h1>
+          <p className="text-sm text-gray-500 mb-6">단어 상세 화면에서 별표를 눌러 즐겨찾기를 추가해 주세요.</p>
+          <Button onClick={() => navigate("/app/favorites")} className="rounded-2xl">
+            즐겨찾기로 돌아가기
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isComplete) {
     return (
@@ -130,22 +186,15 @@ export default function FlashcardFavorites() {
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-md"
         >
-          {/* Trophy */}
           <div className="flex justify-center mb-8">
             <div className="bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full p-8 shadow-2xl">
               <Trophy className="w-20 h-20 text-white" />
             </div>
           </div>
 
-          {/* Title */}
-          <h1 className="text-4xl font-bold text-center mb-4 text-gray-800">
-            즐겨찾기 학습 완료!
-          </h1>
-          <p className="text-center text-gray-600 mb-8">
-            ⭐ 즐겨찾기 단어를 모두 학습했습니다!
-          </p>
+          <h1 className="text-4xl font-bold text-center mb-4 text-gray-800">즐겨찾기 학습 완료!</h1>
+          <p className="text-center text-gray-600 mb-8">즐겨찾기에 담은 단어를 모두 학습했어요.</p>
 
-          {/* Stats Card */}
           <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="text-center">
@@ -165,24 +214,19 @@ export default function FlashcardFavorites() {
             <div className="border-t border-gray-200 pt-6">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-gray-700 font-semibold">숙련도</span>
-                <span className="text-2xl font-bold text-green-600">
-                  {totalCards > 0 ? Math.round((correctCount / totalCards) * 100) : 0}%
-                </span>
+                <span className="text-2xl font-bold text-green-600">{statsSummary}%</span>
               </div>
               <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-green-400 to-emerald-500"
                   initial={{ width: 0 }}
-                  animate={{ 
-                    width: `${totalCards > 0 ? (correctCount / totalCards) * 100 : 0}%` 
-                  }}
+                  animate={{ width: `${statsSummary}%` }}
                   transition={{ duration: 1, delay: 0.5 }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-4">
             <Button
               onClick={handleRestart}
@@ -208,7 +252,6 @@ export default function FlashcardFavorites() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-border">
         <Button
           variant="ghost"
@@ -221,9 +264,7 @@ export default function FlashcardFavorites() {
 
         <div className="flex items-center gap-3 flex-1 mx-4">
           <div className="bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full px-3 py-1">
-            <span className="text-white text-sm font-bold">
-              ⭐ {completedCards}/{totalCards}
-            </span>
+            <span className="text-white text-sm font-bold">⭐ {completedCards}/{totalCards}</span>
           </div>
           <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
             <motion.div
@@ -245,9 +286,7 @@ export default function FlashcardFavorites() {
         </Button>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-        {/* Instructions */}
         <div className="mb-8 text-center">
           <p className="text-gray-600 mb-2">카드를 탭해서 뒤집거나</p>
           <div className="flex items-center justify-center gap-4 text-sm">
@@ -262,7 +301,6 @@ export default function FlashcardFavorites() {
           </div>
         </div>
 
-        {/* Flashcard */}
         <div className="w-full max-w-md h-96 perspective-1000 relative">
           <AnimatePresence mode="wait">
             {currentCard && !exitDirection && (
@@ -273,23 +311,22 @@ export default function FlashcardFavorites() {
                 dragElastic={0.7}
                 onDragEnd={handleDragEnd}
                 initial={{ opacity: 0, scale: 0.8, rotateY: 0 }}
-                animate={{ 
-                  opacity: 1, 
+                animate={{
+                  opacity: 1,
                   scale: 1,
-                  rotateY: isFlipped ? 180 : 0
+                  rotateY: isFlipped ? 180 : 0,
                 }}
                 exit={{
                   opacity: 0,
                   y: exitDirection === "up" ? -300 : 300,
                   scale: 0.8,
-                  transition: { duration: 0.3 }
+                  transition: { duration: 0.3 },
                 }}
                 transition={{ duration: 0.5 }}
                 onClick={handleFlip}
                 className="w-full h-full cursor-pointer relative"
                 style={{ transformStyle: "preserve-3d" }}
               >
-                {/* Front Side */}
                 <div
                   className="absolute inset-0 backface-hidden"
                   style={{
@@ -298,31 +335,18 @@ export default function FlashcardFavorites() {
                   }}
                 >
                   <div className="w-full h-full bg-white rounded-3xl shadow-2xl p-8 flex flex-col items-center justify-center border border-border relative">
-                    {/* 즐겨찾기 버튼 */}
-                    <button
-                      onClick={toggleFavorite}
-                      className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors z-10"
-                    >
-                      <Star
-                        className={`w-6 h-6 ${
-                          favorites.has(currentCard.id)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-gray-400"
-                        }`}
-                      />
-                    </button>
+                    <div className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 z-10">
+                      <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
+                    </div>
 
                     <div className="mb-6 px-4 py-2 bg-yellow-100 rounded-full">
                       <span className="text-xs text-yellow-800 font-semibold">앞면</span>
                     </div>
-                    <h2 className="text-5xl font-bold text-gray-800 mb-4 text-center">
-                      {currentCard.word}
-                    </h2>
+                    <h2 className="text-5xl font-bold text-gray-800 mb-4 text-center">{currentCard.word}</h2>
                     <p className="text-gray-500 text-center">카드를 탭해서 뒤집기</p>
                   </div>
                 </div>
 
-                {/* Back Side */}
                 <div
                   className="absolute inset-0 backface-hidden"
                   style={{
@@ -331,26 +355,14 @@ export default function FlashcardFavorites() {
                   }}
                 >
                   <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-amber-500 rounded-3xl shadow-2xl p-8 flex flex-col items-center justify-center text-white relative">
-                    {/* 즐겨찾기 버튼 (뒷면) */}
-                    <button
-                      onClick={toggleFavorite}
-                      className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors z-10"
-                    >
-                      <Star
-                        className={`w-6 h-6 ${
-                          favorites.has(currentCard.id)
-                            ? "fill-white text-white"
-                            : "text-white/60"
-                        }`}
-                      />
-                    </button>
+                    <div className="absolute top-4 right-4 p-2 rounded-full bg-white/20 z-10">
+                      <Star className="w-6 h-6 fill-white text-white" />
+                    </div>
 
                     <div className="mb-6 px-4 py-2 bg-white/20 rounded-full">
                       <span className="text-xs font-semibold">뒷면</span>
                     </div>
-                    <h3 className="text-4xl font-bold mb-6 text-center">
-                      {currentCard.meaning}
-                    </h3>
+                    <h3 className="text-4xl font-bold mb-6 text-center">{currentCard.meaning}</h3>
                     {currentCard.example && (
                       <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mt-4">
                         <p className="text-sm italic text-center">{currentCard.example}</p>
@@ -363,7 +375,6 @@ export default function FlashcardFavorites() {
           </AnimatePresence>
         </div>
 
-        {/* Action Buttons */}
         <div className="mt-12 flex items-center gap-6">
           <button
             onClick={handleDontKnow}
@@ -387,7 +398,6 @@ export default function FlashcardFavorites() {
           </button>
         </div>
 
-        {/* Stats */}
         <div className="mt-8 flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-500" />
