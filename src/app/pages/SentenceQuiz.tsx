@@ -95,6 +95,60 @@ const normalizeAnswerForComparison = (value: string) =>
     .replace(/[.,!?'"`~]/g, "")
     .toLowerCase();
 
+const buildCommonKoreanVerbFormVariants = (value: string) => {
+  const normalized = normalizeAnswerForComparison(value);
+  const variants = new Set([normalized]);
+
+  const replacements: Array<[RegExp, string]> = [
+    [/(했습니까|했나요|했어요|했어|했나|했니|했냐|했다|했습니다|하였다|하였습니다)$/g, "하다"],
+    [/(해요|합니다|하십시오|하세요|해라|한다|해)$/g, "하다"],
+    [/(되고있습니까|되고있나요|되고있어요|되고있어|되고있다|되는중이다)$/g, "되다"],
+    [/(됐다|되었다|됐어|되었어|됐나요|되었나요|됩니다|돼요|돼)$/g, "되다"],
+    [/(시키고있습니까|시키고있나요|시키고있어요|시키고있어|시키고있다|시키는중이다)$/g, "시키다"],
+    [/(시켰습니까|시켰나요|시켰어요|시켰어|시켰다|시킵니다|시켜요|시켜)$/g, "시키다"],
+    [/(하고있습니까|하고있나요|하고있어요|하고있어|하고있다|하는중이다)$/g, "하다"],
+    [/(고있습니까|고있나요|고있어요|고있어|고있다|는중이다)$/g, "다"],
+    [/(주세요|주십시오|줘요|줘)$/g, "주다"],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    const next = normalized.replace(pattern, replacement);
+    if (next !== normalized) {
+      variants.add(next);
+    }
+  }
+
+  return Array.from(variants);
+};
+
+const GRADUAL_TOKENS = ["점차", "점진적", "점진적으로", "단계적", "단계적으로", "서서히", "차차"] as const;
+const REMOVAL_TOKENS = ["없애", "폐지", "중단", "단종", "제거", "줄이", "퇴출", "사용을멈추"] as const;
+const OPPOSITE_REMOVAL_TOKENS = ["도입", "출시", "늘리", "증가", "추가", "시작"] as const;
+
+const includesAny = (value: string, tokens: readonly string[]) =>
+  tokens.some((token) => value.includes(token));
+
+const hasGradualRemovalComponents = (value: string) => {
+  const normalized = normalizeAnswerForComparison(value);
+  return includesAny(normalized, GRADUAL_TOKENS) && includesAny(normalized, REMOVAL_TOKENS);
+};
+
+const hasOppositeRemovalMeaning = (value: string) =>
+  includesAny(normalizeAnswerForComparison(value), OPPOSITE_REMOVAL_TOKENS);
+
+const hasGradualRemovalFallbackMatch = (
+  userAnswer: string,
+  candidates: string[],
+  wordMeaning: string,
+) => {
+  const referenceText = [...candidates, wordMeaning].join(" ");
+  return (
+    hasGradualRemovalComponents(userAnswer) &&
+    hasGradualRemovalComponents(referenceText) &&
+    !hasOppositeRemovalMeaning(userAnswer)
+  );
+};
+
 // Local fallback only: used when the server/LLM grader is unavailable.
 // Keep this list small; sentence-aware semantic grading belongs on the server.
 const fallbackSemanticEquivalenceGroups = [
@@ -126,10 +180,10 @@ const buildSemanticVariants = (value: string) => {
 };
 
 const hasSemanticAnswerMatch = (userAnswer: string, answers: string[]) => {
-  const userVariants = buildSemanticVariants(normalizeAnswerForComparison(userAnswer));
+  const userVariants = buildCommonKoreanVerbFormVariants(userAnswer).flatMap(buildSemanticVariants);
 
   return answers.some((answer) => {
-    const answerVariants = buildSemanticVariants(normalizeAnswerForComparison(answer));
+    const answerVariants = buildCommonKoreanVerbFormVariants(answer).flatMap(buildSemanticVariants);
     return userVariants.some((variant) => answerVariants.includes(variant));
   });
 };
@@ -309,6 +363,14 @@ const createLocalFeedback = (
   }
 
   if (hasSemanticAnswerMatch(trimmedUser, answerCandidates)) {
+    return {
+      isCorrect: true,
+      tone: "success",
+      message: `정답입니다. '${question.targetWord}'는 이 문장에서 '${trimmedCorrect}'로 쓰입니다.`,
+    };
+  }
+
+  if (hasGradualRemovalFallbackMatch(trimmedUser, answerCandidates, question.wordMeaning)) {
     return {
       isCorrect: true,
       tone: "success",

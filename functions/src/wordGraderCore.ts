@@ -26,6 +26,11 @@ export const SYSTEM_PROMPT = [
   "If the target is a phrasal verb or multi-word expression, grade the whole expression as one semantic unit.",
   "Step 2: Compare the user's Korean answer with that sentence sense. Check whether the core meaning, role, direction, object, and sentence-level effect are preserved.",
   "Step 3: Ignore surface differences when meaning is preserved. Do not penalize Korean particles, spacing, minor typos, verb endings, tense expression, honorifics, casual/polite register, declarative/imperative form, or natural paraphrase.",
+  "For Korean answers, tolerate question-form, spoken/written register, politeness, and ending differences such as 반응했다/반응했어/반응했나/반응했나요/반응했습니까 when the lexical meaning is the same.",
+  "In vocabulary learning, prioritize whether the learner understood the target's lexical meaning. A small tense or aspect mismatch is usually correct or correct_but_unnatural unless the target itself is a tense, time, completion, or future marker.",
+  "For phrasal verbs and multi-word expressions, check semantic components such as direction, removal/completion, gradualness, focus/targeting, encounter/discovery, start/stop, repetition, and emphasis.",
+  "For gradual removal or discontinuation meanings such as phase out, answers that preserve gradualness plus removal/discontinuation are correct: 점차/점진적으로/단계적으로/서서히/차차 plus 없애다/줄이다/폐지하다/중단하다/단종시키다/사용을 멈추다/퇴출하다.",
+  "For react/respond meanings, accept Korean forms of 반응하다, 대응하다, 응답하다, or 답하다 when they fit the sentence. Do not accept subject words like 관객 or surrounding adverbs like 어떻게 as answers for the target.",
   "Step 4: Reject wrong sense or loose association. Answers should be close or incorrect when they use another sense, translate a surrounding word instead of the target, change the object or direction, change the target's part of speech or sentence role, give a mere topic word, or omit a core meaning element.",
   "Verdict rules:",
   "correct: the target's sentence meaning and role are preserved, and the Korean answer is natural or clearly understandable in the blank. It may differ from the canonical answer.",
@@ -45,6 +50,60 @@ const normalizeAnswerForComparison = (value: string) =>
     .replace(/[.,!?'"`~]/g, "")
     .replace(/\s+/g, "")
     .toLowerCase();
+
+const buildCommonKoreanVerbFormVariants = (value: string) => {
+  const normalized = normalizeAnswerForComparison(value);
+  const variants = new Set([normalized]);
+
+  const replacements: Array<[RegExp, string]> = [
+    [/(했습니까|했나요|했어요|했어|했나|했니|했냐|했다|했습니다|하였다|하였습니다)$/g, "하다"],
+    [/(해요|합니다|하십시오|하세요|해라|한다|해)$/g, "하다"],
+    [/(되고있습니까|되고있나요|되고있어요|되고있어|되고있다|되는중이다)$/g, "되다"],
+    [/(됐다|되었다|됐어|되었어|됐나요|되었나요|됩니다|돼요|돼)$/g, "되다"],
+    [/(시키고있습니까|시키고있나요|시키고있어요|시키고있어|시키고있다|시키는중이다)$/g, "시키다"],
+    [/(시켰습니까|시켰나요|시켰어요|시켰어|시켰다|시킵니다|시켜요|시켜)$/g, "시키다"],
+    [/(하고있습니까|하고있나요|하고있어요|하고있어|하고있다|하는중이다)$/g, "하다"],
+    [/(고있습니까|고있나요|고있어요|고있어|고있다|는중이다)$/g, "다"],
+    [/(주세요|주십시오|줘요|줘)$/g, "주다"],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    const next = normalized.replace(pattern, replacement);
+    if (next !== normalized) {
+      variants.add(next);
+    }
+  }
+
+  return Array.from(variants);
+};
+
+const GRADUAL_TOKENS = ["점차", "점진적", "점진적으로", "단계적", "단계적으로", "서서히", "차차"] as const;
+const REMOVAL_TOKENS = ["없애", "폐지", "중단", "단종", "제거", "줄이", "퇴출", "사용을멈추"] as const;
+const OPPOSITE_REMOVAL_TOKENS = ["도입", "출시", "늘리", "증가", "추가", "시작"] as const;
+
+const includesAny = (value: string, tokens: readonly string[]) =>
+  tokens.some((token) => value.includes(token));
+
+const hasGradualRemovalComponents = (value: string) => {
+  const normalized = normalizeAnswerForComparison(value);
+  return includesAny(normalized, GRADUAL_TOKENS) && includesAny(normalized, REMOVAL_TOKENS);
+};
+
+const hasOppositeRemovalMeaning = (value: string) =>
+  includesAny(normalizeAnswerForComparison(value), OPPOSITE_REMOVAL_TOKENS);
+
+const hasGradualRemovalFallbackMatch = (
+  userAnswer: string,
+  candidates: string[],
+  wordMeaning: string,
+) => {
+  const referenceText = [...candidates, wordMeaning].join(" ");
+  return (
+    hasGradualRemovalComponents(userAnswer) &&
+    hasGradualRemovalComponents(referenceText) &&
+    !hasOppositeRemovalMeaning(userAnswer)
+  );
+};
 
 // Legacy safety net for fallback-only grading when the LLM is unavailable.
 // Do not expand this list to cover the full vocabulary set; the primary grader
@@ -176,7 +235,7 @@ const buildComparisonVariants = (value: string) => {
   const stripped = stripKoreanSuffixes(value);
   return Array.from(
     new Set(
-      [normalized, stripped]
+      [normalized, stripped, ...buildCommonKoreanVerbFormVariants(value)]
         .filter(Boolean)
         .flatMap((variant) => buildSemanticVariants(variant)),
     ),
@@ -230,6 +289,13 @@ export const buildUserPrompt = (request: GradeWordAnswerRequest) =>
     "4. Use close or incorrect when the answer is merely related, uses another sense, translates a surrounding word, changes the object/direction, or omits a core meaning element.",
     "5. Return exactly one verdict token.",
     "",
+    "General Korean tolerance rules:",
+    "- Treat ending/register/question-form variants as equivalent when lexical meaning is preserved, e.g. 반응했다/반응했어/반응했나/반응했나요/반응했습니까.",
+    "- Treat 진행형 or sentence tense differences leniently when the target lexical meaning remains clear, e.g. 없앴다/없애고 있다/없애고 있어.",
+    "- For phrasal verbs, preserve the whole expression's semantic components rather than translating each English word separately.",
+    "- For gradual removal/discontinuation, 점차/점진적으로/단계적으로/서서히/차차 plus 없애다/줄이다/폐지하다/중단하다/단종시키다/사용을 멈추다/퇴출하다 is correct when the sentence sense supports it.",
+    "- For react/respond, 반응하다/대응하다/응답하다/답하다 forms are correct when they fit the sentence; subject words or surrounding adverbs alone are incorrect.",
+    "",
     "Verdict boundaries:",
     "- correct: same sentence meaning and role; natural or clearly understandable Korean.",
     "- correct_but_unnatural: same core meaning, but the Korean is clearly awkward or less natural.",
@@ -245,6 +311,8 @@ export const buildUserPrompt = (request: GradeWordAnswerRequest) =>
     "- Sentence: He held the cup. Target: held. correct: 들었다, 잡았다, 쥐었다. close: 가지고 있었다. incorrect: 개최했다, 유지했다.",
     "- Sentence: She has a beautiful voice. Target: beautiful. correct: 아름다운, 예쁜, 고운. close: 좋은. incorrect: 큰, 시끄러운.",
     "- Sentence: I came across an old photo album. Target: came across. correct: 우연히 발견했다, 우연히 찾았다, 마주쳤다. incorrect: 건너왔다, 화가 났다.",
+    "- Sentence: How did the audience react? Target: react. correct: 반응했나, 반응했어, 반응했나요, 어떻게 반응했어. incorrect: 관객, 어떻게.",
+    "- Sentence: The company phased out old models. Target: phased out. correct: 점차 없앴다, 점차 없애고 있어, 단계적으로 폐지했다, 점차 단종시켰다, 점차 단종 시키고 있어. incorrect: 도입했다, 출시했다, 구형 모델.",
     "",
     "Return only one verdict token from this list:",
     "correct",
@@ -331,6 +399,15 @@ export const buildFallbackFeedback = (
       verdict: "correct",
       message: "정답입니다!",
       matchedAnswer: exactMatch,
+    };
+  }
+
+  if (hasGradualRemovalFallbackMatch(userAnswer, candidates, wordMeaning)) {
+    return {
+      isCorrect: true,
+      verdict: "correct",
+      message: "정답입니다!",
+      matchedAnswer: correctAnswer,
     };
   }
 
