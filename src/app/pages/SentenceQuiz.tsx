@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getIdToken } from "firebase/auth";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { useNavigate, useSearchParams } from "react-router";
@@ -7,7 +7,6 @@ import {
   BookOpen,
   CheckCircle,
   ChevronLeft,
-  Delete,
   Home,
   ImageIcon,
   Play,
@@ -216,6 +215,14 @@ const IMAGE_HINT_URL =
 
 const ALL_LEVEL = "전체";
 
+const shouldUseNativeKeyboardFocus = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.matchMedia("(pointer: coarse), (max-width: 1024px)").matches;
+};
+
 const fallbackQuizQuestions: QuizQuestion[] = [
   {
     id: 1,
@@ -247,12 +254,6 @@ const fallbackQuizQuestions: QuizQuestion[] = [
     koreanTargetWord: "아름다운",
     acceptableAnswers: ["아름다운", "예쁜", "고운"],
   },
-];
-
-const koreanKeyboard = [
-  ["ㅂ", "ㅈ", "ㄷ", "ㄱ", "ㅅ", "ㅛ", "ㅕ", "ㅑ", "ㅐ", "ㅔ"],
-  ["ㅁ", "ㄴ", "ㅇ", "ㄹ", "ㅎ", "ㅗ", "ㅓ", "ㅏ", "ㅣ"],
-  ["ㅋ", "ㅌ", "ㅊ", "ㅍ", "ㅠ", "ㅜ", "ㅡ"],
 ];
 
 const isLowQualityCommonsResult = (title: string, imageUrl: string) => {
@@ -661,6 +662,7 @@ export default function SentenceQuiz() {
   const [didRevealAnswerForCurrentQuestion, setDidRevealAnswerForCurrentQuestion] = useState(false);
   const [sourceQuestions, setSourceQuestions] = useState<QuizQuestion[]>([]);
   const [completionRecorded, setCompletionRecorded] = useState(false);
+  const answerInputRef = useRef<HTMLInputElement | null>(null);
   const selectedStudyLevel = searchParams.get("level") || getStoredStudyLevel();
   const reviewMode = searchParams.get("mode") === "review";
 
@@ -757,15 +759,16 @@ export default function SentenceQuiz() {
   }, [isCompleted, reviewMode]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const activeElement = document.activeElement;
-      if (activeElement instanceof HTMLElement) {
-        activeElement.blur();
-      }
-    }, 0);
+    if (isCompleted || !shouldUseNativeKeyboardFocus()) {
+      return;
+    }
 
-    return () => clearTimeout(timer);
-  }, [currentIndex]);
+    const timer = window.setTimeout(() => {
+      answerInputRef.current?.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [currentIndex, isCompleted]);
 
   useEffect(() => {
     if (!isCompleted || completionRecorded) {
@@ -924,6 +927,7 @@ export default function SentenceQuiz() {
       <h2 className="text-2xl mb-2 flex items-center flex-wrap gap-1">
         {parts[0]}
         <input
+          ref={answerInputRef}
           type="text"
           value={userInput}
           onChange={(event) => setUserInput(event.target.value)}
@@ -1179,20 +1183,6 @@ export default function SentenceQuiz() {
     }
   };
 
-  const handleKeyPress = (key: string) => {
-    if (key === "backspace") {
-      setUserInput((value) => value.slice(0, -1));
-      return;
-    }
-
-    if (key === "space") {
-      setUserInput((value) => value + " ");
-      return;
-    }
-
-    setUserInput((value) => value + key);
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
@@ -1338,36 +1328,6 @@ export default function SentenceQuiz() {
                     {showFeedback.hint && <p className="mt-2 text-sm text-gray-600">힌트: {showFeedback.hint}</p>}
                   </div>
                 )}
-
-                <div className="bg-gray-200 rounded-[1.25rem] sm:rounded-3xl p-3 sm:p-4 mb-1 sm:mb-2">
-                  {koreanKeyboard.map((row, rowIndex) => (
-                    <div key={rowIndex} className="flex justify-center gap-1 mb-1.5 sm:mb-2">
-                      {row.map((key) => (
-                        <button
-                          key={key}
-                          onClick={() => handleKeyPress(key)}
-                          className="bg-white text-gray-800 font-medium px-2.5 sm:px-3 py-2.5 sm:py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors min-w-[30px] sm:min-w-[32px] text-sm sm:text-base"
-                        >
-                          {key}
-                        </button>
-                      ))}
-                    </div>
-                  ))}
-                  <div className="flex justify-center gap-1">
-                    <button
-                      onClick={() => handleKeyPress("backspace")}
-                      className="bg-white text-gray-800 font-medium px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex items-center justify-center"
-                    >
-                      <Delete className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleKeyPress("space")}
-                      className="bg-white text-gray-800 font-medium px-8 sm:px-12 py-2.5 sm:py-3 rounded-lg shadow hover:bg-gray-100 active:bg-gray-300 transition-colors flex-1 max-w-[180px] sm:max-w-[200px] text-sm sm:text-base"
-                    >
-                      스페이스
-                    </button>
-                  </div>
-                </div>
               </motion.div>
             </AnimatePresence>
           </div>
