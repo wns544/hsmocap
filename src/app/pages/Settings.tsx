@@ -11,7 +11,7 @@ const settingsGroups = [
   },
   {
     title: "학습 설정",
-    items: [{ label: "일일 학습 목표", path: "/settings/goal", value: "20개" }],
+    items: [{ label: "일일 학습 목표", path: "/app/settings/goal", value: "20개" }],
   },
   {
     title: "지원",

@@ -17,6 +17,7 @@ import Community from "./pages/Community";
 import CreatePost from "./pages/CreatePost";
 import Feedback from "./pages/Feedback";
 import FeedbackStatus from "./pages/FeedbackStatus";
+import DailyGoal from "./pages/DailyGoal";
 import HelpCenter from "./pages/HelpCenter";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -102,6 +103,10 @@ export const router = createBrowserRouter([
           {
             path: "settings",
             element: <Settings />,
+          },
+          {
+            path: "settings/goal",
+            element: <DailyGoal />,
           },
           {
             path: "settings/feedback",
