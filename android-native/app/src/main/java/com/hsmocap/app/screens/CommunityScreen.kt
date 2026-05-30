@@ -3,6 +3,7 @@ package com.hsmocap.app.screens
 import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.drawable.RippleDrawable
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
@@ -10,9 +11,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.TextView
 import com.hsmocap.app.R
 import com.hsmocap.app.data.CommunityPost
 import com.hsmocap.app.data.CommunityRepository
@@ -38,6 +41,7 @@ class CommunityScreen(
     private var activeCategoryId: String = "all"
     private var loadedPosts: List<CommunityPost> = emptyList()
     private var body: LinearLayout? = null
+    private val categoryChipViews = mutableMapOf<String, TextView>()
 
     fun view(): View {
         return scrollWithContent { box ->
@@ -60,6 +64,7 @@ class CommunityScreen(
 
     private fun header(): View {
         return ui.vertical().apply {
+            categoryChipViews.clear()
             setPadding(ui.dp(24), ui.dp(44), ui.dp(24), ui.dp(18))
             setBackgroundColor(Theme.Card)
             addView(ui.horizontal().apply {
@@ -97,25 +102,57 @@ class CommunityScreen(
             }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(54)).apply {
                 setMargins(0, ui.dp(16), 0, 0)
             })
-            addView(ui.horizontal().apply {
+            addView(HorizontalScrollView(activity).apply {
+                isHorizontalScrollBarEnabled = false
+                overScrollMode = View.OVER_SCROLL_NEVER
                 setPadding(0, ui.dp(12), 0, 0)
-                communityCategories.forEach { category ->
-                    val selected = activeCategoryId == category.id
-                    val style = categoryStyle(category.id)
-                    addView(ui.text(category.name, 13, if (selected) Theme.Card else style.text, true).apply {
-                        gravity = Gravity.CENTER
-                        setPadding(ui.dp(12), ui.dp(7), ui.dp(12), ui.dp(7))
-                        background = ui.rounded(if (selected) style.color else style.background, 16, style.border)
-                        setOnClickListener {
-                            activeCategoryId = category.id
-                            body?.let { renderPosts(it) }
-                        }
-                    }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(34)).apply {
-                        setMargins(0, 0, ui.dp(8), 0)
-                    })
-                }
-            })
+                clipToPadding = false
+                addView(ui.horizontal().apply {
+                    communityCategories.forEach { category ->
+                        val style = categoryStyle(category.id)
+                        addView(ui.text(category.name, 13, Theme.Text, true).apply {
+                            gravity = Gravity.CENTER
+                            includeFontPadding = false
+                            setSingleLine(false)
+                            setPadding(ui.dp(13), ui.dp(8), ui.dp(13), ui.dp(8))
+                            isClickable = true
+                            categoryChipViews[category.id] = this
+                            applyCategoryChipStyle(this, category.id)
+                            setOnClickListener {
+                                activeCategoryId = category.id
+                                updateCategoryChips()
+                                body?.let { renderPosts(it) }
+                            }
+                        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(36)).apply {
+                            setMargins(0, 0, ui.dp(8), 0)
+                        })
+                    }
+                }, ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ))
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
+    }
+
+    private fun updateCategoryChips() {
+        communityCategories.forEach { category ->
+            categoryChipViews[category.id]?.let { chip ->
+                applyCategoryChipStyle(chip, category.id)
+            }
+        }
+    }
+
+    private fun applyCategoryChipStyle(chip: TextView, categoryId: String) {
+        val selected = activeCategoryId == categoryId
+        val style = categoryStyle(categoryId)
+        chip.setTextColor(if (selected) Theme.Card else style.text)
+        chip.background = ui.rounded(if (selected) style.color else style.background, 16, style.border)
+        chip.foreground = RippleDrawable(
+            ColorStateList.valueOf(if (selected) 0x55FFFFFF else 0x22000000),
+            null,
+            ui.rounded(0xFFFFFFFF.toInt(), 16),
+        )
     }
 
     private fun certificationCard(): View {
@@ -231,8 +268,10 @@ class CommunityScreen(
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(0, ui.dp(14), 0, 0)
                 val style = categoryStyle(post.categoryId)
-                addView(ui.text(post.categoryName, 12, style.text, true).apply {
-                    setPadding(ui.dp(8), ui.dp(3), ui.dp(8), ui.dp(3))
+                addView(ui.text(categoryLabel(post), 12, style.text, true).apply {
+                    gravity = Gravity.CENTER
+                    minWidth = ui.dp(58)
+                    setPadding(ui.dp(10), ui.dp(4), ui.dp(10), ui.dp(4))
                     background = ui.rounded(style.background, 12, style.border)
                 }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
                 addView(View(activity), LinearLayout.LayoutParams(0, 1, 1f))
@@ -352,6 +391,19 @@ class CommunityScreen(
             addView(ui.text("$count", 13, Theme.Muted).apply {
                 setPadding(ui.dp(4), 0, 0, 0)
             })
+        }
+    }
+
+    private fun categoryLabel(post: CommunityPost): String {
+        return when (post.categoryId) {
+            "study-tip" -> "학습팁"
+            "word-compare" -> "단어비교"
+            "sentence-practice" -> "문장학습"
+            "exam-prep" -> "시험준비"
+            "resources" -> "자료공유"
+            "question" -> "질문"
+            "review" -> "후기"
+            else -> post.categoryName.ifBlank { post.category }
         }
     }
 

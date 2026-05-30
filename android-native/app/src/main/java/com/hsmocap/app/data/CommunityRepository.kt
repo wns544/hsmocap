@@ -224,6 +224,9 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
     }
 
     private fun DocumentSnapshot.toPost(): CommunityPost {
+        val rawCategory = getString("categoryName").orEmpty().ifBlank { getString("category").orEmpty() }
+        val normalizedCategoryId = getString("categoryId").orEmpty().ifBlank { categoryIdFor(rawCategory) }
+        val normalizedCategoryName = categoryNameFor(normalizedCategoryId).ifBlank { categoryNameFor(rawCategory) }
         return CommunityPost(
             id = id,
             authorId = getString("authorId").orEmpty(),
@@ -232,15 +235,9 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
             authorLevel = getString("authorLevel").orEmpty().ifBlank { "레벨 1" },
             title = getString("title").orEmpty(),
             content = getString("content").orEmpty(),
-            categoryId = getString("categoryId").orEmpty().ifBlank {
-                categoryIdFor(getString("categoryName").orEmpty().ifBlank { getString("category").orEmpty() })
-            },
-            categoryName = getString("categoryName").orEmpty().ifBlank {
-                categoryNameFor(getString("category").orEmpty())
-            },
-            category = getString("categoryName").orEmpty().ifBlank {
-                categoryNameFor(getString("category").orEmpty())
-            },
+            categoryId = normalizedCategoryId,
+            categoryName = normalizedCategoryName,
+            category = normalizedCategoryName,
             likes = getLong("likes").toIntOrZero(),
             comments = getLong("comments").toIntOrZero(),
             views = getLong("views").toIntOrZero(),
