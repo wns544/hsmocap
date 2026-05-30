@@ -4,6 +4,9 @@ import { toast } from "sonner";
 
 import { useAuth } from "../contexts/AuthContext";
 
+declare const __APP_VERSION__: string;
+declare const __APP_UPDATED_AT__: string;
+
 const settingsGroups = [
   {
     title: "계정",
@@ -79,11 +82,11 @@ export default function Settings() {
         <div className="bg-white rounded-2xl p-5 border border-border mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-muted-foreground">앱 버전</span>
-            <span>1.1.0</span>
+            <span>{__APP_VERSION__}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">최신 업데이트</span>
-            <span className="text-sm">2026.05.30</span>
+            <span className="text-sm">{__APP_UPDATED_AT__}</span>
           </div>
         </div>
 
