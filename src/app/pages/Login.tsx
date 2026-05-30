@@ -319,17 +319,6 @@ export default function Login() {
             </div>
           ) : null}
 
-          <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-            <p className="text-xs text-yellow-800 text-center">
-              Firebase 설정이 필요합니다.
-              <br />
-              <code className="text-xs bg-yellow-100 px-2 py-1 rounded mt-1 inline-block">
-                /src/app/lib/firebase.ts
-              </code>
-              <br />
-              Firebase Authentication 제공업체 설정을 확인해 주세요.
-            </p>
-          </div>
         </div>
       </div>
     </div>
