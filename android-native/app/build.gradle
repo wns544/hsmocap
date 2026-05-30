@@ -1,0 +1,299 @@
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "org.jetbrains.kotlin.kapt"
+}
+
+import groovy.json.JsonSlurper
+
+if (file("google-services.json").exists()) {
+    apply plugin: "com.google.gms.google-services"
+}
+
+android {
+    namespace "com.hsmocap.app"
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "com.hsmocap.app"
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName "1.0"
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
+    }
+}
+
+dependencies {
+    implementation platform("com.google.firebase:firebase-bom:34.13.0")
+    implementation "com.google.firebase:firebase-auth"
+    implementation "com.google.firebase:firebase-firestore"
+    implementation "com.google.firebase:firebase-storage"
+    implementation "androidx.credentials:credentials:1.3.0"
+    implementation "androidx.credentials:credentials-play-services-auth:1.3.0"
+    implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
+    implementation "androidx.room:room-runtime:2.8.4"
+    kapt "androidx.room:room-compiler:2.8.4"
+}
+
+tasks.register("firebaseReadiness") {
+    group = "verification"
+    description = "Checks whether google-services.json is ready for the native Firebase integration."
+
+    doLast {
+        def configFile = file("google-services.json")
+        def expectedPackage = android.defaultConfig.applicationId
+
+        println "Firebase readiness"
+        println "Package: ${expectedPackage}"
+        println "Config: ${configFile.absolutePath}"
+
+        if (!configFile.exists()) {
+            println "Status: WAITING"
+            println "Next: add android-native/app/google-services.json from Firebase Console."
+            return
+        }
+
+        def json = new JsonSlurper().parse(configFile)
+        def clients = json.client ?: []
+        def matchingClient = clients.find { client ->
+            client.client_info?.android_client_info?.package_name == expectedPackage
+        }
+        def projectId = json.project_info?.project_id ?: "(missing)"
+        def hasWebClient = clients.any { client ->
+            (client.oauth_client ?: []).any { oauth -> oauth.client_type == 3 && oauth.client_id }
+        }
+
+        println "Project: ${projectId}"
+        println "Android client: ${matchingClient ? "OK" : "MISSING"}"
+        println "Web client ID: ${hasWebClient ? "OK" : "MISSING"}"
+
+        if (!matchingClient) {
+            throw new GradleException("google-services.json does not include Android package ${expectedPackage}.")
+        }
+        if (!hasWebClient) {
+            println "Next: enable Google sign-in, add SHA-1/SHA-256, then download google-services.json again."
+            return
+        }
+
+        println "Status: READY"
+    }
+}
+
+tasks.register("architectureCheck") {
+    group = "verification"
+    description = "Ensures UI and navigation layers do not import Firebase SDKs directly."
+
+    doLast {
+        def forbiddenPatterns = [
+            "com.google.firebase",
+            "FirebaseAuth",
+            "FirebaseFirestore",
+            "FirebaseStorage",
+            "FirebaseApp",
+        ]
+        def checkedPaths = [
+            "src/main/java/com/hsmocap/app/MainActivity.kt",
+            "src/main/java/com/hsmocap/app/screens",
+            "src/main/java/com/hsmocap/app/ui",
+            "src/main/java/com/hsmocap/app/navigation",
+        ]
+        def violations = []
+
+        checkedPaths.each { relativePath ->
+            def target = file(relativePath)
+            if (!target.exists()) return
+            def files = target.isDirectory()
+                ? fileTree(target) { include "**/*.kt" }.files
+                : [target]
+            files.each { sourceFile ->
+                sourceFile.eachLine { line, number ->
+                    if (forbiddenPatterns.any { pattern -> line.contains(pattern) }) {
+                        violations << "${sourceFile.path}:${number}: ${line.trim()}"
+                    }
+                }
+            }
+        }
+
+        if (!violations.isEmpty()) {
+            throw new GradleException(
+                "Firebase access must stay behind repositories/services.\n" + violations.join("\n")
+            )
+        }
+
+        println "Architecture check passed: UI/navigation layers do not import Firebase SDKs directly."
+    }
+}
+
+tasks.named("check") {
+    dependsOn("architectureCheck")
+}
+
+tasks.register("nativeStaticAcceptance") {
+    group = "verification"
+    description = "Runs all native acceptance checks that do not require a connected Android device."
+    dependsOn("architectureCheck", "firebaseReadiness", "assembleDebug", "lintDebug")
+
+    doLast {
+        println "Native static acceptance passed. Runtime gates still require :app:connectedDeviceCheck and :app:runtimeSmokeCheck on a real emulator/device."
+    }
+}
+
+def resolveAdb = {
+    def sdkDir = android.sdkDirectory
+    def adb = new File(sdkDir, "platform-tools/adb.exe")
+    if (!adb.exists()) {
+        adb = new File(sdkDir, "platform-tools/adb")
+    }
+    if (!adb.exists()) {
+        throw new GradleException("adb was not found under ${sdkDir}.")
+    }
+    return adb
+}
+
+def runAdbCommand = { File adb, List<String> args ->
+    def stdout = new ByteArrayOutputStream()
+    def stderr = new ByteArrayOutputStream()
+    def command = ([adb.absolutePath] + args)
+    def process = command.execute(null, projectDir)
+    process.consumeProcessOutput(stdout, stderr)
+    if (!process.waitFor(20, java.util.concurrent.TimeUnit.SECONDS)) {
+        process.destroyForcibly()
+        throw new GradleException("adb command timed out: ${command.join(" ")}")
+    }
+    def exitCode = process.exitValue()
+    if (exitCode != 0) {
+        throw new GradleException(
+            "adb command failed (${exitCode}): ${command.join(" ")}\n${stderr.toString().trim()}"
+        )
+    }
+    return stdout.toString()
+}
+
+def runOptionalCommand = { List<String> command ->
+    def stdout = new ByteArrayOutputStream()
+    def stderr = new ByteArrayOutputStream()
+    def process = command.execute(null, projectDir)
+    process.consumeProcessOutput(stdout, stderr)
+    if (!process.waitFor(20, java.util.concurrent.TimeUnit.SECONDS)) {
+        process.destroyForcibly()
+        return "Timed out: ${command.join(" ")}"
+    }
+    def output = stdout.toString().trim()
+    def error = stderr.toString().trim()
+    if (process.exitValue() != 0) {
+        return error ? error : "Command failed (${process.exitValue()}): ${command.join(" ")}"
+    }
+    return output
+}
+
+tasks.register("androidDeviceDoctor") {
+    group = "verification"
+    description = "Prints Android SDK, adb device, and emulator AVD diagnostics without requiring a connected device."
+
+    doLast {
+        def sdkDir = android.sdkDirectory
+        def adb = resolveAdb()
+        def emulator = new File(sdkDir, "emulator/emulator.exe")
+        if (!emulator.exists()) {
+            emulator = new File(sdkDir, "emulator/emulator")
+        }
+
+        println "Android device doctor"
+        println "SDK: ${sdkDir}"
+        println "ADB: ${adb.absolutePath}"
+        println ""
+        println "adb devices -l:"
+        println runOptionalCommand([adb.absolutePath, "devices", "-l"])
+        println ""
+        if (emulator.exists()) {
+            println "Emulator: ${emulator.absolutePath}"
+            println "Available AVDs:"
+            println runOptionalCommand([emulator.absolutePath, "-list-avds"])
+        } else {
+            println "Emulator binary was not found under ${sdkDir}."
+        }
+        println ""
+        println "Next: start an AVD in Android Studio, wait for it to finish booting, then run :app:runtimeSmokeCheck."
+    }
+}
+
+tasks.register("connectedDeviceCheck") {
+    group = "verification"
+    description = "Checks that adb can see at least one connected Android device or emulator."
+
+    doLast {
+        def adb = resolveAdb()
+        def output = runAdbCommand(adb, ["devices", "-l"])
+        def devices = output
+            .readLines()
+            .findAll { line -> line ==~ /^\S+\s+device\b.*$/ }
+
+        println output.trim()
+        if (devices.isEmpty()) {
+            throw new GradleException(
+                "No connected Android device was found. Start an emulator or connect a device, then confirm `adb devices` shows `device`."
+            )
+        }
+        println "Connected device check passed: ${devices.size()} device(s)."
+    }
+}
+
+tasks.register("installFreshDebug") {
+    group = "verification"
+    description = "Installs the debug APK on the connected emulator, clears app data, and launches the app."
+    dependsOn("assembleDebug", "connectedDeviceCheck")
+
+    doLast {
+        def adb = resolveAdb()
+        def apk = file("${buildDir}/outputs/apk/debug/app-debug.apk")
+        def appId = android.defaultConfig.applicationId
+        print runAdbCommand(adb, ["install", "-r", apk.absolutePath])
+        print runAdbCommand(adb, ["shell", "pm", "clear", appId])
+        print runAdbCommand(adb, ["shell", "am", "start", "-n", "${appId}/.MainActivity"])
+
+        println "Installed and launched ${appId}."
+    }
+}
+
+tasks.register("runtimeSmokeCheck") {
+    group = "verification"
+    description = "Installs a fresh debug build, launches it, and verifies the native app is visible to Android runtime state."
+    dependsOn("installFreshDebug")
+
+    doLast {
+        def adb = resolveAdb()
+        def appId = android.defaultConfig.applicationId
+        sleep(3000)
+
+        def windowState = runAdbCommand(adb, ["shell", "dumpsys", "window"])
+        def activityState = runAdbCommand(adb, ["shell", "dumpsys", "activity", "activities"])
+        def combinedState = "${windowState}\n${activityState}"
+        def foregroundHints = [
+            "mCurrentFocus",
+            "mFocusedApp",
+            "topResumedActivity",
+            "ResumedActivity",
+            "ACTIVITY ${appId}",
+            "${appId}/.MainActivity",
+        ]
+        def appMentioned = combinedState.contains(appId)
+        def foregroundMentioned = foregroundHints.any { hint ->
+            combinedState.readLines().any { line -> line.contains(hint) && line.contains(appId) }
+        }
+
+        if (!appMentioned || !foregroundMentioned) {
+            throw new GradleException(
+                "Runtime smoke check failed: ${appId} was not confirmed as the foreground native app. " +
+                    "Open the emulator display and confirm the app did not crash or stay behind another Activity."
+            )
+        }
+
+        println "Runtime smoke check passed: ${appId} is visible in Android foreground runtime state."
+    }
+}
