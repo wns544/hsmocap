@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ChevronRight, Code2, HelpCircle, LogOut, MessageSquare, Shield, User } from "lucide-react";
 import { toast } from "sonner";
@@ -31,10 +32,39 @@ const settingsGroups = [
   },
 ] as const;
 
+const DAILY_GOAL_STORAGE_KEY = "wordy.daily-goal";
+const DEFAULT_DAILY_GOAL = 20;
+const goalOptions = [5, 10, 20, 30, 50];
+
+function readStoredDailyGoal() {
+  if (typeof window === "undefined") {
+    return DEFAULT_DAILY_GOAL;
+  }
+
+  const value = Number(window.localStorage.getItem(DAILY_GOAL_STORAGE_KEY));
+  return goalOptions.includes(value) ? value : DEFAULT_DAILY_GOAL;
+}
+
 export default function Settings() {
   const navigate = useNavigate();
   const { signOut, isAdmin } = useAuth();
+  const [dailyGoal, setDailyGoal] = useState(readStoredDailyGoal);
   const visibleSettingsGroups = settingsGroups.filter((group) => group.title !== "관리" || isAdmin);
+
+  useEffect(() => {
+    const syncDailyGoal = () => {
+      setDailyGoal(readStoredDailyGoal());
+    };
+
+    syncDailyGoal();
+    window.addEventListener("focus", syncDailyGoal);
+    window.addEventListener("storage", syncDailyGoal);
+
+    return () => {
+      window.removeEventListener("focus", syncDailyGoal);
+      window.removeEventListener("storage", syncDailyGoal);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -67,7 +97,11 @@ export default function Settings() {
                         <span>{item.label}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {item.value && <span className="text-sm text-muted-foreground">{item.value}</span>}
+                        {item.value && (
+                          <span className="text-sm text-muted-foreground">
+                            {item.path === "/app/settings/goal" ? `${dailyGoal}개` : item.value}
+                          </span>
+                        )}
                         <ChevronRight className="w-5 h-5 text-muted-foreground" />
                       </div>
                     </div>
