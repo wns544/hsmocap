@@ -3,30 +3,19 @@ import { useNavigate } from "react-router";
 import { Check, ChevronLeft, Target } from "lucide-react";
 
 import { Button } from "../components/ui/button";
-
-const DAILY_GOAL_STORAGE_KEY = "wordy.daily-goal";
-const goalOptions = [5, 10, 20, 30, 50];
-
-function readStoredGoal() {
-  if (typeof window === "undefined") {
-    return 20;
-  }
-
-  const value = Number(window.localStorage.getItem(DAILY_GOAL_STORAGE_KEY));
-  return goalOptions.includes(value) ? value : 20;
-}
+import { DAILY_GOAL_OPTIONS, DEFAULT_DAILY_GOAL, readStoredDailyGoal, writeStoredDailyGoal } from "../lib/dailyGoal";
 
 export default function DailyGoal() {
   const navigate = useNavigate();
-  const [selectedGoal, setSelectedGoal] = useState(20);
+  const [selectedGoal, setSelectedGoal] = useState(DEFAULT_DAILY_GOAL);
 
   useEffect(() => {
-    setSelectedGoal(readStoredGoal());
+    setSelectedGoal(readStoredDailyGoal());
   }, []);
 
   const handleSelectGoal = (goal: number) => {
     setSelectedGoal(goal);
-    window.localStorage.setItem(DAILY_GOAL_STORAGE_KEY, String(goal));
+    writeStoredDailyGoal(goal);
   };
 
   return (
@@ -51,7 +40,7 @@ export default function DailyGoal() {
       </div>
 
       <div className="px-6 mt-6 space-y-3">
-        {goalOptions.map((goal) => {
+        {DAILY_GOAL_OPTIONS.map((goal) => {
           const isSelected = selectedGoal === goal;
 
           return (

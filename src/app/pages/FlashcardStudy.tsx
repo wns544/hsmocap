@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { ChevronDown, ChevronLeft, ChevronUp, RotateCcw, CheckCircle, XCircle, Trophy, Star } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { motion, AnimatePresence, PanInfo } from "motion/react";
+import { limitToStoredDailyGoal } from "../lib/dailyGoal";
 import { shuffleArray } from "../lib/random";
 import { recordCorrectAnswer, recordStudySessionCompletion, recordWrongAnswer } from "../lib/studyProgress";
 
@@ -26,6 +27,8 @@ const initialCards: Card[] = [
   { id: 9, word: "Harmonious", meaning: "조화로운", level: "비즈니스", example: "They have a harmonious relationship." },
 ];
 
+const buildDailyGoalCardSession = (cards: Card[]) => limitToStoredDailyGoal(shuffleArray(cards));
+
 export default function FlashcardStudy() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -38,6 +41,7 @@ export default function FlashcardStudy() {
   const [exitDirection, setExitDirection] = useState<"up" | "down" | null>(null);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [completionRecorded, setCompletionRecorded] = useState(false);
+  const [studyCards, setStudyCards] = useState<Card[]>([]);
 
   const selectedLevel = searchParams.get("level");
   const filteredCards =
@@ -45,17 +49,18 @@ export default function FlashcardStudy() {
       ? initialCards
       : initialCards.filter((card) => card.level === selectedLevel);
 
-  const totalCards = filteredCards.length;
+  const totalCards = studyCards.length;
   const progress = totalCards > 0 ? (correctCount / totalCards) * 100 : 0;
 
   useEffect(() => {
-    const shuffled = shuffleArray(filteredCards);
-    setRemainingCards(shuffled);
-    setCurrentCard(shuffled[0] ?? null);
+    const nextStudyCards = buildDailyGoalCardSession(filteredCards);
+    setStudyCards(nextStudyCards);
+    setRemainingCards(nextStudyCards);
+    setCurrentCard(nextStudyCards[0] ?? null);
     setIsFlipped(false);
     setCorrectCount(0);
     setWrongCount(0);
-    setIsComplete(shuffled.length === 0);
+    setIsComplete(nextStudyCards.length === 0);
     setExitDirection(null);
     setCompletionRecorded(false);
   }, [selectedLevel]);
@@ -129,13 +134,14 @@ export default function FlashcardStudy() {
   };
 
   const handleRestart = () => {
-    const shuffled = shuffleArray(filteredCards);
-    setRemainingCards(shuffled);
-    setCurrentCard(shuffled[0] ?? null);
+    const nextStudyCards = buildDailyGoalCardSession(filteredCards);
+    setStudyCards(nextStudyCards);
+    setRemainingCards(nextStudyCards);
+    setCurrentCard(nextStudyCards[0] ?? null);
     setIsFlipped(false);
     setCorrectCount(0);
     setWrongCount(0);
-    setIsComplete(shuffled.length === 0);
+    setIsComplete(nextStudyCards.length === 0);
     setExitDirection(null);
     setCompletionRecorded(false);
   };

@@ -4,6 +4,7 @@ import { ChevronRight, Code2, HelpCircle, LogOut, MessageSquare, Shield, User } 
 import { toast } from "sonner";
 
 import { useAuth } from "../contexts/AuthContext";
+import { readStoredDailyGoal } from "../lib/dailyGoal";
 
 declare const __APP_VERSION__: string;
 declare const __APP_UPDATED_AT__: string;
@@ -31,19 +32,6 @@ const settingsGroups = [
     items: [{ label: "관리자 대시보드", icon: Code2, path: "/app/admin", value: "Admin" }],
   },
 ] as const;
-
-const DAILY_GOAL_STORAGE_KEY = "wordy.daily-goal";
-const DEFAULT_DAILY_GOAL = 20;
-const goalOptions = [5, 10, 20, 30, 50];
-
-function readStoredDailyGoal() {
-  if (typeof window === "undefined") {
-    return DEFAULT_DAILY_GOAL;
-  }
-
-  const value = Number(window.localStorage.getItem(DAILY_GOAL_STORAGE_KEY));
-  return goalOptions.includes(value) ? value : DEFAULT_DAILY_GOAL;
-}
 
 export default function Settings() {
   const navigate = useNavigate();

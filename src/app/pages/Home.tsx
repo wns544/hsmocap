@@ -4,6 +4,7 @@ import { Award, BookOpen, ChevronRight, Clock, Layers, Target, TrendingUp } from
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
 import { useAuth } from "../contexts/AuthContext";
+import { readStoredDailyGoal } from "../lib/dailyGoal";
 import { resolveProfileName, subscribeProfileName } from "../lib/profileName";
 import { buildWordLookup, listWordLibraryItems, type WordLibraryItem } from "../lib/wordLibrary";
 import { listReviewQueueWordIds, listWordProgresses, type WordProgressRecord } from "../lib/wordProgresses";
@@ -14,8 +15,6 @@ interface StudyHistoryRecord {
   wordsLearned: number;
   correctRate: number;
 }
-
-const DAILY_GOAL = 20;
 
 function isSameDay(left: Date, right: Date) {
   return (
@@ -124,6 +123,7 @@ export default function Home() {
   const [reviewQueueCount, setReviewQueueCount] = useState(0);
   const [progresses, setProgresses] = useState<WordProgressRecord[]>([]);
   const [recentWords, setRecentWords] = useState<WordLibraryItem[]>([]);
+  const [dailyGoal, setDailyGoal] = useState(readStoredDailyGoal);
 
   const today = useMemo(() => new Date(), []);
   const learnedWords = progresses.filter((progress) => progress.totalAnswerCount > 0).length;
@@ -173,6 +173,21 @@ export default function Home() {
       setDisplayName(nextName || resolveProfileName(user?.displayName, user?.email));
     });
   }, [user?.displayName, user?.email]);
+
+  useEffect(() => {
+    const syncDailyGoal = () => {
+      setDailyGoal(readStoredDailyGoal());
+    };
+
+    syncDailyGoal();
+    window.addEventListener("focus", syncDailyGoal);
+    window.addEventListener("storage", syncDailyGoal);
+
+    return () => {
+      window.removeEventListener("focus", syncDailyGoal);
+      window.removeEventListener("storage", syncDailyGoal);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -231,11 +246,11 @@ export default function Home() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-white/80">오늘의 학습 진행도</span>
             <span className="text-sm">
-              {todayLearnedWords} / {DAILY_GOAL} 단어
+              {todayLearnedWords} / {dailyGoal} 단어
             </span>
           </div>
           <Progress
-            value={Math.min(100, (todayLearnedWords / DAILY_GOAL) * 100)}
+            value={Math.min(100, (todayLearnedWords / dailyGoal) * 100)}
             className="h-2 bg-white/20 [&_[data-slot=progress-indicator]]:bg-[#D8C3A5]"
           />
         </div>

@@ -20,6 +20,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { auth, db } from "../lib/firebase";
+import { limitToStoredDailyGoal } from "../lib/dailyGoal";
 import { shuffleArray } from "../lib/random";
 import { getStoredStudyLevel } from "../lib/studyPreferences";
 import { recordCorrectAnswer, recordStudySessionCompletion, recordWrongAnswer } from "../lib/studyProgress";
@@ -640,6 +641,11 @@ const mapServerFeedback = (feedback: GradeWordAnswerResponse): FeedbackData => (
   hint: feedback.hint,
 });
 
+const buildDailyGoalQuestionSession = (questions: QuizQuestion[], shouldLimit: boolean) => {
+  const shuffledQuestions = shuffleArray(questions);
+  return shouldLimit ? limitToStoredDailyGoal(shuffledQuestions) : shuffledQuestions;
+};
+
 export default function SentenceQuiz() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -731,7 +737,7 @@ export default function SentenceQuiz() {
         }
 
         setSourceQuestions(nextQuestions);
-        setQuizQuestions(shuffleArray(nextQuestions));
+        setQuizQuestions(buildDailyGoalQuestionSession(nextQuestions, !reviewMode));
         setCurrentIndex(0);
         setCompletedCount(0);
         setCorrectCount(0);
@@ -980,7 +986,7 @@ export default function SentenceQuiz() {
   };
 
   const handleRestart = () => {
-    setQuizQuestions(shuffleArray(sourceQuestions.length > 0 ? sourceQuestions : quizQuestions));
+    setQuizQuestions(buildDailyGoalQuestionSession(sourceQuestions.length > 0 ? sourceQuestions : quizQuestions, !reviewMode));
     setCurrentIndex(0);
     setCompletedCount(0);
     setCorrectCount(0);
