@@ -232,7 +232,10 @@ export default function Home() {
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="min-w-0 flex-1">
-            <h1 className="text-3xl mb-1">{`안녕하세요, ${displayName}님`}</h1>
+            <h1 className="text-3xl mb-1">
+              <span className="block sm:inline">안녕하세요,</span>
+              <span className="block sm:inline sm:ml-2">{displayName}님</span>
+            </h1>
             <p className="text-white/80">오늘도 목표 단어를 차근차근 채워봐요.</p>
           </div>
           <Link to="/app/profile" className="shrink-0" aria-label="프로필">
