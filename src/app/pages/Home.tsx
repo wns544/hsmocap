@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Award, BookOpen, ChevronRight, Clock, Layers, Target, TrendingUp } from "lucide-react";
+import { Award, BookOpen, ChevronRight, Clock, Layers, Target, TrendingUp, User } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
 import { useAuth } from "../contexts/AuthContext";
@@ -230,14 +230,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-primary text-white px-6 pt-12 pb-8 rounded-b-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="min-w-0 flex-1">
             <h1 className="text-3xl mb-1">{`안녕하세요, ${displayName}님`}</h1>
             <p className="text-white/80">오늘도 목표 단어를 차근차근 채워봐요.</p>
           </div>
-          <Link to="/app/profile">
-            <div className="min-w-12 h-12 px-4 bg-white/20 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium">프로필</span>
+          <Link to="/app/profile" className="shrink-0" aria-label="프로필">
+            <div className="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center">
+              <User className="h-5 w-5" aria-hidden="true" />
             </div>
           </Link>
         </div>
