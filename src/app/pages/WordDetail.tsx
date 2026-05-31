@@ -166,6 +166,39 @@ export default function WordDetail() {
     navigate("/app/sentence-quiz?mode=review");
   };
 
+  const handlePlayPronunciation = () => {
+    if (!word) {
+      return;
+    }
+
+    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+      toast.error("이 브라우저에서는 발음 듣기를 지원하지 않습니다.");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(word.word);
+    utterance.lang = "en-US";
+    utterance.rate = 0.85;
+    utterance.pitch = 1;
+
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoice =
+      voices.find((voice) => voice.lang.toLowerCase() === "en-us") ??
+      voices.find((voice) => voice.lang.toLowerCase().startsWith("en"));
+
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+    }
+
+    utterance.onerror = () => {
+      toast.error("발음을 재생하지 못했습니다. 휴대폰 음량/무음 모드를 확인해 주세요.");
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   if (!word) {
     return (
       <div className="min-h-screen bg-background px-6 py-10">
@@ -201,7 +234,11 @@ export default function WordDetail() {
           </Badge>
         </div>
 
-        <button className="w-full bg-white/20 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={handlePlayPronunciation}
+          className="w-full bg-white/20 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-center gap-2"
+        >
           <Volume2 className="w-5 h-5" />
           <span>발음 듣기</span>
         </button>
