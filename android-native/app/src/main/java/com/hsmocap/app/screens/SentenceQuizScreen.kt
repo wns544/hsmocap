@@ -109,8 +109,9 @@ class SentenceQuizScreen(
                                 isEnabled = true
                                 result
                                     .onSuccess { showRemoteHint(hintHolder, it) }
-                                    .onFailure {
-                                        Toast.makeText(activity, "이미지 힌트를 찾지 못했습니다.", Toast.LENGTH_SHORT).show()
+                                    .onFailure { error ->
+                                        val message = error.localizedMessage ?: "이미지 힌트를 찾지 못했습니다."
+                                        Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
                                     }
                             }
                         }

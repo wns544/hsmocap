@@ -8,6 +8,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Toast
+import com.hsmocap.app.R
 import com.hsmocap.app.data.StudyStore
 import com.hsmocap.app.data.Word
 import com.hsmocap.app.navigation.Screen
@@ -60,8 +61,7 @@ class MultipleChoiceQuizScreen(
             addView(ui.horizontal().apply {
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(0, ui.dp(14), 0, ui.dp(18))
-                addView(ui.text("×", 22, Theme.Muted, true).apply {
-                    gravity = Gravity.CENTER
+                addView(ui.icon(R.drawable.ic_lucide_x, Theme.Muted, 22).apply {
                     setOnClickListener { navigate(Screen.QuizStart) }
                 }, LinearLayout.LayoutParams(ui.dp(44), ui.dp(44)))
                 addView(ui.vertical().apply {

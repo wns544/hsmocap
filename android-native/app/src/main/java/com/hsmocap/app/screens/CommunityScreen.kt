@@ -207,10 +207,12 @@ class CommunityScreen(
     }
 
     private fun loadMoreButton(body: LinearLayout): View {
-        return ui.text("더 보기  ›", 16, Theme.Primary, true).apply {
+        return ui.horizontal().apply {
             gravity = Gravity.CENTER
             setPadding(0, ui.dp(18), 0, ui.dp(18))
             background = ui.rounded(Theme.Card, 24, Theme.Border)
+            addView(ui.text("더 보기", 16, Theme.Primary, true))
+            addView(ui.icon(R.drawable.ic_lucide_chevron_right, Theme.Primary, 18), LinearLayout.LayoutParams(ui.dp(22), ui.dp(22)))
             setOnClickListener {
                 postLimit += PAGE_SIZE
                 body.removeAllViews()
@@ -334,7 +336,7 @@ class CommunityScreen(
                 addView(ui.text(title, 18, Theme.Text, true))
                 addView(ui.text(subtitle, 14, Theme.Muted))
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            addView(ui.text("›", 30, Theme.Muted))
+            addView(ui.icon(R.drawable.ic_lucide_chevron_right, Theme.Muted, 20))
         }
     }
 
@@ -347,7 +349,7 @@ class CommunityScreen(
                     addView(ui.text(word.meaning, 15, Theme.Muted))
                     addView(ui.text(word.exampleSentence, 14, Theme.Muted))
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                addView(ui.text("›", 30, Theme.Muted))
+                addView(ui.icon(R.drawable.ic_lucide_chevron_right, Theme.Muted, 20))
             })
         }
     }

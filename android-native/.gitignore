@@ -4,6 +4,11 @@ build/
 app/build/
 local.properties
 app/google-services.json
+keystore.properties
+*.jks
+*.keystore
+pepk.jar
+store-assets/
 *.iml
 .idea/
 runtime*.png

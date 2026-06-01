@@ -1,7 +1,6 @@
 package com.hsmocap.app.screens
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.net.Uri
@@ -19,6 +18,7 @@ import com.hsmocap.app.data.NativeSettings
 import com.hsmocap.app.data.StudyStore
 import com.hsmocap.app.firebase.FirebaseStatus
 import com.hsmocap.app.navigation.Screen
+import com.hsmocap.app.ui.AppDialog
 import com.hsmocap.app.ui.Theme
 import com.hsmocap.app.ui.Ui
 
@@ -74,6 +74,7 @@ class SettingsScreen(
                 )))
             }
             body.addView(appInfoCard())
+            body.addView(logoutButton())
             box.addView(body)
         }
     }
@@ -151,8 +152,24 @@ class SettingsScreen(
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 setMargins(0, ui.dp(30), 0, 0)
             }
-            addView(infoRow("앱 버전", "1.0.0"))
+            addView(infoRow("앱 버전", "1.5.14"))
             addView(infoRow("최신 업데이트", "2026.05.30"))
+        }
+    }
+
+    private fun logoutButton(): View {
+        return ui.horizontal().apply {
+            gravity = Gravity.CENTER
+            setPadding(ui.dp(26), ui.dp(18), ui.dp(26), ui.dp(18))
+            background = ui.rounded(Theme.Card, 18, Theme.Border)
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                setMargins(0, ui.dp(18), 0, 0)
+            }
+            setOnClickListener { onLogout() }
+            addView(tintedIcon(R.drawable.ic_lucide_log_out, Theme.Destructive, 20), LinearLayout.LayoutParams(ui.dp(22), ui.dp(22)).apply {
+                setMargins(0, 0, ui.dp(10), 0)
+            })
+            addView(ui.text("로그아웃", 16, Theme.Destructive, true))
         }
     }
 
@@ -166,19 +183,20 @@ class SettingsScreen(
     }
 
     private fun showDailyGoalDialog() {
-        val labels = arrayOf("10개", "20개", "30개", "직접 입력: 50개")
+        val labels = listOf("10개", "20개", "30개", "직접 입력: 50개")
         val values = intArrayOf(10, 20, 30, 50)
         val checked = values.indexOf(settings.dailyGoal).takeIf { it >= 0 } ?: 1
-        AlertDialog.Builder(activity)
-            .setTitle("일일 학습 목표")
-            .setSingleChoiceItems(labels, checked) { dialog, which ->
+        AppDialog.choices(
+            activity = activity,
+            ui = ui,
+            title = "일일 학습 목표",
+            options = labels,
+            selectedIndex = checked,
+        ) { which ->
                 settings.dailyGoal = values[which]
                 Toast.makeText(activity, "일일 목표를 ${values[which]}개로 설정했습니다.", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
                 onDataChanged()
-            }
-            .setNegativeButton("취소", null)
-            .show()
+        }
     }
 
     private fun openAdminDashboard() {

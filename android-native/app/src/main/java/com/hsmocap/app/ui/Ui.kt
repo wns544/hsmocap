@@ -1,6 +1,7 @@
 package com.hsmocap.app.ui
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
@@ -8,6 +9,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 
@@ -42,6 +44,15 @@ class Ui(val context: Context) {
             ).apply {
                 setMargins(0, dp(6), 0, dp(8))
             }
+        }
+    }
+
+    fun icon(iconRes: Int, color: Int, sizeDp: Int): ImageView {
+        return ImageView(context).apply {
+            setImageResource(iconRes)
+            imageTintList = ColorStateList.valueOf(color)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            layoutParams = LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp))
         }
     }
 

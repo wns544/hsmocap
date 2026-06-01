@@ -2,6 +2,7 @@ package com.hsmocap.app.data
 
 import android.content.Context
 import android.net.Uri
+import com.google.firebase.storage.StorageMetadata
 import com.google.firebase.storage.FirebaseStorage
 import com.hsmocap.app.firebase.FirebaseBackend
 import java.util.UUID
@@ -11,6 +12,7 @@ interface ImageUploadRepository {
 }
 
 class FirebaseImageUploadRepository(context: Context) : ImageUploadRepository {
+    private val appContext = context.applicationContext
     private val storage = FirebaseStorage.getInstance().reference
 
     init {
@@ -18,9 +20,12 @@ class FirebaseImageUploadRepository(context: Context) : ImageUploadRepository {
     }
 
     override fun uploadCommunityImage(userId: String, imageUri: Uri, callback: (Result<String>) -> Unit) {
-        val path = "community_posts/$userId/${System.currentTimeMillis()}-${UUID.randomUUID()}.jpg"
+        val path = "communityPosts/$userId/${System.currentTimeMillis()}-${UUID.randomUUID()}.jpg"
         val ref = storage.child(path)
-        ref.putFile(imageUri)
+        val metadata = StorageMetadata.Builder()
+            .setContentType(appContext.contentResolver.getType(imageUri) ?: "image/jpeg")
+            .build()
+        ref.putFile(imageUri, metadata)
             .continueWithTask { task ->
                 task.exception?.let { throw it }
                 ref.downloadUrl

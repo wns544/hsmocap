@@ -1,6 +1,7 @@
 package com.hsmocap.app.data
 
 import android.content.Context
+import android.util.Log
 import com.hsmocap.app.firebase.FirebaseBackend
 import org.json.JSONObject
 import java.io.OutputStreamWriter
@@ -26,7 +27,10 @@ class FirebaseFunctionImageHintRepository(context: Context) : ImageHintRepositor
         Thread {
             runCatching { postHintRequest(word) }
                 .onSuccess { callback(Result.success(it)) }
-                .onFailure { callback(Result.failure(it)) }
+                .onFailure {
+                    Log.e(TAG, "Image hint request failed for ${word.word}", it)
+                    callback(Result.failure(it))
+                }
         }.start()
     }
 
@@ -74,6 +78,7 @@ class FirebaseFunctionImageHintRepository(context: Context) : ImageHintRepositor
     }
 
     companion object {
+        private const val TAG = "WordyImageHint"
         private const val FUNCTION_URL = "https://asia-northeast3-hsmocap-d907e.cloudfunctions.net/imageHintSearchHttp"
     }
 }

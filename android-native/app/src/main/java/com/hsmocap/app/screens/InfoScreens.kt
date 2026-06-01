@@ -9,12 +9,21 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.Toast
+import com.hsmocap.app.R
 import com.hsmocap.app.auth.AuthUser
 import com.hsmocap.app.data.CreateFeedbackRequest
 import com.hsmocap.app.data.FeedbackRepository
 import com.hsmocap.app.navigation.Screen
 import com.hsmocap.app.ui.Theme
 import com.hsmocap.app.ui.Ui
+
+private fun settingsBack(ui: Ui, navigate: (Screen) -> Unit): View = ui.horizontal().apply {
+    gravity = Gravity.CENTER_VERTICAL
+    setPadding(0, 0, 0, ui.dp(18))
+    setOnClickListener { navigate(Screen.Settings) }
+    addView(ui.icon(R.drawable.ic_lucide_chevron_left, Theme.Primary, 18), LinearLayout.LayoutParams(ui.dp(18), ui.dp(18)))
+    addView(ui.text("설정", 18, Theme.Primary, true))
+}
 
 class HelpScreen(
     private val activity: Activity,
@@ -45,10 +54,7 @@ class HelpScreen(
         }
     }
 
-    private fun back(): View = ui.text("‹ 설정", 18, Theme.Primary, true).apply {
-        setPadding(0, 0, 0, ui.dp(18))
-        setOnClickListener { navigate(Screen.Settings) }
-    }
+    private fun back(): View = settingsBack(ui, navigate)
 
     private fun infoCard(title: String, body: String): View = ui.card().apply {
         addView(ui.text(title, 18, Theme.Text, true))
@@ -70,10 +76,7 @@ class FeedbackScreen(
         return ScrollView(activity).apply {
             addView(ui.vertical().apply {
                 setPadding(ui.dp(24), ui.dp(52), ui.dp(24), ui.dp(24))
-                addView(ui.text("‹ 설정", 18, Theme.Primary, true).apply {
-                    setPadding(0, 0, 0, ui.dp(18))
-                    setOnClickListener { navigate(Screen.Settings) }
-                })
+                addView(settingsBack(ui, navigate))
                 addView(ui.text("피드백 보내기", 30, Theme.Text, true))
                 addView(ui.text("불편한 점이나 제안을 남겨주세요.", 15, Theme.Muted).apply {
                     setPadding(0, ui.dp(4), 0, ui.dp(18))
@@ -106,8 +109,8 @@ class FeedbackScreen(
                 addView(ui.button("피드백 등록", Theme.Primary, Theme.Card).apply {
                     setOnClickListener {
                         val currentUser = user
-                        if (currentUser == null || currentUser.isGuest) {
-                            Toast.makeText(activity, "피드백은 이메일 또는 Google 로그인 후 보낼 수 있습니다.", Toast.LENGTH_SHORT).show()
+                        if (currentUser == null) {
+                            Toast.makeText(activity, "피드백은 로그인 후 보낼 수 있습니다.", Toast.LENGTH_SHORT).show()
                         } else if (titleInput.text.isBlank() || bodyInput.text.isBlank()) {
                             Toast.makeText(activity, "제목과 내용을 입력하세요.", Toast.LENGTH_SHORT).show()
                         } else {
@@ -193,10 +196,7 @@ class PrivacyScreen(
         return ScrollView(activity).apply {
             addView(ui.vertical().apply {
                 setPadding(ui.dp(24), ui.dp(52), ui.dp(24), ui.dp(24))
-                addView(ui.text("‹ 설정", 18, Theme.Primary, true).apply {
-                    setPadding(0, 0, 0, ui.dp(18))
-                    setOnClickListener { navigate(Screen.Settings) }
-                })
+                addView(settingsBack(ui, navigate))
                 addView(ui.text("개인정보 보호약관", 30, Theme.Text, true))
                 addView(ui.text("Wordy는 이용자의 개인정보를 존중합니다.", 15, Theme.Muted).apply {
                     setPadding(0, ui.dp(4), 0, ui.dp(18))

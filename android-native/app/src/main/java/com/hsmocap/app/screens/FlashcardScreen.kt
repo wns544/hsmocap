@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import com.hsmocap.app.R
 import com.hsmocap.app.data.StudyStore
 import com.hsmocap.app.data.Word
 import com.hsmocap.app.navigation.Screen
@@ -75,8 +76,7 @@ class FlashcardScreen(
             addView(ui.horizontal().apply {
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(0, ui.dp(14), 0, ui.dp(18))
-                addView(ui.text("×", 22, Theme.Muted, true).apply {
-                    gravity = Gravity.CENTER
+                addView(ui.icon(R.drawable.ic_lucide_x, Theme.Muted, 22).apply {
                     setOnClickListener { navigate(Screen.Home) }
                 }, LinearLayout.LayoutParams(ui.dp(44), ui.dp(44)))
                 addView(ui.vertical().apply {
@@ -84,8 +84,7 @@ class FlashcardScreen(
                     addView(ui.text(title, 14, Theme.Muted).apply { gravity = Gravity.CENTER })
                     addView(ui.text("${cardIndex + 1} / $total", 17, Theme.Text, true).apply { gravity = Gravity.CENTER })
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                addView(ui.text("↻", 22, Theme.Muted, true).apply {
-                    gravity = Gravity.CENTER
+                addView(ui.icon(R.drawable.ic_lucide_refresh_cw, Theme.Muted, 22).apply {
                     setOnClickListener { navigate(Screen.Flashcard) }
                 }, LinearLayout.LayoutParams(ui.dp(44), ui.dp(44)))
             })

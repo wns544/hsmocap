@@ -130,18 +130,29 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
         val payload = mutableMapOf<String, Any>(
             "categoryId" to categoryIdFor(category),
             "categoryName" to categoryNameFor(category),
+            "userId" to author.id,
+            "authorSnapshot" to mapOf(
+                "name" to author.name,
+            ),
             "authorId" to author.id,
             "authorName" to author.name,
             "authorAvatar" to author.avatar,
             "authorLevel" to author.level,
             "title" to trimmedTitle,
+            "body" to trimmedContent,
             "content" to trimmedContent,
             "category" to categoryNameFor(category),
+            "likeCount" to 0,
+            "commentCount" to 0,
+            "viewCount" to 0,
             "likes" to 0,
             "comments" to 0,
             "views" to 0,
+            "bookmarks" to 0,
             "isHot" to false,
+            "imageUrls" to if (trimmedImageUrl.isNotBlank()) listOf(trimmedImageUrl) else emptyList<String>(),
             "createdAt" to Timestamp.now(),
+            "updatedAt" to Timestamp.now(),
         )
         if (trimmedImageUrl.isNotBlank()) {
             payload["imageUrl"] = trimmedImageUrl
@@ -159,6 +170,10 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
         post.collection("comments")
             .add(
                 mapOf(
+                    "userId" to author.id,
+                    "authorSnapshot" to mapOf(
+                        "name" to author.name,
+                    ),
                     "authorId" to author.id,
                     "authorName" to author.name,
                     "authorAvatar" to author.avatar,
@@ -166,6 +181,7 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
                     "content" to trimmedContent,
                     "likes" to 0,
                     "createdAt" to Timestamp.now(),
+                    "updatedAt" to Timestamp.now(),
                 ),
             )
             .addOnSuccessListener { callback(Result.success(Unit)) }
@@ -229,18 +245,20 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
         val normalizedCategoryName = categoryNameFor(normalizedCategoryId).ifBlank { categoryNameFor(rawCategory) }
         return CommunityPost(
             id = id,
-            authorId = getString("authorId").orEmpty(),
-            authorName = getString("authorName").orEmpty().ifBlank { "워디 사용자" },
+            authorId = getString("authorId").orEmpty().ifBlank { getString("userId").orEmpty() },
+            authorName = getString("authorName").orEmpty().ifBlank {
+                (get("authorSnapshot") as? Map<*, *>)?.get("name") as? String ?: "워디 사용자"
+            },
             authorAvatar = getString("authorAvatar").orEmpty().ifBlank { "👤" },
             authorLevel = getString("authorLevel").orEmpty().ifBlank { "레벨 1" },
             title = getString("title").orEmpty(),
-            content = getString("content").orEmpty(),
+            content = getString("content").orEmpty().ifBlank { getString("body").orEmpty() },
             categoryId = normalizedCategoryId,
             categoryName = normalizedCategoryName,
             category = normalizedCategoryName,
-            likes = getLong("likes").toIntOrZero(),
-            comments = getLong("comments").toIntOrZero(),
-            views = getLong("views").toIntOrZero(),
+            likes = getLong("likes").toIntOrZero().takeIf { it > 0 } ?: getLong("likeCount").toIntOrZero(),
+            comments = getLong("comments").toIntOrZero().takeIf { it > 0 } ?: getLong("commentCount").toIntOrZero(),
+            views = getLong("views").toIntOrZero().takeIf { it > 0 } ?: getLong("viewCount").toIntOrZero(),
             bookmarks = getLong("bookmarks").toIntOrZero(),
             isHot = getBoolean("isHot") ?: false,
             timestampLabel = timestampLabel(getTimestamp("createdAt")?.toDate()),
@@ -336,8 +354,10 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
     private fun DocumentSnapshot.toComment(): CommunityComment {
         return CommunityComment(
             id = id,
-            authorId = getString("authorId").orEmpty(),
-            authorName = getString("authorName").orEmpty().ifBlank { "워디 사용자" },
+            authorId = getString("authorId").orEmpty().ifBlank { getString("userId").orEmpty() },
+            authorName = getString("authorName").orEmpty().ifBlank {
+                (get("authorSnapshot") as? Map<*, *>)?.get("name") as? String ?: "워디 사용자"
+            },
             authorAvatar = getString("authorAvatar").orEmpty().ifBlank { "👤" },
             authorLevel = getString("authorLevel").orEmpty().ifBlank { "레벨 1" },
             content = getString("content").orEmpty(),

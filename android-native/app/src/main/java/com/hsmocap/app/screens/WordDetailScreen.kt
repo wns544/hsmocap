@@ -28,7 +28,7 @@ class WordDetailScreen(
         return scrollWithContent { box ->
             if (word == null) {
                 box.setPadding(ui.dp(24), ui.dp(52), ui.dp(24), ui.dp(24))
-                box.addView(ui.text("‹ 뒤로", 20, Theme.Primary, true).apply {
+                box.addView(backToWords().apply {
                     setOnClickListener { navigate(Screen.Words) }
                 })
                 box.addView(ui.text("단어를 찾을 수 없습니다.", 20, Theme.Muted))
@@ -71,7 +71,7 @@ class WordDetailScreen(
             }
             addView(ui.horizontal().apply {
                 gravity = Gravity.CENTER_VERTICAL
-                addView(headerButton("‹") { navigate(Screen.Words) })
+                addView(headerIconButton(R.drawable.ic_lucide_chevron_left) { navigate(Screen.Words) })
                 addView(View(activity), LinearLayout.LayoutParams(0, 1, 1f))
                 addView(headerIconButton(if (store.isFavorite(word)) R.drawable.ic_lucide_star_active else R.drawable.ic_lucide_star) {
                     store.toggleFavorite(word)
@@ -106,22 +106,21 @@ class WordDetailScreen(
         }
     }
 
-    private fun headerButton(label: String, action: () -> Unit): View {
-        return ui.text(label, 25, Theme.Card, true).apply {
-            gravity = Gravity.CENTER
-            background = ui.rounded(0x33FFFFFF, 12)
-            setOnClickListener { action() }
-        }.also {
-            it.layoutParams = LinearLayout.LayoutParams(ui.dp(44), ui.dp(44))
-        }
-    }
-
     private fun headerIconButton(iconRes: Int, action: () -> Unit): View {
         return FrameLayout(activity).apply {
             background = ui.rounded(0x33FFFFFF, 12)
             setOnClickListener { action() }
             addView(tintedIcon(iconRes, Theme.Card, 22), FrameLayout.LayoutParams(ui.dp(22), ui.dp(22), Gravity.CENTER))
             layoutParams = LinearLayout.LayoutParams(ui.dp(44), ui.dp(44))
+        }
+    }
+
+    private fun backToWords(): View {
+        return ui.horizontal().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, ui.dp(18))
+            addView(tintedIcon(R.drawable.ic_lucide_chevron_left, Theme.Primary, 18), LinearLayout.LayoutParams(ui.dp(18), ui.dp(18)))
+            addView(ui.text("뒤로", 20, Theme.Primary, true))
         }
     }
 

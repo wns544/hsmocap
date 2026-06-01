@@ -45,9 +45,9 @@ class WordListScreen(
                         setPadding(0, 0, 0, ui.dp(10))
                     })
                     words.forEach { body.addView(wordCard(it)) }
-                    body.addView(savedPostsSection())
                     body.addView(tipsCard())
                 }
+                body.addView(savedPostsSection())
                 box.addView(body)
             } else {
                 box.setPadding(ui.dp(24), ui.dp(52), ui.dp(24), ui.dp(24))
@@ -289,7 +289,7 @@ class WordListScreen(
                         addView(ui.text("${mastery(word)}%", 12, Theme.Muted))
                     })
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                addView(ui.text("›", 30, Theme.Muted))
+                addView(tintedIcon(R.drawable.ic_lucide_chevron_right, Theme.Muted, 20))
             })
         }
     }

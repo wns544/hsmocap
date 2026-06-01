@@ -24,6 +24,7 @@ class ProfileScreen(
     private val user: AuthUser?,
     private val words: List<Word>,
     private val store: StudyStore,
+    private val onEditProfile: () -> Unit,
     private val navigate: (Screen) -> Unit,
 ) {
     fun view(): View {
@@ -54,9 +55,8 @@ class ProfileScreen(
         val stats = profileStats()
         val subtitle = when {
             user == null -> "로그인 정보 없음"
-            user.isGuest -> "게스트 모드"
             user.email != null -> user.email
-            else -> user.id
+            else -> "user.wordy.com"
         }
 
         return ui.vertical().apply {
@@ -69,8 +69,7 @@ class ProfileScreen(
                     ui.dp(32).toFloat(), ui.dp(32).toFloat(),
                 )
             }
-            addView(ui.text("‹", 25, Theme.Card, true).apply {
-                gravity = Gravity.CENTER
+            addView(ui.icon(R.drawable.ic_lucide_chevron_left, Theme.Card, 25).apply {
                 background = ui.rounded(0x33FFFFFF, 12)
                 setOnClickListener { navigate(Screen.Home) }
             }, LinearLayout.LayoutParams(ui.dp(44), ui.dp(44)))
@@ -90,6 +89,7 @@ class ProfileScreen(
                 addView(ui.text("프로필 수정", 13, Theme.Card, true).apply {
                     gravity = Gravity.CENTER
                     background = ui.rounded(0x33FFFFFF, 12)
+                    setOnClickListener { onEditProfile() }
                 }, LinearLayout.LayoutParams(ui.dp(86), ui.dp(42)))
             })
             addView(ui.vertical().apply {
@@ -209,7 +209,7 @@ class ProfileScreen(
             addView(ui.text(title, 18, Theme.Text, true).apply {
                 setPadding(ui.dp(14), 0, 0, 0)
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            addView(ui.text("›", 30, Theme.Muted))
+            addView(ui.icon(R.drawable.ic_lucide_chevron_right, Theme.Muted, 20))
         }
     }
 

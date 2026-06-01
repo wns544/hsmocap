@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Toast
+import com.hsmocap.app.R
 import com.hsmocap.app.data.CommunityAuthor
 import com.hsmocap.app.data.CommunityRepository
 import com.hsmocap.app.data.ImageUploadRepository
@@ -71,8 +72,7 @@ class CreatePostScreen(
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(ui.dp(18), ui.dp(44), ui.dp(18), ui.dp(12))
                 setBackgroundColor(Theme.Card)
-                addView(ui.text("‹", 32, Theme.Text, false).apply {
-                    gravity = Gravity.CENTER
+                addView(ui.icon(R.drawable.ic_lucide_chevron_left, Theme.Text, 26).apply {
                     setOnClickListener { navigate(Screen.Community) }
                 }, LinearLayout.LayoutParams(ui.dp(44), ui.dp(44)))
                 addView(ui.text("글쓰기", 18, Theme.Text, false), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -81,7 +81,7 @@ class CreatePostScreen(
                 setPadding(ui.dp(24), ui.dp(32), ui.dp(24), ui.dp(24))
                 addView(ui.card().apply {
                     addView(ui.text("로그인이 필요합니다", 20, Theme.Text, true))
-                    addView(ui.text("커뮤니티 글쓰기는 이메일 또는 Google 로그인 후 사용할 수 있습니다.", 15, Theme.Muted).apply {
+                    addView(ui.text("커뮤니티 글쓰기는 로그인 후 사용할 수 있습니다.", 15, Theme.Muted).apply {
                         setPadding(0, ui.dp(8), 0, ui.dp(12))
                     })
                     addView(ui.button("로그인하기", Theme.Primary, Theme.Card).apply {
@@ -97,8 +97,7 @@ class CreatePostScreen(
             gravity = Gravity.CENTER_VERTICAL
             setPadding(ui.dp(18), ui.dp(44), ui.dp(18), ui.dp(12))
             setBackgroundColor(Theme.Card)
-            addView(ui.text("‹", 32, Theme.Text, false).apply {
-                gravity = Gravity.CENTER
+            addView(ui.icon(R.drawable.ic_lucide_chevron_left, Theme.Text, 26).apply {
                 setOnClickListener { navigate(Screen.Community) }
             }, LinearLayout.LayoutParams(ui.dp(44), ui.dp(44)))
             addView(ui.text("글쓰기", 18, Theme.Text, false), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -159,8 +158,9 @@ class CreatePostScreen(
             activity.runOnUiThread {
                 result
                     .onSuccess { imageUrl -> createPost(title, category, content, imageUrl) }
-                    .onFailure { error ->
-                        Toast.makeText(activity, error.localizedMessage ?: "이미지 업로드에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    .onFailure {
+                        Toast.makeText(activity, "이미지 첨부 없이 게시를 계속합니다.", Toast.LENGTH_SHORT).show()
+                        createPost(title, category, content, imageUrl = null)
                     }
             }
         }
@@ -180,13 +180,12 @@ class CreatePostScreen(
                         onPostCreated()
                         navigate(Screen.PostDetail(postId))
                     }
-                    .onFailure { error ->
-                        Toast.makeText(activity, error.localizedMessage ?: "게시글 저장에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    .onFailure {
+                        Toast.makeText(activity, "게시 권한을 확인할 수 없습니다. 다시 로그인한 뒤 시도해 주세요.", Toast.LENGTH_LONG).show()
                     }
             }
         }
     }
-
     private fun input(hintValue: String): EditText {
         return EditText(activity).apply {
             hint = hintValue

@@ -7,6 +7,7 @@ interface AuthService {
     fun signInWithEmail(email: String, password: String): AuthUser
     fun signInWithGoogleIdToken(idToken: String): AuthUser
     fun signInAsGuest(): AuthUser
+    fun updateDisplayName(displayName: String): AuthUser
     fun signOut()
 }
 

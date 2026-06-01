@@ -11,6 +11,7 @@ import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import com.hsmocap.app.R
 import com.hsmocap.app.data.StudyStore
 import com.hsmocap.app.data.Word
 import com.hsmocap.app.navigation.Screen
@@ -98,8 +99,8 @@ class WordsScreen(
                         gravity = Gravity.CENTER_VERTICAL
                         addView(ui.text(word.word, 20, Theme.Text, true))
                         if (store.isFavorite(word)) {
-                            addView(ui.text("★", 17, Theme.Yellow, true).apply {
-                                setPadding(ui.dp(8), 0, 0, 0)
+                            addView(ui.icon(R.drawable.ic_lucide_star_active, Theme.Yellow, 17), LinearLayout.LayoutParams(ui.dp(25), ui.dp(17)).apply {
+                                setMargins(ui.dp(8), 0, 0, 0)
                             })
                         }
                     })
@@ -115,7 +116,7 @@ class WordsScreen(
                         addView(ui.text("${mastery(word)}%", 12, Theme.Muted))
                     })
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                addView(ui.text("›", 30, Theme.Muted))
+                addView(ui.icon(R.drawable.ic_lucide_chevron_right, Theme.Muted, 20))
             })
         }
     }

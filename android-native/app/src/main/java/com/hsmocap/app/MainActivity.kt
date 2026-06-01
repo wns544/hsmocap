@@ -2,15 +2,19 @@ package com.hsmocap.app
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.util.Log
+import android.view.Gravity
 import android.view.ViewGroup
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.Toast
 import com.hsmocap.app.auth.AuthService
 import com.hsmocap.app.auth.GoogleCredentialSignIn
@@ -42,6 +46,7 @@ import com.hsmocap.app.screens.WordDetailScreen
 import com.hsmocap.app.screens.WordListScreen
 import com.hsmocap.app.screens.WordsScreen
 import com.hsmocap.app.ui.BottomNav
+import com.hsmocap.app.ui.AppDialog
 import com.hsmocap.app.ui.Theme
 import com.hsmocap.app.ui.Ui
 import java.util.Locale
@@ -69,6 +74,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var backCallback: OnBackInvokedCallback? = null
     private var textToSpeech: TextToSpeech? = null
     private var textToSpeechReady: Boolean = false
+    private var authLoadingDialog: Dialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -183,6 +189,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                                 navigate(Screen.Home, addToBackStack = false)
                             },
                             fallbackMessage = "로그인에 실패했습니다.",
+                            loadingMessage = "로그인 중입니다.",
                         )
                     },
                     onSignup = { email, password ->
@@ -194,9 +201,12 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                                 navigate(Screen.Home, addToBackStack = false)
                             },
                             fallbackMessage = "회원가입에 실패했습니다.",
+                            loadingMessage = "회원가입 중입니다.",
                         )
                     },
                     onGoogleLogin = {
+                        Log.d(TAG, "Google login button clicked")
+                        showAuthLoading("Google 로그인 중입니다.")
                         GoogleCredentialSignIn.requestIdToken(
                             activity = this,
                             onSuccess = { idToken ->
@@ -207,10 +217,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                                         navigate(Screen.Home, addToBackStack = false)
                                     },
                                     fallbackMessage = "Google 로그인에 실패했습니다.",
+                                    loadingMessage = null,
                                 )
                             },
                             onFailure = { message ->
+                                Log.e(TAG, "Google credential flow failed: $message")
                                 runOnUiThread {
+                                    dismissAuthLoading()
                                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                                 }
                             },
@@ -224,11 +237,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                                 navigate(Screen.Home, addToBackStack = false)
                             },
                             fallbackMessage = "게스트 로그인에 실패했습니다.",
+                            loadingMessage = "게스트로 시작하는 중입니다.",
                         )
                     },
                 ).view(),
             )
-            Screen.Home -> content.addView(HomeScreen(this, ui, words, store, nativeSettings, ::navigate).view())
+            Screen.Home -> content.addView(HomeScreen(
+                this,
+                ui,
+                words,
+                store,
+                nativeSettings,
+                authService.currentUser?.displayName ?: "워디 사용자",
+                ::navigate,
+            ).view())
             Screen.Words -> content.addView(
                 WordsScreen(
                     activity = this,
@@ -316,7 +338,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                 ).view(),
             )
             Screen.Privacy -> content.addView(PrivacyScreen(this, ui, ::navigate).view())
-            Screen.Profile -> content.addView(ProfileScreen(this, ui, authService.currentUser, words, store, ::navigate).view())
+            Screen.Profile -> content.addView(ProfileScreen(this, ui, authService.currentUser, words, store, ::showEditProfileDialog, ::navigate).view())
             Screen.Community -> content.addView(
                 CommunityScreen(
                     activity = this,
@@ -533,22 +555,62 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun currentCommunityAuthor(): CommunityAuthor {
         val user = authService.currentUser
+        val displayName = user?.displayName?.ifBlank { null } ?: "워디 사용자"
         return CommunityAuthor(
             id = user?.id ?: "anonymous",
-            name = user?.displayName?.ifBlank { null } ?: "워디 사용자",
-            avatar = if (user?.isGuest == true) "👤" else "W",
+            name = displayName,
+            avatar = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "W",
             level = "레벨 ${store.streakDays().coerceAtLeast(1)}",
         )
     }
 
     private fun canUseServerAccount(): Boolean {
-        val user = authService.currentUser ?: return false
-        return !user.isGuest && user.email?.isNotBlank() == true
+        return authService.currentUser != null
     }
 
     private fun requireLoginForServerFeature() {
-        Toast.makeText(this, "이 기능은 이메일 또는 Google 로그인 후 사용할 수 있습니다.", Toast.LENGTH_LONG).show()
-        navigate(Screen.Login)
+        AppDialog.confirm(
+            activity = this,
+            ui = ui,
+            title = "로그인이 필요합니다",
+            message = "로그인 후 이용할 수 있는 기능입니다.\n로그인 화면으로 이동할까요?",
+            negativeLabel = "아니요",
+            positiveLabel = "로그인하기",
+            onPositive = {
+                authService.signOut()
+                store = createStudyStore("anonymous")
+                navigate(Screen.Login, addToBackStack = false)
+            },
+        )
+    }
+
+    private fun showEditProfileDialog() {
+        val current = authService.currentUser
+        if (current == null) {
+            Toast.makeText(this, "프로필 수정은 로그인 후 사용할 수 있습니다.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        AppDialog.textInput(
+            activity = this,
+            ui = ui,
+            title = "프로필 수정",
+            message = "앱에서 표시할 닉네임을 입력해 주세요.",
+            hint = "닉네임",
+            initialValue = current.displayName,
+            negativeLabel = "취소",
+            positiveLabel = "저장",
+        ) { dialog, name ->
+            runAuth(
+                action = { authService.updateDisplayName(name) },
+                onSuccess = {
+                    Toast.makeText(this@MainActivity, "프로필이 수정되었습니다.", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                    navigate(Screen.Profile, addToBackStack = false)
+                },
+                fallbackMessage = "프로필 수정에 실패했습니다.",
+            )
+        }
     }
 
     private fun pickPostImage() {
@@ -573,21 +635,58 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         action: () -> Unit,
         onSuccess: () -> Unit,
         fallbackMessage: String,
+        loadingMessage: String? = null,
     ) {
+        loadingMessage?.let { showAuthLoading(it) }
         Thread {
             runCatching { action() }
                 .onSuccess {
-                    runOnUiThread { onSuccess() }
+                    Log.d(TAG, "Auth action succeeded")
+                    runOnUiThread {
+                        dismissAuthLoading()
+                        onSuccess()
+                    }
                 }
                 .onFailure { error ->
+                    Log.e(TAG, "Auth action failed: ${error.javaClass.name}: ${error.message}", error)
                     runOnUiThread {
-                        Toast.makeText(this, error.message ?: fallbackMessage, Toast.LENGTH_SHORT).show()
+                        dismissAuthLoading()
+                        val message = error.message ?: "${fallbackMessage} (${error.javaClass.simpleName})"
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                     }
                 }
         }.start()
     }
 
+    private fun showAuthLoading(message: String) {
+        if (authLoadingDialog?.isShowing == true) return
+        authLoadingDialog = Dialog(this).apply {
+            setCancelable(false)
+            setContentView(
+                ui.horizontal().apply {
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(ui.dp(24), ui.dp(18), ui.dp(24), ui.dp(18))
+                    background = ui.rounded(Theme.Card, 18, Theme.Border)
+                    addView(ProgressBar(this@MainActivity).apply {
+                        isIndeterminate = true
+                    }, LinearLayout.LayoutParams(ui.dp(34), ui.dp(34)).apply {
+                        setMargins(0, 0, ui.dp(14), 0)
+                    })
+                    addView(ui.text(message, 16, Theme.Text, true))
+                },
+            )
+            window?.setBackgroundDrawableResource(android.R.color.transparent)
+        }
+        authLoadingDialog?.show()
+    }
+
+    private fun dismissAuthLoading() {
+        authLoadingDialog?.dismiss()
+        authLoadingDialog = null
+    }
+
     companion object {
+        private const val TAG = "WordyMain"
         private const val PICK_POST_IMAGE_REQUEST = 4301
     }
 }

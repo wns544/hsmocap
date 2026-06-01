@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import com.hsmocap.app.R
 import com.hsmocap.app.data.StudyStore
 import com.hsmocap.app.data.Word
 import com.hsmocap.app.navigation.Screen
@@ -99,7 +100,7 @@ class ReviewScreen(
                         setPadding(0, ui.dp(8), 0, 0)
                     })
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                addView(ui.text("›", 30, Theme.Muted))
+                addView(ui.icon(R.drawable.ic_lucide_chevron_right, Theme.Muted, 20))
             })
         }
     }

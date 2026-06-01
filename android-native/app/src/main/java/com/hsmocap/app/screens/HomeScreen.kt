@@ -2,6 +2,7 @@ package com.hsmocap.app.screens
 
 import android.app.Activity
 import android.content.res.ColorStateList
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -27,6 +28,7 @@ class HomeScreen(
     private val words: List<Word>,
     private val store: StudyStore,
     private val settings: NativeSettings,
+    private val userName: String,
     private val navigate: (Screen) -> Unit,
 ) {
     fun view(): View {
@@ -83,7 +85,11 @@ class HomeScreen(
                 gravity = Gravity.CENTER_VERTICAL
                 addView(ui.vertical().apply {
                     addView(ui.text(todayLabel(), 14, 0xC0FFFFFF.toInt()))
-                    addView(ui.text("안녕하세요, 워디 사용자님", 30, Theme.Card, true))
+                    addView(ui.text("안녕하세요,", 30, Theme.Card, true))
+                    addView(ui.text("${userName.ifBlank { "워디 사용자" }}님", 30, Theme.Card, true).apply {
+                        maxLines = 1
+                        ellipsize = TextUtils.TruncateAt.END
+                    })
                     addView(ui.text("오늘도 목표 단어를 차근차근 채워봐요.", 16, 0xD0FFFFFF.toInt()))
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
                 addView(ui.text("프로필", 14, Theme.Card, true).apply {
@@ -112,11 +118,19 @@ class HomeScreen(
             setOnClickListener { navigate(Screen.WordDetail(word.index)) }
             addView(ui.horizontal().apply {
                 addView(ui.vertical().apply {
-                    addView(ui.text(word.word + if (store.isFavorite(word)) " ★" else "", 20, Theme.Text, true))
+                    addView(ui.horizontal().apply {
+                        gravity = Gravity.CENTER_VERTICAL
+                        addView(ui.text(word.word, 20, Theme.Text, true))
+                        if (store.isFavorite(word)) {
+                            addView(tintedIcon(R.drawable.ic_lucide_star_active, Theme.Yellow, 17), LinearLayout.LayoutParams(ui.dp(25), ui.dp(17)).apply {
+                                setMargins(ui.dp(8), 0, 0, 0)
+                            })
+                        }
+                    })
                     addView(ui.text(word.meaning, 15, Theme.Muted))
                     addView(ui.text(word.level, 12, Theme.Muted, true))
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                addView(ui.text("›", 30, Theme.Muted))
+                addView(tintedIcon(R.drawable.ic_lucide_chevron_right, Theme.Muted, 20))
             })
         }
     }

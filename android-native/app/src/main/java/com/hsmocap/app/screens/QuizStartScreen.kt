@@ -57,7 +57,7 @@ class QuizStartScreen(
                 addView(ui.text(title, 18, Theme.Text, true))
                 addView(ui.text(subtitle, 14, Theme.Muted))
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            addView(ui.text("›", 30, Theme.Muted))
+            addView(ui.icon(R.drawable.ic_lucide_chevron_right, Theme.Muted, 20))
         }
     }
 

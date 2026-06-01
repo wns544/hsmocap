@@ -1,6 +1,8 @@
 package com.hsmocap.app.screens
 
 import android.app.Activity
+import android.app.Dialog
+import android.graphics.Color
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -9,9 +11,13 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.TextView
 import android.widget.Toast
+import com.hsmocap.app.R
 import com.hsmocap.app.data.CommunityAuthor
 import com.hsmocap.app.data.CommunityComment
 import com.hsmocap.app.data.CommunityPost
@@ -33,6 +39,10 @@ class PostDetailScreen(
     private val navigate: (Screen) -> Unit,
 ) {
     private lateinit var content: LinearLayout
+    private var currentPost: CommunityPost? = null
+    private var currentReaction: CommunityReaction = CommunityReaction(liked = false, bookmarked = false)
+    private var statsText: TextView? = null
+    private var reactionUpdating: Boolean = false
 
     fun view(): View {
         return ui.vertical().apply {
@@ -81,6 +91,8 @@ class PostDetailScreen(
     }
 
     private fun renderPost(post: CommunityPost, reaction: CommunityReaction) {
+        currentPost = post
+        currentReaction = reaction
         content.removeAllViews()
         content.addView(postBody(post))
         content.addView(actionBar(post, reaction))
@@ -104,13 +116,12 @@ class PostDetailScreen(
             gravity = Gravity.CENTER_VERTICAL
             setPadding(ui.dp(18), ui.dp(44), ui.dp(18), ui.dp(12))
             setBackgroundColor(Theme.Card)
-            addView(ui.text("‹", 32, Theme.Text, false).apply {
-                gravity = Gravity.CENTER
+            addView(ui.icon(R.drawable.ic_lucide_chevron_left, Theme.Text, 26).apply {
                 setOnClickListener { navigate(Screen.Community) }
             }, LinearLayout.LayoutParams(ui.dp(44), ui.dp(44)))
             addView(View(activity), LinearLayout.LayoutParams(0, 1, 1f))
             addView(ui.text("공유", 14, Theme.Muted, true).apply { gravity = Gravity.CENTER }, LinearLayout.LayoutParams(ui.dp(48), ui.dp(40)))
-            addView(ui.text("⋮", 24, Theme.Muted, true).apply { gravity = Gravity.CENTER }, LinearLayout.LayoutParams(ui.dp(40), ui.dp(40)))
+            addView(ui.icon(R.drawable.ic_lucide_more_vertical, Theme.Muted, 22), LinearLayout.LayoutParams(ui.dp(40), ui.dp(40)))
         }
     }
 
@@ -137,13 +148,15 @@ class PostDetailScreen(
             post.imageUrl?.takeIf { it.isNotBlank() }?.let { imageUrl ->
                 addView(RemoteImageView(activity, imageUrl, ui, 260).apply {
                     background = ui.rounded(Theme.Card, 18, Theme.Border)
+                    setOnClickListener { showImagePreview(imageUrl) }
                 }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(260)).apply {
                     setMargins(0, 0, 0, ui.dp(22))
                 })
             }
-            addView(ui.text("조회 ${post.views}   좋아요 ${post.likes}   댓글 ${post.comments}   저장 ${post.bookmarks}", 14, Theme.Muted).apply {
+            statsText = ui.text(statsLabel(post), 14, Theme.Muted).apply {
                 setPadding(0, ui.dp(16), 0, 0)
-            })
+            }
+            addView(statsText)
         }
     }
 
@@ -179,17 +192,7 @@ class PostDetailScreen(
                 if (!canComment) {
                     onRequireLogin()
                 } else {
-                    communityRepository.toggleLike(post.id, author.id) { result ->
-                        activity.runOnUiThread {
-                            result
-                                .onSuccess {
-                                    load()
-                                }
-                                .onFailure { error ->
-                                    Toast.makeText(activity, error.localizedMessage ?: "좋아요 반영에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                                }
-                        }
-                    }
+                    toggleReaction(like = true)
                 }
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             addView(action(ReactionIcon.Comment, "댓글", false) {
@@ -199,18 +202,90 @@ class PostDetailScreen(
                 if (!canComment) {
                     onRequireLogin()
                 } else {
-                    communityRepository.toggleBookmark(post.id, author.id) { result ->
-                        activity.runOnUiThread {
-                            result
-                                .onSuccess { load() }
-                                .onFailure { error ->
-                                    Toast.makeText(activity, error.localizedMessage ?: "저장에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                                }
-                        }
-                    }
+                    toggleReaction(like = false)
                 }
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
+    }
+
+    private fun toggleReaction(like: Boolean) {
+        val post = currentPost ?: return
+        if (reactionUpdating) return
+        reactionUpdating = true
+        val action = if (like) {
+            { callback: (Result<Unit>) -> Unit -> communityRepository.toggleLike(post.id, author.id, callback) }
+        } else {
+            { callback: (Result<Unit>) -> Unit -> communityRepository.toggleBookmark(post.id, author.id, callback) }
+        }
+        action { result ->
+            activity.runOnUiThread {
+                reactionUpdating = false
+                result
+                    .onSuccess {
+                        val previousReaction = currentReaction
+                        val nextReaction = if (like) {
+                            previousReaction.copy(liked = !previousReaction.liked)
+                        } else {
+                            previousReaction.copy(bookmarked = !previousReaction.bookmarked)
+                        }
+                        val nextPost = if (like) {
+                            post.copy(likes = (post.likes + if (nextReaction.liked) 1 else -1).coerceAtLeast(0))
+                        } else {
+                            post.copy(bookmarks = (post.bookmarks + if (nextReaction.bookmarked) 1 else -1).coerceAtLeast(0))
+                        }
+                        currentReaction = nextReaction
+                        currentPost = nextPost
+                        statsText?.text = statsLabel(nextPost)
+                        if (content.childCount > 1) {
+                            content.removeViewAt(1)
+                            content.addView(actionBar(nextPost, nextReaction), 1)
+                        }
+                    }
+                    .onFailure { error ->
+                        Toast.makeText(
+                            activity,
+                            error.localizedMessage ?: if (like) "좋아요 반영에 실패했습니다." else "저장에 실패했습니다.",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+            }
+        }
+    }
+
+    private fun statsLabel(post: CommunityPost): String {
+        return "조회 ${post.views}   좋아요 ${post.likes}   댓글 ${post.comments}   저장 ${post.bookmarks}"
+    }
+
+    private fun showImagePreview(imageUrl: String) {
+        val dialog = Dialog(activity, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
+            setCancelable(true)
+        }
+        val root = FrameLayout(activity).apply {
+            setBackgroundColor(Color.BLACK)
+            setOnClickListener { dialog.dismiss() }
+        }
+        root.addView(
+            RemoteImageView(activity, imageUrl, ui, 1).apply {
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setBackgroundColor(Color.BLACK)
+                setOnClickListener { }
+            },
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER).apply {
+                setMargins(ui.dp(12), ui.dp(64), ui.dp(12), ui.dp(24))
+            },
+        )
+        root.addView(
+            ui.icon(R.drawable.ic_lucide_x, Theme.Card, 28).apply {
+                setPadding(ui.dp(10), ui.dp(10), ui.dp(10), ui.dp(10))
+                background = ui.rounded(0x66000000, 24)
+                setOnClickListener { dialog.dismiss() }
+            },
+            FrameLayout.LayoutParams(ui.dp(52), ui.dp(52), Gravity.TOP or Gravity.END).apply {
+                setMargins(0, ui.dp(26), ui.dp(18), 0)
+            },
+        )
+        dialog.setContentView(root)
+        dialog.show()
     }
 
     private fun action(icon: ReactionIcon, label: String, active: Boolean, onClick: () -> Unit): View {
@@ -291,9 +366,9 @@ class PostDetailScreen(
             addView(input, LinearLayout.LayoutParams(0, ui.dp(44), 1f).apply {
                 setMargins(0, 0, ui.dp(10), 0)
             })
-            addView(ui.text("➤", 18, Theme.Card, true).apply {
-                gravity = Gravity.CENTER
+            addView(ui.icon(R.drawable.ic_lucide_send, Theme.Card, 18).apply {
                 background = ui.rounded(Theme.Primary, 22)
+                setPadding(ui.dp(10), ui.dp(14), ui.dp(14), ui.dp(10))
                 setOnClickListener {
                     if (!canComment) {
                         onRequireLogin()
