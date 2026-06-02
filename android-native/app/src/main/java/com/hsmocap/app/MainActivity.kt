@@ -379,7 +379,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     postId = next.postId,
                     communityRepository = NativeServices.communityRepository(this),
                     author = currentCommunityAuthor(),
-                    canComment = canUseServerAccount(),
+                    canComment = canUseCommunityInteraction(),
                     onRequireLogin = ::requireLoginForServerFeature,
                     navigate = ::navigate,
                 ).view(),
@@ -570,6 +570,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun canCreateCommunityPost(): Boolean {
+        return authService.currentUser != null
+    }
+
+    private fun canUseCommunityInteraction(): Boolean {
         return authService.currentUser != null
     }
 

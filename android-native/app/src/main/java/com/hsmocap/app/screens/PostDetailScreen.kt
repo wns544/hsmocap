@@ -8,10 +8,12 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -145,18 +147,42 @@ class PostDetailScreen(
                 setLineSpacing(ui.dp(5).toFloat(), 1f)
                 setPadding(0, 0, 0, ui.dp(22))
             })
-            post.imageUrls.filter { it.isNotBlank() }.forEach { imageUrl ->
-                addView(RemoteImageView(activity, imageUrl, ui, 260).apply {
-                    background = ui.rounded(Theme.Card, 18, Theme.Border)
-                    setOnClickListener { showImagePreview(imageUrl) }
-                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(260)).apply {
-                    setMargins(0, 0, 0, ui.dp(14))
+            val imageUrls = post.imageUrls.filter { it.isNotBlank() }
+            if (imageUrls.isNotEmpty()) {
+                addView(imageCarousel(imageUrls), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(280)).apply {
+                    setMargins(0, 0, 0, ui.dp(18))
                 })
             }
             statsText = ui.text(statsLabel(post), 14, Theme.Muted).apply {
                 setPadding(0, ui.dp(16), 0, 0)
             }
             addView(statsText)
+        }
+    }
+
+    private fun imageCarousel(imageUrls: List<String>): View {
+        val imageWidth = activity.resources.displayMetrics.widthPixels - ui.dp(48)
+        return ui.vertical().apply {
+            addView(HorizontalScrollView(activity).apply {
+                isHorizontalScrollBarEnabled = false
+                overScrollMode = View.OVER_SCROLL_NEVER
+                addView(ui.horizontal().apply {
+                    imageUrls.forEachIndexed { index, imageUrl ->
+                        addView(RemoteImageView(activity, imageUrl, ui, 260).apply {
+                            background = ui.rounded(Theme.Card, 18, Theme.Border)
+                            setOnClickListener { showImagePreview(imageUrls, index) }
+                        }, LinearLayout.LayoutParams(imageWidth, ui.dp(260)).apply {
+                            if (index < imageUrls.lastIndex) setMargins(0, 0, ui.dp(10), 0)
+                        })
+                    }
+                })
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(260)))
+            if (imageUrls.size > 1) {
+                addView(ui.text("1 / ${imageUrls.size}", 12, Theme.Muted, true).apply {
+                    gravity = Gravity.CENTER
+                    setPadding(0, ui.dp(7), 0, 0)
+                })
+            }
         }
     }
 
@@ -256,24 +282,66 @@ class PostDetailScreen(
         return "조회 ${post.views}   좋아요 ${post.likes}   댓글 ${post.comments}   저장 ${post.bookmarks}"
     }
 
-    private fun showImagePreview(imageUrl: String) {
+    private fun showImagePreview(imageUrls: List<String>, initialIndex: Int) {
+        var currentIndex = initialIndex.coerceIn(0, imageUrls.lastIndex)
         val dialog = Dialog(activity, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             setCancelable(true)
         }
         val root = FrameLayout(activity).apply {
             setBackgroundColor(Color.BLACK)
-            setOnClickListener { dialog.dismiss() }
+        }
+        val imageHolder = FrameLayout(activity)
+        val counter = ui.text("", 13, Theme.Card, true).apply {
+            gravity = Gravity.CENTER
+            background = ui.rounded(0x66000000, 14)
+            setPadding(ui.dp(10), ui.dp(4), ui.dp(10), ui.dp(4))
+        }
+        fun renderPreview() {
+            imageHolder.removeAllViews()
+            imageHolder.addView(
+                RemoteImageView(activity, imageUrls[currentIndex], ui, 1).apply {
+                    setImageScaleType(ImageView.ScaleType.FIT_CENTER)
+                    setBackgroundColor(Color.BLACK)
+                },
+                FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER),
+            )
+            counter.text = "${currentIndex + 1} / ${imageUrls.size}"
         }
         root.addView(
-            RemoteImageView(activity, imageUrl, ui, 1).apply {
-                setImageScaleType(ImageView.ScaleType.FIT_CENTER)
-                setBackgroundColor(Color.BLACK)
-                setOnClickListener { }
-            },
+            imageHolder,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER).apply {
                 setMargins(ui.dp(12), ui.dp(64), ui.dp(12), ui.dp(24))
             },
         )
+        if (imageUrls.size > 1) {
+            var downX = 0f
+            root.setOnTouchListener { _, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        downX = event.x
+                        true
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        val deltaX = event.x - downX
+                        when {
+                            deltaX < -SWIPE_THRESHOLD && currentIndex < imageUrls.lastIndex -> {
+                                currentIndex += 1
+                                renderPreview()
+                            }
+                            deltaX > SWIPE_THRESHOLD && currentIndex > 0 -> {
+                                currentIndex -= 1
+                                renderPreview()
+                            }
+                        }
+                        true
+                    }
+                    else -> true
+                }
+            }
+            root.addView(counter, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(30), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply {
+                setMargins(0, ui.dp(38), 0, 0)
+            })
+        }
         root.addView(
             ui.icon(R.drawable.ic_lucide_x, Theme.Card, 28).apply {
                 setPadding(ui.dp(10), ui.dp(10), ui.dp(10), ui.dp(10))
@@ -284,6 +352,7 @@ class PostDetailScreen(
                 setMargins(0, ui.dp(26), ui.dp(18), 0)
             },
         )
+        renderPreview()
         dialog.setContentView(root)
         dialog.show()
     }
@@ -406,6 +475,10 @@ class PostDetailScreen(
         Like,
         Comment,
         Bookmark,
+    }
+
+    companion object {
+        private const val SWIPE_THRESHOLD = 80f
     }
 
     private class ReactionIconView(
