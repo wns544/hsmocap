@@ -266,7 +266,7 @@ class PostDetailScreen(
         }
         root.addView(
             RemoteImageView(activity, imageUrl, ui, 1).apply {
-                scaleType = ImageView.ScaleType.FIT_CENTER
+                setImageScaleType(ImageView.ScaleType.FIT_CENTER)
                 setBackgroundColor(Color.BLACK)
                 setOnClickListener { }
             },
