@@ -283,59 +283,56 @@ class PostDetailScreen(
     }
 
     private fun showImagePreview(imageUrls: List<String>, initialIndex: Int) {
-        var currentIndex = initialIndex.coerceIn(0, imageUrls.lastIndex)
+        val initialPage = initialIndex.coerceIn(0, imageUrls.lastIndex)
         val dialog = Dialog(activity, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             setCancelable(true)
         }
         val root = FrameLayout(activity).apply {
             setBackgroundColor(Color.BLACK)
         }
-        val imageHolder = FrameLayout(activity)
+        val pageWidth = activity.resources.displayMetrics.widthPixels
+        val pager = HorizontalScrollView(activity).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
         val counter = ui.text("", 13, Theme.Card, true).apply {
             gravity = Gravity.CENTER
             background = ui.rounded(0x66000000, 14)
             setPadding(ui.dp(10), ui.dp(4), ui.dp(10), ui.dp(4))
         }
-        fun renderPreview() {
-            imageHolder.removeAllViews()
-            imageHolder.addView(
-                RemoteImageView(activity, imageUrls[currentIndex], ui, 1).apply {
-                    setImageScaleType(ImageView.ScaleType.FIT_CENTER)
-                    setBackgroundColor(Color.BLACK)
-                },
-                FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER),
-            )
-            counter.text = "${currentIndex + 1} / ${imageUrls.size}"
+        fun updateCounter() {
+            val page = ((pager.scrollX + pageWidth / 2) / pageWidth).coerceIn(0, imageUrls.lastIndex)
+            counter.text = "${page + 1} / ${imageUrls.size}"
         }
+        pager.addView(ui.horizontal().apply {
+            imageUrls.forEach { imageUrl ->
+                addView(
+                    RemoteImageView(activity, imageUrl, ui, 1).apply {
+                        setImageScaleType(ImageView.ScaleType.FIT_CENTER)
+                        setBackgroundColor(Color.BLACK)
+                    },
+                    LinearLayout.LayoutParams(pageWidth, ViewGroup.LayoutParams.MATCH_PARENT),
+                )
+            }
+        }, ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT))
         root.addView(
-            imageHolder,
+            pager,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER).apply {
-                setMargins(ui.dp(12), ui.dp(64), ui.dp(12), ui.dp(24))
+                setMargins(0, ui.dp(64), 0, ui.dp(24))
             },
         )
         if (imageUrls.size > 1) {
-            var downX = 0f
-            root.setOnTouchListener { _, event ->
+            pager.setOnTouchListener { _, event ->
                 when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        downX = event.x
-                        true
-                    }
                     MotionEvent.ACTION_UP -> {
-                        val deltaX = event.x - downX
-                        when {
-                            deltaX < -SWIPE_THRESHOLD && currentIndex < imageUrls.lastIndex -> {
-                                currentIndex += 1
-                                renderPreview()
-                            }
-                            deltaX > SWIPE_THRESHOLD && currentIndex > 0 -> {
-                                currentIndex -= 1
-                                renderPreview()
-                            }
-                        }
-                        true
+                        pager.postDelayed({ updateCounter() }, 120)
+                        false
                     }
-                    else -> true
+                    MotionEvent.ACTION_CANCEL -> {
+                        pager.postDelayed({ updateCounter() }, 120)
+                        false
+                    }
+                    else -> false
                 }
             }
             root.addView(counter, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(30), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply {
@@ -352,9 +349,13 @@ class PostDetailScreen(
                 setMargins(0, ui.dp(26), ui.dp(18), 0)
             },
         )
-        renderPreview()
+        counter.text = "${initialPage + 1} / ${imageUrls.size}"
         dialog.setContentView(root)
         dialog.show()
+        pager.post {
+            pager.scrollTo(initialPage * pageWidth, 0)
+            updateCounter()
+        }
     }
 
     private fun action(icon: ReactionIcon, label: String, active: Boolean, onClick: () -> Unit): View {
@@ -475,10 +476,6 @@ class PostDetailScreen(
         Like,
         Comment,
         Bookmark,
-    }
-
-    companion object {
-        private const val SWIPE_THRESHOLD = 80f
     }
 
     private class ReactionIconView(
