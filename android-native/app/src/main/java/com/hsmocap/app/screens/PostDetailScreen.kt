@@ -2,6 +2,7 @@ package com.hsmocap.app.screens
 
 import android.app.Activity
 import android.app.Dialog
+import android.animation.ValueAnimator
 import android.graphics.Color
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -11,6 +12,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
@@ -360,6 +362,7 @@ class PostDetailScreen(
         var pageCount: Int = 1
         var onPageChanged: ((Int) -> Unit)? = null
         private var gestureStartScrollX: Int = 0
+        private var snapAnimator: ValueAnimator? = null
 
         fun currentPage(): Int {
             if (pageStride <= 0 || pageCount <= 1) return 0
@@ -368,6 +371,7 @@ class PostDetailScreen(
 
         override fun onTouchEvent(event: MotionEvent): Boolean {
             if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                snapAnimator?.cancel()
                 gestureStartScrollX = scrollX
             }
             val handled = super.onTouchEvent(event)
@@ -395,10 +399,9 @@ class PostDetailScreen(
             if (pageStride <= 0 || pageCount <= 1) return
             val startPage = ((gestureStartScrollX + pageStride / 2) / pageStride).coerceIn(0, pageCount - 1)
             val dragDistance = scrollX - gestureStartScrollX
-            val threshold = (pageStride * DRAG_PAGE_THRESHOLD).toInt()
             val target = when {
-                dragDistance > threshold -> startPage + 1
-                dragDistance < -threshold -> startPage - 1
+                dragDistance > pageStride * FORWARD_DRAG_THRESHOLD -> startPage + 1
+                dragDistance < -pageStride * BACKWARD_DRAG_THRESHOLD -> startPage - 1
                 else -> currentPage()
             }.coerceIn(0, pageCount - 1)
             snapToPage(target)
@@ -406,13 +409,27 @@ class PostDetailScreen(
 
         private fun snapToPage(page: Int) {
             val targetX = page * pageStride
-            smoothScrollTo(targetX, 0)
+            snapAnimator?.cancel()
+            if (scrollX == targetX) {
+                onPageChanged?.invoke(page)
+                return
+            }
+            snapAnimator = ValueAnimator.ofInt(scrollX, targetX).apply {
+                duration = SNAP_ANIMATION_MS
+                interpolator = DecelerateInterpolator(1.35f)
+                addUpdateListener { animator ->
+                    scrollTo(animator.animatedValue as Int, 0)
+                }
+                start()
+            }
             onPageChanged?.invoke(page)
         }
 
         private companion object {
             private const val MIN_FLING_VELOCITY = 450
-            private const val DRAG_PAGE_THRESHOLD = 0.18f
+            private const val FORWARD_DRAG_THRESHOLD = 0.16f
+            private const val BACKWARD_DRAG_THRESHOLD = 0.08f
+            private const val SNAP_ANIMATION_MS = 420L
         }
     }
 
