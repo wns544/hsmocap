@@ -3,6 +3,7 @@ package com.hsmocap.app.screens
 import android.app.Activity
 import android.app.Dialog
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -189,6 +190,9 @@ class CreatePostScreen(
             Toast.makeText(activity, "내용을 입력하세요.", Toast.LENGTH_SHORT).show()
             return
         }
+        if (!validateImages(imageUris)) {
+            return
+        }
 
         showPublishingDialog()
         if (imageUris.isEmpty()) {
@@ -199,6 +203,56 @@ class CreatePostScreen(
         uploadImages(imageUris, mutableListOf()) { imageUrls ->
             createPost(title, category, content, imageUrls)
         }
+    }
+
+    private fun validateImages(imageUris: List<Uri>): Boolean {
+        imageUris.forEachIndexed { index, uri ->
+            val imageNumber = index + 1
+            val mimeType = activity.contentResolver.getType(uri)
+            if (mimeType == null || !mimeType.startsWith("image/")) {
+                Toast.makeText(activity, "${imageNumber}번째 이미지를 인식할 수 없습니다. 다른 사진을 선택해 주세요.", Toast.LENGTH_LONG).show()
+                return false
+            }
+            val size = imageSize(uri)
+            if (size == null || size <= 0L) {
+                Toast.makeText(activity, "${imageNumber}번째 이미지 파일을 확인할 수 없습니다. 다른 사진을 선택해 주세요.", Toast.LENGTH_LONG).show()
+                return false
+            }
+            if (size > MAX_IMAGE_BYTES) {
+                Toast.makeText(activity, "이미지는 5MB 이하만 첨부할 수 있습니다. ${imageNumber}번째 사진 용량을 줄여 주세요.", Toast.LENGTH_LONG).show()
+                return false
+            }
+            if (!canOpenImage(uri)) {
+                Toast.makeText(activity, "${imageNumber}번째 이미지를 불러올 수 없습니다. 다른 사진을 선택해 주세요.", Toast.LENGTH_LONG).show()
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun imageSize(uri: Uri): Long? {
+        val projection = arrayOf(OpenableColumns.SIZE)
+        activity.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
+                    return cursor.getLong(sizeIndex)
+                }
+            }
+        }
+        return runCatching {
+            activity.contentResolver.openAssetFileDescriptor(uri, "r")?.use { descriptor ->
+                descriptor.length.takeIf { it > 0L }
+            }
+        }.getOrNull()
+    }
+
+    private fun canOpenImage(uri: Uri): Boolean {
+        return runCatching {
+            activity.contentResolver.openInputStream(uri)?.use { stream ->
+                stream.read(ByteArray(1)) >= 0
+            } ?: false
+        }.getOrDefault(false)
     }
 
     private fun uploadImages(remaining: List<Uri>, uploaded: MutableList<String>, onComplete: (List<String>) -> Unit) {
@@ -214,8 +268,12 @@ class CreatePostScreen(
                         uploaded.add(imageUrl)
                         uploadImages(remaining.drop(1), uploaded, onComplete)
                     }
-                    .onFailure {
-                        Toast.makeText(activity, "일부 이미지를 첨부하지 못했습니다.", Toast.LENGTH_SHORT).show()
+                    .onFailure { error ->
+                        Toast.makeText(
+                            activity,
+                            error.localizedMessage ?: "이미지를 첨부하지 못했습니다. 사진 형식이나 용량을 확인해 주세요.",
+                            Toast.LENGTH_LONG,
+                        ).show()
                         uploadImages(remaining.drop(1), uploaded, onComplete)
                     }
             }
@@ -303,5 +361,6 @@ class CreatePostScreen(
 
     companion object {
         private const val MAX_IMAGES = 6
+        private const val MAX_IMAGE_BYTES = 5L * 1024L * 1024L
     }
 }
