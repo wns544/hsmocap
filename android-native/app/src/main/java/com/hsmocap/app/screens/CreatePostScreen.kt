@@ -1,13 +1,17 @@
 package com.hsmocap.app.screens
 
 import android.app.Activity
+import android.app.Dialog
 import android.net.Uri
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.ScrollView
+import android.widget.Spinner
 import android.widget.Toast
 import com.hsmocap.app.R
 import com.hsmocap.app.data.CommunityAuthor
@@ -31,13 +35,16 @@ class CreatePostScreen(
     private val onRequireLogin: () -> Unit,
     private val navigate: (Screen) -> Unit,
 ) {
+    private var publishingDialog: Dialog? = null
+    private var publishing = false
+
     fun view(): View {
         if (!canSubmit) {
             return lockedView()
         }
 
         val titleInput = input("제목")
-        val categoryInput = input("카테고리").apply { setText("학습팁") }
+        val categoryInput = categoryDropdown()
         val contentInput = input("내용을 입력하세요").apply {
             setSingleLine(false)
             minLines = 8
@@ -53,7 +60,6 @@ class CreatePostScreen(
                     addView(label("제목"))
                     addView(titleInput, fieldParams())
                     addView(label("카테고리"))
-                    addView(ui.text("학습팁, 단어비교, 문장학습, 시험준비, 자료공유, 질문, 후기 중 하나로 작성하면 라이브 웹과 같은 게시판 색상이 적용됩니다.", 12, Theme.Muted))
                     addView(categoryInput, fieldParams())
                     addView(label("이미지"))
                     addView(imagePicker())
@@ -92,7 +98,7 @@ class CreatePostScreen(
         }
     }
 
-    private fun header(titleInput: EditText, categoryInput: EditText, contentInput: EditText): View {
+    private fun header(titleInput: EditText, categoryInput: Spinner, contentInput: EditText): View {
         return ui.horizontal().apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(ui.dp(18), ui.dp(44), ui.dp(18), ui.dp(12))
@@ -109,6 +115,17 @@ class CreatePostScreen(
                     publish(titleInput, categoryInput, contentInput)
                 }
             })
+        }
+    }
+
+    private fun categoryDropdown(): Spinner {
+        val categories = listOf("학습팁", "단어비교", "문장학습", "시험준비", "자료공유", "질문", "후기")
+        return Spinner(activity).apply {
+            adapter = ArrayAdapter(activity, android.R.layout.simple_spinner_item, categories).also { adapter ->
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            setPadding(ui.dp(12), 0, ui.dp(12), 0)
+            background = ui.rounded(Theme.Card, 16, Theme.Border)
         }
     }
 
@@ -142,23 +159,33 @@ class CreatePostScreen(
         }
     }
 
-    private fun publish(titleInput: EditText, categoryInput: EditText, contentInput: EditText) {
+    private fun publish(titleInput: EditText, categoryInput: Spinner, contentInput: EditText) {
         if (!canSubmit) {
             onRequireLogin()
             return
         }
+        if (publishing) return
 
-        val title = titleInput.text.toString()
-        val category = categoryInput.text.toString()
-        val content = contentInput.text.toString()
+        val title = titleInput.text.toString().trim()
+        val category = categoryInput.selectedItem?.toString().orEmpty().ifBlank { "학습팁" }
+        val content = contentInput.text.toString().trim()
         val imageUri = selectedImageUri
 
+        if (title.isBlank()) {
+            Toast.makeText(activity, "제목을 입력하세요.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (content.isBlank()) {
+            Toast.makeText(activity, "내용을 입력하세요.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        showPublishingDialog()
         if (imageUri == null) {
             createPost(title, category, content, imageUrl = null)
             return
         }
 
-        Toast.makeText(activity, "이미지를 업로드하는 중입니다.", Toast.LENGTH_SHORT).show()
         imageUploadRepository.uploadCommunityImage(author.id, imageUri) { result ->
             activity.runOnUiThread {
                 result
@@ -182,19 +209,51 @@ class CreatePostScreen(
             ) { result ->
                 activity.runOnUiThread {
                     result
-                        .onSuccess { postId ->
+                        .onSuccess {
+                            dismissPublishingDialog()
                             onPostCreated()
-                            navigate(Screen.PostDetail(postId))
+                            navigate(Screen.Community)
                         }
                         .onFailure {
+                            dismissPublishingDialog()
                             Toast.makeText(activity, "게시 권한을 확인할 수 없습니다. 다시 로그인한 뒤 시도해 주세요.", Toast.LENGTH_LONG).show()
                         }
                 }
             }
         }.onFailure { error ->
+            dismissPublishingDialog()
             Toast.makeText(activity, error.message ?: "게시글 내용을 확인해 주세요.", Toast.LENGTH_LONG).show()
         }
     }
+
+    private fun showPublishingDialog() {
+        publishing = true
+        publishingDialog = Dialog(activity).apply {
+            setCancelable(false)
+            setContentView(
+                ui.horizontal().apply {
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(ui.dp(24), ui.dp(18), ui.dp(24), ui.dp(18))
+                    background = ui.rounded(Theme.Card, 18, Theme.Border)
+                    addView(ProgressBar(activity).apply {
+                        isIndeterminate = true
+                    }, LinearLayout.LayoutParams(ui.dp(34), ui.dp(34)).apply {
+                        setMargins(0, 0, ui.dp(14), 0)
+                    })
+                    addView(ui.text("게시글을 올리는 중입니다.", 16, Theme.Text, true))
+                },
+            )
+            window?.setBackgroundDrawableResource(android.R.color.transparent)
+        }
+        publishingDialog?.show()
+    }
+
+    private fun dismissPublishingDialog() {
+        publishing = false
+        publishingDialog?.dismiss()
+        publishingDialog = null
+    }
+
     private fun input(hintValue: String): EditText {
         return EditText(activity).apply {
             hint = hintValue

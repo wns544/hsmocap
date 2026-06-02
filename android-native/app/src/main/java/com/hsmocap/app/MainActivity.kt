@@ -346,7 +346,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     words = words,
                     store = store,
                     communityRepository = NativeServices.communityRepository(this),
-                    canWrite = canUseServerAccount(),
+                    canWrite = canCreateCommunityPost(),
                     onRequireLogin = ::requireLoginForServerFeature,
                     navigate = ::navigate,
                 ).view(),
@@ -367,7 +367,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     onPostCreated = {
                         selectedPostImageUri = null
                     },
-                    canSubmit = canUseServerAccount(),
+                    canSubmit = canCreateCommunityPost(),
                     onRequireLogin = ::requireLoginForServerFeature,
                     navigate = ::navigate,
                 ).view(),
@@ -569,12 +569,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         return user != null && !user.isGuest
     }
 
-    private fun requireLoginForServerFeature() {
-        if (authService.currentUser?.isGuest == true) {
-            Toast.makeText(this, "커뮤니티 기능은 이메일 또는 Google 로그인 후 사용할 수 있습니다.", Toast.LENGTH_LONG).show()
-            return
-        }
+    private fun canCreateCommunityPost(): Boolean {
+        return authService.currentUser != null
+    }
 
+    private fun requireLoginForServerFeature() {
         AppDialog.confirm(
             activity = this,
             ui = ui,

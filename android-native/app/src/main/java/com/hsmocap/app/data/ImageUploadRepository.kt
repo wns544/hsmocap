@@ -20,7 +20,7 @@ class FirebaseImageUploadRepository(context: Context) : ImageUploadRepository {
     }
 
     override fun uploadCommunityImage(userId: String, imageUri: Uri, callback: (Result<String>) -> Unit) {
-        val path = "community_posts/$userId/${System.currentTimeMillis()}-${UUID.randomUUID()}.jpg"
+        val path = "communityPosts/$userId/${System.currentTimeMillis()}-${UUID.randomUUID()}.jpg"
         val ref = storage.child(path)
         val metadata = StorageMetadata.Builder()
             .setContentType(appContext.contentResolver.getType(imageUri) ?: "image/jpeg")
