@@ -565,10 +565,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     }
 
     private fun canUseServerAccount(): Boolean {
-        return authService.currentUser != null
+        val user = authService.currentUser
+        return user != null && !user.isGuest
     }
 
     private fun requireLoginForServerFeature() {
+        if (authService.currentUser?.isGuest == true) {
+            Toast.makeText(this, "커뮤니티 기능은 이메일 또는 Google 로그인 후 사용할 수 있습니다.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         AppDialog.confirm(
             activity = this,
             ui = ui,

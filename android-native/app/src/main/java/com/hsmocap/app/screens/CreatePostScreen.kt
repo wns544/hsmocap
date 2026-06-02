@@ -143,6 +143,11 @@ class CreatePostScreen(
     }
 
     private fun publish(titleInput: EditText, categoryInput: EditText, contentInput: EditText) {
+        if (!canSubmit) {
+            onRequireLogin()
+            return
+        }
+
         val title = titleInput.text.toString()
         val category = categoryInput.text.toString()
         val content = contentInput.text.toString()
@@ -167,23 +172,27 @@ class CreatePostScreen(
     }
 
     private fun createPost(title: String, category: String, content: String, imageUrl: String?) {
-        communityRepository.addPost(
-            author = author,
-            title = title,
-            content = content,
-            category = category,
-            imageUrl = imageUrl,
-        ) { result ->
-            activity.runOnUiThread {
-                result
-                    .onSuccess { postId ->
-                        onPostCreated()
-                        navigate(Screen.PostDetail(postId))
-                    }
-                    .onFailure {
-                        Toast.makeText(activity, "게시 권한을 확인할 수 없습니다. 다시 로그인한 뒤 시도해 주세요.", Toast.LENGTH_LONG).show()
-                    }
+        runCatching {
+            communityRepository.addPost(
+                author = author,
+                title = title,
+                content = content,
+                category = category,
+                imageUrl = imageUrl,
+            ) { result ->
+                activity.runOnUiThread {
+                    result
+                        .onSuccess { postId ->
+                            onPostCreated()
+                            navigate(Screen.PostDetail(postId))
+                        }
+                        .onFailure {
+                            Toast.makeText(activity, "게시 권한을 확인할 수 없습니다. 다시 로그인한 뒤 시도해 주세요.", Toast.LENGTH_LONG).show()
+                        }
+                }
             }
+        }.onFailure { error ->
+            Toast.makeText(activity, error.message ?: "게시글 내용을 확인해 주세요.", Toast.LENGTH_LONG).show()
         }
     }
     private fun input(hintValue: String): EditText {
