@@ -259,9 +259,22 @@ class CommunityScreen(
                 setPadding(0, ui.dp(14), 0, ui.dp(6))
             })
             addView(ui.text(post.content, 14, Theme.Muted))
-            post.imageUrl?.takeIf { it.isNotBlank() }?.let { imageUrl ->
-                addView(RemoteImageView(activity, imageUrl, ui, 170).apply {
+            post.imageUrls.firstOrNull()?.takeIf { it.isNotBlank() }?.let { imageUrl ->
+                addView(FrameLayout(activity).apply {
                     background = ui.rounded(Theme.Card, 16, Theme.Border)
+                    addView(RemoteImageView(activity, imageUrl, ui, 170), FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ui.dp(170),
+                    ))
+                    if (post.imageUrls.size > 1) {
+                        addView(ui.text("+${post.imageUrls.size - 1}", 13, Theme.Card, true).apply {
+                            gravity = Gravity.CENTER
+                            background = ui.rounded(0x99000000.toInt(), 14)
+                            setPadding(ui.dp(10), ui.dp(4), ui.dp(10), ui.dp(4))
+                        }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(30), Gravity.TOP or Gravity.END).apply {
+                            setMargins(0, ui.dp(10), ui.dp(10), 0)
+                        })
+                    }
                 }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(170)).apply {
                     setMargins(0, ui.dp(14), 0, 0)
                 })

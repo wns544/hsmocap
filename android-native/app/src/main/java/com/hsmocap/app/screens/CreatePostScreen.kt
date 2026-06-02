@@ -27,7 +27,7 @@ class CreatePostScreen(
     private val communityRepository: CommunityRepository,
     private val imageUploadRepository: ImageUploadRepository,
     private val author: CommunityAuthor,
-    private val selectedImageUri: Uri?,
+    private val selectedImageUris: List<Uri>,
     private val onPickImage: () -> Unit,
     private val onClearImage: () -> Unit,
     private val onPostCreated: () -> Unit,
@@ -137,7 +137,7 @@ class CreatePostScreen(
                 setMargins(0, ui.dp(8), 0, ui.dp(8))
             }
             addView(ui.text(
-                selectedImageUri?.lastPathSegment?.let { "선택됨: $it" } ?: "선택된 이미지가 없습니다.",
+                selectedImagesLabel(),
                 14,
                 Theme.Muted,
             ))
@@ -149,13 +149,23 @@ class CreatePostScreen(
                     setMargins(0, 0, ui.dp(8), 0)
                 })
                 addView(ui.button("삭제", Theme.Card, 0xFFDC2626.toInt()).apply {
-                    isEnabled = selectedImageUri != null
-                    alpha = if (selectedImageUri != null) 1f else 0.45f
+                    isEnabled = selectedImageUris.isNotEmpty()
+                    alpha = if (selectedImageUris.isNotEmpty()) 1f else 0.45f
                     setOnClickListener {
-                        if (selectedImageUri != null) onClearImage()
+                        if (selectedImageUris.isNotEmpty()) onClearImage()
                     }
                 }, LinearLayout.LayoutParams(0, ui.dp(48), 1f))
             })
+        }
+    }
+
+    private fun selectedImagesLabel(): String {
+        if (selectedImageUris.isEmpty()) return "선택된 이미지가 없습니다."
+        val firstName = selectedImageUris.first().lastPathSegment ?: "이미지"
+        return if (selectedImageUris.size == 1) {
+            "선택됨: $firstName"
+        } else {
+            "선택됨: $firstName 외 ${selectedImageUris.size - 1}장"
         }
     }
 
@@ -169,7 +179,7 @@ class CreatePostScreen(
         val title = titleInput.text.toString().trim()
         val category = categoryInput.selectedItem?.toString().orEmpty().ifBlank { "학습팁" }
         val content = contentInput.text.toString().trim()
-        val imageUri = selectedImageUri
+        val imageUris = selectedImageUris.take(MAX_IMAGES)
 
         if (title.isBlank()) {
             Toast.makeText(activity, "제목을 입력하세요.", Toast.LENGTH_SHORT).show()
@@ -181,31 +191,45 @@ class CreatePostScreen(
         }
 
         showPublishingDialog()
-        if (imageUri == null) {
-            createPost(title, category, content, imageUrl = null)
+        if (imageUris.isEmpty()) {
+            createPost(title, category, content, imageUrls = emptyList())
             return
         }
 
-        imageUploadRepository.uploadCommunityImage(author.id, imageUri) { result ->
+        uploadImages(imageUris, mutableListOf()) { imageUrls ->
+            createPost(title, category, content, imageUrls)
+        }
+    }
+
+    private fun uploadImages(remaining: List<Uri>, uploaded: MutableList<String>, onComplete: (List<String>) -> Unit) {
+        val next = remaining.firstOrNull()
+        if (next == null) {
+            onComplete(uploaded)
+            return
+        }
+        imageUploadRepository.uploadCommunityImage(author.id, next) { result ->
             activity.runOnUiThread {
                 result
-                    .onSuccess { imageUrl -> createPost(title, category, content, imageUrl) }
+                    .onSuccess { imageUrl ->
+                        uploaded.add(imageUrl)
+                        uploadImages(remaining.drop(1), uploaded, onComplete)
+                    }
                     .onFailure {
-                        Toast.makeText(activity, "이미지 첨부 없이 게시를 계속합니다.", Toast.LENGTH_SHORT).show()
-                        createPost(title, category, content, imageUrl = null)
+                        Toast.makeText(activity, "일부 이미지를 첨부하지 못했습니다.", Toast.LENGTH_SHORT).show()
+                        uploadImages(remaining.drop(1), uploaded, onComplete)
                     }
             }
         }
     }
 
-    private fun createPost(title: String, category: String, content: String, imageUrl: String?) {
+    private fun createPost(title: String, category: String, content: String, imageUrls: List<String>) {
         runCatching {
             communityRepository.addPost(
                 author = author,
                 title = title,
                 content = content,
                 category = category,
-                imageUrl = imageUrl,
+                imageUrls = imageUrls,
             ) { result ->
                 activity.runOnUiThread {
                     result
@@ -275,5 +299,9 @@ class CreatePostScreen(
         return LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(56)).apply {
             setMargins(0, ui.dp(8), 0, ui.dp(8))
         }
+    }
+
+    companion object {
+        private const val MAX_IMAGES = 6
     }
 }

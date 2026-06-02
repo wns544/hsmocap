@@ -22,9 +22,15 @@ data class CommunityPostEntity(
     val isHot: Boolean,
     val timestampLabel: String,
     val imageUrl: String?,
+    val imageUrlsText: String = imageUrl.orEmpty(),
     val cachedAt: Long,
 ) {
     fun toPost(): CommunityPost {
+        val imageUrls = imageUrlsText
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .ifEmpty { imageUrl?.let { listOf(it) } ?: emptyList() }
         return CommunityPost(
             id = id,
             authorId = authorId,
@@ -43,6 +49,7 @@ data class CommunityPostEntity(
             isHot = isHot,
             timestampLabel = timestampLabel,
             imageUrl = imageUrl,
+            imageUrls = imageUrls,
         )
     }
 
@@ -66,6 +73,7 @@ data class CommunityPostEntity(
                 isHot = post.isHot,
                 timestampLabel = post.timestampLabel,
                 imageUrl = post.imageUrl,
+                imageUrlsText = post.imageUrls.joinToString("\n"),
                 cachedAt = cachedAt,
             )
         }

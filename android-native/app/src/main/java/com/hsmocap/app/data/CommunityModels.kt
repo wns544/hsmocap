@@ -18,6 +18,7 @@ data class CommunityPost(
     val isHot: Boolean,
     val timestampLabel: String,
     val imageUrl: String?,
+    val imageUrls: List<String> = imageUrl?.let { listOf(it) } ?: emptyList(),
 )
 
 data class CommunityComment(

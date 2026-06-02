@@ -70,7 +70,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var flashcardIndex: Int = 0
     private var flashcardShowingAnswer: Boolean = false
     private var flashcardReviewOnly: Boolean = false
-    private var selectedPostImageUri: Uri? = null
+    private var selectedPostImageUris: List<Uri> = emptyList()
     private var backCallback: OnBackInvokedCallback? = null
     private var textToSpeech: TextToSpeech? = null
     private var textToSpeechReady: Boolean = false
@@ -116,7 +116,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PICK_POST_IMAGE_REQUEST && resultCode == RESULT_OK) {
-            selectedPostImageUri = data?.data
+            selectedPostImageUris = selectedImageUrisFrom(data).take(MAX_POST_IMAGES)
             if (screen is Screen.CreatePost) {
                 navigate(Screen.CreatePost, addToBackStack = false)
             }
@@ -358,14 +358,14 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     communityRepository = NativeServices.communityRepository(this),
                     imageUploadRepository = NativeServices.imageUploadRepository(this),
                     author = currentCommunityAuthor(),
-                    selectedImageUri = selectedPostImageUri,
+                    selectedImageUris = selectedPostImageUris,
                     onPickImage = ::pickPostImage,
                     onClearImage = {
-                        selectedPostImageUri = null
+                        selectedPostImageUris = emptyList()
                         navigate(Screen.CreatePost, addToBackStack = false)
                     },
                     onPostCreated = {
-                        selectedPostImageUri = null
+                        selectedPostImageUris = emptyList()
                     },
                     canSubmit = canCreateCommunityPost(),
                     onRequireLogin = ::requireLoginForServerFeature,
@@ -622,8 +622,20 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
             type = "image/*"
             addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
         startActivityForResult(Intent.createChooser(intent, "이미지 선택"), PICK_POST_IMAGE_REQUEST)
+    }
+
+    private fun selectedImageUrisFrom(data: Intent?): List<Uri> {
+        if (data == null) return emptyList()
+        val clipData = data.clipData
+        if (clipData != null) {
+            return (0 until clipData.itemCount).mapNotNull { index ->
+                clipData.getItemAt(index)?.uri
+            }
+        }
+        return data.data?.let { listOf(it) } ?: emptyList()
     }
 
     private fun speakText(text: String) {
@@ -693,5 +705,6 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     companion object {
         private const val TAG = "WordyMain"
         private const val PICK_POST_IMAGE_REQUEST = 4301
+        private const val MAX_POST_IMAGES = 6
     }
 }

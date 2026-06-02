@@ -145,12 +145,12 @@ class PostDetailScreen(
                 setLineSpacing(ui.dp(5).toFloat(), 1f)
                 setPadding(0, 0, 0, ui.dp(22))
             })
-            post.imageUrl?.takeIf { it.isNotBlank() }?.let { imageUrl ->
+            post.imageUrls.filter { it.isNotBlank() }.forEach { imageUrl ->
                 addView(RemoteImageView(activity, imageUrl, ui, 260).apply {
                     background = ui.rounded(Theme.Card, 18, Theme.Border)
                     setOnClickListener { showImagePreview(imageUrl) }
                 }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(260)).apply {
-                    setMargins(0, 0, 0, ui.dp(22))
+                    setMargins(0, 0, 0, ui.dp(14))
                 })
             }
             statsText = ui.text(statsLabel(post), 14, Theme.Muted).apply {

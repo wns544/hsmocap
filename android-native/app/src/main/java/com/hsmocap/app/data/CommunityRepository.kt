@@ -18,7 +18,7 @@ interface CommunityRepository {
     fun loadReaction(postId: String, userId: String, callback: (Result<CommunityReaction>) -> Unit)
     fun loadBookmarkedPosts(userId: String, callback: (Result<List<CommunityPost>>) -> Unit)
     fun loadComments(postId: String, callback: (Result<List<CommunityComment>>) -> Unit)
-    fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrl: String?, callback: (Result<String>) -> Unit)
+    fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrls: List<String>, callback: (Result<String>) -> Unit)
     fun addComment(postId: String, author: CommunityAuthor, content: String, callback: (Result<Unit>) -> Unit)
     fun recordView(postId: String, userId: String, callback: (Result<Unit>) -> Unit)
     fun toggleLike(postId: String, userId: String, callback: (Result<Unit>) -> Unit)
@@ -120,10 +120,10 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
             .addOnFailureListener { error -> callback(Result.failure(error)) }
     }
 
-    override fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrl: String?, callback: (Result<String>) -> Unit) {
+    override fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrls: List<String>, callback: (Result<String>) -> Unit) {
         val trimmedTitle = title.trim()
         val trimmedContent = content.trim()
-        val trimmedImageUrl = imageUrl?.trim().orEmpty()
+        val trimmedImageUrls = imageUrls.map { it.trim() }.filter { it.isNotBlank() }
         require(trimmedTitle.isNotBlank()) { "제목을 입력하세요." }
         require(trimmedContent.isNotBlank()) { "내용을 입력하세요." }
 
@@ -150,12 +150,12 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
             "views" to 0,
             "bookmarks" to 0,
             "isHot" to false,
-            "imageUrls" to if (trimmedImageUrl.isNotBlank()) listOf(trimmedImageUrl) else emptyList<String>(),
+            "imageUrls" to trimmedImageUrls,
             "createdAt" to Timestamp.now(),
             "updatedAt" to Timestamp.now(),
         )
-        if (trimmedImageUrl.isNotBlank()) {
-            payload["imageUrl"] = trimmedImageUrl
+        if (trimmedImageUrls.isNotEmpty()) {
+            payload["imageUrl"] = trimmedImageUrls.first()
         }
 
         posts.add(payload)
@@ -262,7 +262,8 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
             bookmarks = getLong("bookmarks").toIntOrZero(),
             isHot = getBoolean("isHot") ?: false,
             timestampLabel = timestampLabel(getTimestamp("createdAt")?.toDate()),
-            imageUrl = firstImageUrl(),
+            imageUrl = imageUrls().firstOrNull(),
+            imageUrls = imageUrls(),
         )
     }
 
@@ -334,6 +335,33 @@ class FirebaseCommunityRepository(context: Context) : CommunityRepository {
         )
         return listFields.firstNotNullOfOrNull { field ->
             firstImageFromValue(get(field))
+        }
+    }
+
+    private fun DocumentSnapshot.imageUrls(): List<String> {
+        val listFields = listOf(
+            "imageUrls",
+            "images",
+            "selectedImages",
+            "photos",
+            "photoUrls",
+            "mediaUrls",
+            "attachments",
+        )
+        val fromLists = listFields.flatMap { field -> imageListFromValue(get(field)) }
+        if (fromLists.isNotEmpty()) return fromLists.distinct()
+        return firstImageUrl()?.let { listOf(it) } ?: emptyList()
+    }
+
+    private fun imageListFromValue(value: Any?): List<String> {
+        return when (value) {
+            is String -> value.trim().takeIf { it.isNotBlank() }?.let { listOf(it) } ?: emptyList()
+            is List<*> -> value.flatMap { imageListFromValue(it) }
+            is Map<*, *> -> {
+                val keys = listOf("imageUrl", "url", "src", "downloadUrl", "data", "base64")
+                keys.flatMap { key -> imageListFromValue(value[key]) }
+            }
+            else -> emptyList()
         }
     }
 
@@ -489,8 +517,8 @@ class CachedCommunityRepository(
         }
     }
 
-    override fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrl: String?, callback: (Result<String>) -> Unit) {
-        remote.addPost(author, title, content, category, imageUrl, callback)
+    override fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrls: List<String>, callback: (Result<String>) -> Unit) {
+        remote.addPost(author, title, content, category, imageUrls, callback)
     }
 
     override fun addComment(postId: String, author: CommunityAuthor, content: String, callback: (Result<Unit>) -> Unit) {
@@ -546,7 +574,7 @@ class CachedReadOnlyCommunityRepository(
         callback(Result.success(commentCache.forPost(postId).map { it.toComment() }))
     }
 
-    override fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrl: String?, callback: (Result<String>) -> Unit) {
+    override fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrls: List<String>, callback: (Result<String>) -> Unit) {
         callback(Result.failure(writeError))
     }
 
@@ -590,7 +618,7 @@ class UnavailableCommunityRepository : CommunityRepository {
         callback(Result.failure(error))
     }
 
-    override fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrl: String?, callback: (Result<String>) -> Unit) {
+    override fun addPost(author: CommunityAuthor, title: String, content: String, category: String, imageUrls: List<String>, callback: (Result<String>) -> Unit) {
         callback(Result.failure(error))
     }
 
