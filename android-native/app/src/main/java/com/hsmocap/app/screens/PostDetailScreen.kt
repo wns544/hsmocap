@@ -162,26 +162,31 @@ class PostDetailScreen(
 
     private fun imageCarousel(imageUrls: List<String>): View {
         val imageWidth = activity.resources.displayMetrics.widthPixels - ui.dp(48)
+        val imageGap = ui.dp(10)
         return ui.vertical().apply {
-            addView(HorizontalScrollView(activity).apply {
+            val counter = ui.text("1 / ${imageUrls.size}", 12, Theme.Muted, true).apply {
+                gravity = Gravity.CENTER
+                setPadding(0, ui.dp(7), 0, 0)
+            }
+            addView(SnappingHorizontalScrollView(activity).apply {
                 isHorizontalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
+                pageStride = imageWidth + imageGap
+                pageCount = imageUrls.size
+                onPageChanged = { page -> counter.text = "${page + 1} / ${imageUrls.size}" }
                 addView(ui.horizontal().apply {
                     imageUrls.forEachIndexed { index, imageUrl ->
                         addView(RemoteImageView(activity, imageUrl, ui, 260).apply {
                             background = ui.rounded(Theme.Card, 18, Theme.Border)
                             setOnClickListener { showImagePreview(imageUrls, index) }
                         }, LinearLayout.LayoutParams(imageWidth, ui.dp(260)).apply {
-                            if (index < imageUrls.lastIndex) setMargins(0, 0, ui.dp(10), 0)
+                            if (index < imageUrls.lastIndex) setMargins(0, 0, imageGap, 0)
                         })
                     }
                 })
             }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(260)))
             if (imageUrls.size > 1) {
-                addView(ui.text("1 / ${imageUrls.size}", 12, Theme.Muted, true).apply {
-                    gravity = Gravity.CENTER
-                    setPadding(0, ui.dp(7), 0, 0)
-                })
+                addView(counter)
             }
         }
     }
@@ -291,9 +296,11 @@ class PostDetailScreen(
             setBackgroundColor(Color.BLACK)
         }
         val pageWidth = activity.resources.displayMetrics.widthPixels
-        val pager = HorizontalScrollView(activity).apply {
+        val pager = SnappingHorizontalScrollView(activity).apply {
             isHorizontalScrollBarEnabled = false
             overScrollMode = View.OVER_SCROLL_NEVER
+            pageStride = pageWidth
+            pageCount = imageUrls.size
         }
         val counter = ui.text("", 13, Theme.Card, true).apply {
             gravity = Gravity.CENTER
@@ -301,9 +308,10 @@ class PostDetailScreen(
             setPadding(ui.dp(10), ui.dp(4), ui.dp(10), ui.dp(4))
         }
         fun updateCounter() {
-            val page = ((pager.scrollX + pageWidth / 2) / pageWidth).coerceIn(0, imageUrls.lastIndex)
+            val page = pager.currentPage()
             counter.text = "${page + 1} / ${imageUrls.size}"
         }
+        pager.onPageChanged = { page -> counter.text = "${page + 1} / ${imageUrls.size}" }
         pager.addView(ui.horizontal().apply {
             imageUrls.forEach { imageUrl ->
                 addView(
@@ -322,19 +330,6 @@ class PostDetailScreen(
             },
         )
         if (imageUrls.size > 1) {
-            pager.setOnTouchListener { _, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_UP -> {
-                        pager.postDelayed({ updateCounter() }, 120)
-                        false
-                    }
-                    MotionEvent.ACTION_CANCEL -> {
-                        pager.postDelayed({ updateCounter() }, 120)
-                        false
-                    }
-                    else -> false
-                }
-            }
             root.addView(counter, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(30), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply {
                 setMargins(0, ui.dp(38), 0, 0)
             })
@@ -355,6 +350,69 @@ class PostDetailScreen(
         pager.post {
             pager.scrollTo(initialPage * pageWidth, 0)
             updateCounter()
+        }
+    }
+
+    private class SnappingHorizontalScrollView(
+        context: android.content.Context,
+    ) : HorizontalScrollView(context) {
+        var pageStride: Int = 1
+        var pageCount: Int = 1
+        var onPageChanged: ((Int) -> Unit)? = null
+        private var gestureStartScrollX: Int = 0
+
+        fun currentPage(): Int {
+            if (pageStride <= 0 || pageCount <= 1) return 0
+            return ((scrollX + pageStride / 2) / pageStride).coerceIn(0, pageCount - 1)
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                gestureStartScrollX = scrollX
+            }
+            val handled = super.onTouchEvent(event)
+            if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
+                post { snapFromRelease() }
+            }
+            return handled
+        }
+
+        override fun fling(velocityX: Int) {
+            if (pageStride <= 0 || pageCount <= 1) {
+                super.fling(velocityX)
+                return
+            }
+            val page = currentPage()
+            val target = when {
+                velocityX > MIN_FLING_VELOCITY -> page + 1
+                velocityX < -MIN_FLING_VELOCITY -> page - 1
+                else -> page
+            }.coerceIn(0, pageCount - 1)
+            snapToPage(target)
+        }
+
+        private fun snapFromRelease() {
+            if (pageStride <= 0 || pageCount <= 1) return
+            val startPage = ((gestureStartScrollX + pageStride / 2) / pageStride).coerceIn(0, pageCount - 1)
+            val dragDistance = scrollX - gestureStartScrollX
+            val threshold = (pageStride * DRAG_PAGE_THRESHOLD).toInt()
+            val target = when {
+                dragDistance > threshold -> startPage + 1
+                dragDistance < -threshold -> startPage - 1
+                else -> currentPage()
+            }.coerceIn(0, pageCount - 1)
+            snapToPage(target)
+        }
+
+        private fun snapToPage(page: Int) {
+            val targetX = page * pageStride
+            smoothScrollTo(targetX, 0)
+            onPageChanged?.invoke(page)
+        }
+
+        private companion object {
+            private const val MIN_FLING_VELOCITY = 450
+            private const val DRAG_PAGE_THRESHOLD = 0.18f
         }
     }
 
