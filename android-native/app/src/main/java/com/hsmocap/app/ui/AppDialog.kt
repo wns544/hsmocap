@@ -22,12 +22,13 @@ object AppDialog {
         positiveLabel: String,
         onPositive: () -> Unit,
         onNegative: (() -> Unit)? = null,
+        primaryActionOnLeft: Boolean = false,
     ) {
         val dialog = Dialog(activity)
         val box = container(ui)
         box.addView(titleView(ui, title))
         box.addView(messageView(ui, message))
-        box.addView(actions(ui, dialog, negativeLabel, positiveLabel, onNegative, onPositive))
+        box.addView(actions(ui, dialog, negativeLabel, positiveLabel, onNegative, onPositive, primaryActionOnLeft = primaryActionOnLeft))
         show(activity, dialog, box)
     }
 
@@ -139,9 +140,27 @@ object AppDialog {
         onNegative: (() -> Unit)?,
         onPositive: () -> Unit,
         dismissOnPositive: Boolean = true,
+        primaryActionOnLeft: Boolean = false,
     ): LinearLayout {
         return ui.horizontal().apply {
             setPadding(0, ui.dp(2), 0, 0)
+            if (primaryActionOnLeft) {
+                addView(dialogButton(ui, positiveLabel, Theme.Primary, Theme.Card).apply {
+                    setOnClickListener {
+                        if (dismissOnPositive) dialog.dismiss()
+                        onPositive()
+                    }
+                }, LinearLayout.LayoutParams(0, ui.dp(52), 1f).apply {
+                    setMargins(0, 0, ui.dp(8), 0)
+                })
+                addView(dialogButton(ui, negativeLabel, Theme.Card, Theme.Muted).apply {
+                    setOnClickListener {
+                        dialog.dismiss()
+                        onNegative?.invoke()
+                    }
+                }, LinearLayout.LayoutParams(0, ui.dp(52), 1f))
+                return@apply
+            }
             addView(dialogButton(ui, negativeLabel, Theme.Card, Theme.Muted).apply {
                 setOnClickListener {
                     dialog.dismiss()

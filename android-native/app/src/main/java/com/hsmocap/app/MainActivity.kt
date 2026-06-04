@@ -115,7 +115,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (GoogleCredentialSignIn.handleActivityResult(requestCode, data)) {
+        if (GoogleCredentialSignIn.handleActivityResult(requestCode, resultCode, data)) {
             return
         }
         if (requestCode == PICK_POST_IMAGE_REQUEST && resultCode == RESULT_OK) {
@@ -221,27 +221,27 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                                     },
                                     fallbackMessage = "Google 로그인에 실패했습니다.",
                                     loadingMessage = null,
+                                    onFailure = {
+                                        showGoogleLoginFailureDialog()
+                                    },
                                 )
                             },
                             onFailure = { message ->
                                 Log.e(TAG, "Google credential flow failed: $message")
                                 runOnUiThread {
                                     dismissAuthLoading()
-                                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                                    showGoogleLoginFailureDialog()
+                                }
+                            },
+                            onCanceled = {
+                                runOnUiThread {
+                                    dismissAuthLoading()
                                 }
                             },
                         )
                     },
                     onGuestLogin = {
-                        runAuth(
-                            action = { authService.signInAsGuest() },
-                            onSuccess = {
-                                store = createStudyStore(authService.currentUser?.id ?: "anonymous")
-                                navigate(Screen.Home, addToBackStack = false)
-                            },
-                            fallbackMessage = "게스트 로그인에 실패했습니다.",
-                            loadingMessage = "게스트로 시작하는 중입니다.",
-                        )
+                        signInAsGuest()
                     },
                 ).view(),
             )
@@ -596,6 +596,33 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         )
     }
 
+    private fun showGoogleLoginFailureDialog() {
+        AppDialog.confirm(
+            activity = this,
+            ui = ui,
+            title = "Google 로그인에 실패했어요",
+            message = "잠시 후 다시 시도하거나, 이메일 로그인 또는 게스트 로그인을 이용해 주세요.",
+            negativeLabel = "확인",
+            positiveLabel = "게스트로 로그인하기",
+            onPositive = {
+                signInAsGuest()
+            },
+            primaryActionOnLeft = true,
+        )
+    }
+
+    private fun signInAsGuest() {
+        runAuth(
+            action = { authService.signInAsGuest() },
+            onSuccess = {
+                store = createStudyStore(authService.currentUser?.id ?: "anonymous")
+                navigate(Screen.Home, addToBackStack = false)
+            },
+            fallbackMessage = "게스트 로그인에 실패했습니다.",
+            loadingMessage = "게스트로 시작하는 중입니다.",
+        )
+    }
+
     private fun showEditProfileDialog() {
         val current = authService.currentUser
         if (current == null) {
@@ -660,6 +687,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         onSuccess: () -> Unit,
         fallbackMessage: String,
         loadingMessage: String? = null,
+        onFailure: (() -> Unit)? = null,
     ) {
         loadingMessage?.let { showAuthLoading(it) }
         Thread {
@@ -676,7 +704,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     runOnUiThread {
                         dismissAuthLoading()
                         val message = error.message ?: "${fallbackMessage} (${error.javaClass.simpleName})"
-                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        if (onFailure != null) {
+                            onFailure()
+                        } else {
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
         }.start()

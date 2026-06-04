@@ -3,35 +3,23 @@ package com.hsmocap.app.auth
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
-import android.os.CancellationSignal
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
-import androidx.credentials.CredentialManager
-import androidx.credentials.CredentialManagerCallback
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.GetCredentialResponse
-import androidx.credentials.exceptions.GetCredentialException
-import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import java.util.concurrent.atomic.AtomicBoolean
 
 object GoogleCredentialSignIn {
     private const val TAG = "WordyGoogleSignIn"
-    private const val CREDENTIAL_TIMEOUT_MS = 12_000L
     const val LEGACY_SIGN_IN_REQUEST = 7301
     private var pendingSuccess: ((String) -> Unit)? = null
     private var pendingFailure: ((String) -> Unit)? = null
+    private var pendingCanceled: (() -> Unit)? = null
 
     fun requestIdToken(
         activity: Activity,
         onSuccess: (String) -> Unit,
         onFailure: (String) -> Unit,
+        onCanceled: () -> Unit,
     ) {
         val clientId = activity.defaultWebClientId()
         if (clientId.isNullOrBlank()) {
@@ -41,18 +29,25 @@ object GoogleCredentialSignIn {
         }
 
         Log.d(TAG, "Starting legacy Google ID token request first")
-        startLegacySignIn(activity, clientId, onSuccess) { message ->
-            Log.e(TAG, "Legacy Google sign-in did not start: $message")
-            requestCredentialManagerIdToken(activity, clientId, onSuccess, onFailure)
+        startLegacySignIn(activity, clientId, onSuccess, onCanceled) { message ->
+            Log.e(TAG, "Legacy Google sign-in failed to start: $message")
+            onFailure(message)
         }
     }
 
-    fun handleActivityResult(requestCode: Int, data: Intent?): Boolean {
+    fun handleActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode != LEGACY_SIGN_IN_REQUEST) return false
         val onSuccess = pendingSuccess
         val onFailure = pendingFailure
+        val onCanceled = pendingCanceled
         pendingSuccess = null
         pendingFailure = null
+        pendingCanceled = null
+        if (resultCode == Activity.RESULT_CANCELED) {
+            Log.d(TAG, "Legacy Google sign-in canceled")
+            onCanceled?.invoke()
+            return true
+        }
         runCatching {
             val account = GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException::class.java)
             requireNotNull(account.idToken) { "Google 로그인 토큰을 찾을 수 없습니다." }
@@ -73,11 +68,13 @@ object GoogleCredentialSignIn {
         activity: Activity,
         clientId: String,
         onSuccess: (String) -> Unit,
+        onCanceled: () -> Unit,
         onFailure: (String) -> Unit,
     ) {
         Log.d(TAG, "Starting legacy Google sign-in")
         pendingSuccess = onSuccess
         pendingFailure = onFailure
+        pendingCanceled = onCanceled
         val options = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(clientId)
             .requestEmail()
@@ -88,81 +85,9 @@ object GoogleCredentialSignIn {
         }.onFailure { error ->
             pendingSuccess = null
             pendingFailure = null
+            pendingCanceled = null
             onFailure(error.localizedMessage ?: "Google 로그인 화면을 열 수 없습니다.")
         }
-    }
-
-    private fun requestCredentialManagerIdToken(
-        activity: Activity,
-        clientId: String,
-        onSuccess: (String) -> Unit,
-        onFailure: (String) -> Unit,
-    ) {
-        Log.d(TAG, "Requesting Credential Manager Google ID token with clientId=${clientId.take(12)}...")
-        val credentialManager = CredentialManager.create(activity)
-        val googleIdOption = GetGoogleIdOption.Builder()
-            .setServerClientId(clientId)
-            .setFilterByAuthorizedAccounts(false)
-            .setAutoSelectEnabled(false)
-            .build()
-        val request = GetCredentialRequest.Builder()
-            .addCredentialOption(googleIdOption)
-            .build()
-        val cancellationSignal = CancellationSignal()
-        val completed = AtomicBoolean(false)
-        val mainHandler = Handler(Looper.getMainLooper())
-        val timeoutRunnable = Runnable {
-            if (completed.compareAndSet(false, true)) {
-                Log.e(TAG, "Credential request timed out")
-                cancellationSignal.cancel()
-                onFailure("Google 로그인 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.")
-            }
-        }
-        mainHandler.postDelayed(timeoutRunnable, CREDENTIAL_TIMEOUT_MS)
-
-        credentialManager.getCredentialAsync(
-            context = activity,
-            request = request,
-            cancellationSignal = cancellationSignal,
-            executor = activity.mainExecutor,
-            callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
-                override fun onResult(result: GetCredentialResponse) {
-                    if (!completed.compareAndSet(false, true)) return
-                    mainHandler.removeCallbacks(timeoutRunnable)
-                    val credential = result.credential
-                    Log.d(TAG, "Credential result type=${credential.type}")
-                    if (
-                        credential is CustomCredential &&
-                        credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-                    ) {
-                        runCatching { GoogleIdTokenCredential.createFrom(credential.data).idToken }
-                            .onSuccess {
-                                Log.d(TAG, "Credential Manager Google ID token received")
-                                onSuccess(it)
-                            }
-                            .onFailure {
-                                Log.e(TAG, "Failed to parse Google credential", it)
-                                onFailure("Google 로그인 정보를 읽지 못했습니다. (${it.javaClass.simpleName})")
-                            }
-                    } else {
-                        Log.e(TAG, "Unexpected credential response: ${credential.type}")
-                        onFailure("Google 로그인 응답 형식이 올바르지 않습니다.")
-                    }
-                }
-
-                override fun onError(e: GetCredentialException) {
-                    if (!completed.compareAndSet(false, true)) return
-                    mainHandler.removeCallbacks(timeoutRunnable)
-                    Log.e(TAG, "Credential request failed: ${e.javaClass.simpleName}: ${e.message}", e)
-                    val message = if (e is NoCredentialException) {
-                        "사용 가능한 Google 계정을 찾을 수 없습니다."
-                    } else {
-                        e.localizedMessage ?: "Google 로그인에 실패했습니다. (${e.javaClass.simpleName})"
-                    }
-                    onFailure(message)
-                }
-            },
-        )
     }
 
     @SuppressLint("DiscouragedApi")
