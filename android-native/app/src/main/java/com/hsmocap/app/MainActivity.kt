@@ -115,6 +115,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (GoogleCredentialSignIn.handleActivityResult(requestCode, data)) {
+            return
+        }
         if (requestCode == PICK_POST_IMAGE_REQUEST && resultCode == RESULT_OK) {
             selectedPostImageUris = selectedImageUrisFrom(data).take(MAX_POST_IMAGES)
             if (screen is Screen.CreatePost) {

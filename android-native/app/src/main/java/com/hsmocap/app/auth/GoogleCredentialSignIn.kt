@@ -2,6 +2,7 @@ package com.hsmocap.app.auth
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import android.os.Handler
 import android.os.CancellationSignal
 import android.os.Looper
@@ -13,6 +14,9 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import java.util.concurrent.atomic.AtomicBoolean
@@ -20,6 +24,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 object GoogleCredentialSignIn {
     private const val TAG = "WordyGoogleSignIn"
     private const val CREDENTIAL_TIMEOUT_MS = 12_000L
+    const val LEGACY_SIGN_IN_REQUEST = 7301
+    private var pendingSuccess: ((String) -> Unit)? = null
+    private var pendingFailure: ((String) -> Unit)? = null
 
     fun requestIdToken(
         activity: Activity,
@@ -50,7 +57,7 @@ object GoogleCredentialSignIn {
             if (completed.compareAndSet(false, true)) {
                 Log.e(TAG, "Credential request timed out")
                 cancellationSignal.cancel()
-                onFailure("Google 로그인 응답이 지연되고 있습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.")
+                startLegacySignIn(activity, clientId, onSuccess, onFailure)
             }
         }
         mainHandler.postDelayed(timeoutRunnable, CREDENTIAL_TIMEOUT_MS)
@@ -89,15 +96,53 @@ object GoogleCredentialSignIn {
                     if (!completed.compareAndSet(false, true)) return
                     mainHandler.removeCallbacks(timeoutRunnable)
                     Log.e(TAG, "Credential request failed: ${e.javaClass.simpleName}: ${e.message}", e)
-                    val message = if (e is NoCredentialException) {
-                        "사용 가능한 Google 계정을 찾을 수 없습니다."
+                    if (e is NoCredentialException) {
+                        onFailure("사용 가능한 Google 계정을 찾을 수 없습니다.")
                     } else {
-                        e.localizedMessage ?: "Google 로그인에 실패했습니다. (${e.javaClass.simpleName})"
+                        startLegacySignIn(activity, clientId, onSuccess, onFailure)
                     }
-                    onFailure(message)
                 }
             },
         )
+    }
+
+    fun handleActivityResult(requestCode: Int, data: Intent?): Boolean {
+        if (requestCode != LEGACY_SIGN_IN_REQUEST) return false
+        val onSuccess = pendingSuccess
+        val onFailure = pendingFailure
+        pendingSuccess = null
+        pendingFailure = null
+        runCatching {
+            val account = GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException::class.java)
+            requireNotNull(account.idToken) { "Google 로그인 토큰을 찾을 수 없습니다." }
+        }.onSuccess { idToken ->
+            Log.d(TAG, "Legacy Google ID token received")
+            onSuccess?.invoke(idToken)
+        }.onFailure { error ->
+            Log.e(TAG, "Legacy Google sign-in failed", error)
+            val message = (error as? ApiException)?.let {
+                "Google 로그인에 실패했습니다. (${it.statusCode})"
+            } ?: (error.localizedMessage ?: "Google 로그인에 실패했습니다.")
+            onFailure?.invoke(message)
+        }
+        return true
+    }
+
+    private fun startLegacySignIn(
+        activity: Activity,
+        clientId: String,
+        onSuccess: (String) -> Unit,
+        onFailure: (String) -> Unit,
+    ) {
+        Log.d(TAG, "Starting legacy Google sign-in fallback")
+        pendingSuccess = onSuccess
+        pendingFailure = onFailure
+        val options = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(clientId)
+            .requestEmail()
+            .build()
+        val client = GoogleSignIn.getClient(activity, options)
+        activity.startActivityForResult(client.signInIntent, LEGACY_SIGN_IN_REQUEST)
     }
 
     @SuppressLint("DiscouragedApi")
